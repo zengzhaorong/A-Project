@@ -16,10 +16,16 @@ public:
 
 
 private:
-	QWidget		*mainWidget;
-	QLabel		*helloLabel;
+	QWidget		*mainWindow;		// 中心窗口
+	QLabel 		*videoArea;			// 图像显示区
+	QImage		initWinImg;			// 初始背景图
+	
 	
 };
+
+
+
+int start_mainwindow_task(void);
 
 
 #endif	// _MAINWINDOW_H_

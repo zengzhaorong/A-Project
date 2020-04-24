@@ -1,6 +1,16 @@
 #include <iostream>
 #include <unistd.h>
 
+/* C++ °üº¬ C */
+#ifdef __cplusplus
+	extern "C" {
+#endif
+
+#include "socket_server.h"
+
+#ifdef __cplusplus
+	}
+#endif
 
 using namespace std;
 
@@ -14,10 +24,13 @@ int main(int argc, char* argv[])
 
 	cout << "hello background_app" << endl;
 
+	start_socket_server_task();
+
+
 	while(1)
 	{
-		printf("sec: %d\n", sec++);
-		sleep(1);
+		printf("sec: %d\n", (sec++)*3);
+		sleep(3);
 	}
 
 	return 0;
