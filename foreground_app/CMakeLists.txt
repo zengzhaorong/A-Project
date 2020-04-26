@@ -33,7 +33,7 @@ find_package(Qt5Widgets)
 find_package(Qt5Gui)
 find_package(Qt5Core)
 set(LIB_QT5_PATH /usr/local/Qt-5.12.8)
-set(LIB_QT5_INC ${LIB_QT5_PATH}/include ${LIB_QT5_PATH}/include/QtWidgets)
+set(LIB_QT5_INC ${LIB_QT5_PATH}/include ${LIB_QT5_PATH}/include/QtWidgets ${LIB_QT5_PATH}/include/QtGui ${LIB_QT5_PATH}/include/QtCore)
 set(LIB_QT5_LIB ${LIB_QT5_PATH}/lib)
 file(GLOB QT5_LIB_FILE ${LIB_QT5_LIB}/libQt5*.so*)
 

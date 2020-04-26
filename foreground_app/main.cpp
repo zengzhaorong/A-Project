@@ -2,17 +2,15 @@
 #include <QApplication>
 #include "opencv_test.h"
 #include "mainwindow.h"
-#include "capture.h"
 
-/* C++ °üº¬ C */
+/* C++ include C */
 #ifdef __cplusplus
-	extern "C" {
+extern "C" {
 #endif
-
+#include "capture.h"
 #include "socket_client.h"
-
 #ifdef __cplusplus
-	}
+}
 #endif
 
 

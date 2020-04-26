@@ -1,15 +1,13 @@
 #include <iostream>
 #include <unistd.h>
 
-/* C++ °üº¬ C */
+/* C++ include C */
 #ifdef __cplusplus
-	extern "C" {
+extern "C" {
 #endif
-
 #include "socket_server.h"
-
 #ifdef __cplusplus
-	}
+}
 #endif
 
 using namespace std;

@@ -26,10 +26,12 @@ DEFINES += QT_DEPRECATED_WARNINGS
 HEADERS += include/capture.h \
            include/mainwindow.h \
            include/opencv_test.h \
-           include/socket_client.h
+           include/socket_client.h \
+           include/image_convert.h
 SOURCES += main.cpp \
-           src/capture.cpp \
+           src/capture.c \
            src/mainwindow.cpp \
            src/opencv_test.cpp \
-           src/socket_client.c
-greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
+           src/socket_client.c \
+           src/image_convert.cpp
+greaterThan(QT_MAJOR_VERSION, 4): QT += widgets gui
