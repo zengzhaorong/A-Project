@@ -2,14 +2,20 @@
 #define _SOCKET_SERVER_H_
 
 #include <netinet/in.h>
+#include "ringbuffer.h"
+#include "protocol.h"
 
 
-#define MAX_CLIENT_NUM 		3
+#define MAX_CLIENT_NUM 		1
 
 struct clientInfo
 {
 	int fd;
 	struct sockaddr_in addr;
+	struct ringbuffer recvRingBuf;			// 接收环形缓冲区
+	struct detect_info detectInfo;
+	uint8_t packBuf[PROTO_PACK_MAX_LEN];		// 协议包数据缓冲区
+	int packLen;
 };
 
 struct serverInfo

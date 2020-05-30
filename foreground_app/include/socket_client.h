@@ -2,6 +2,9 @@
 #define _SOCKET_CLIENT_H_
 
 #include <netinet/in.h>
+#include "ringbuffer.h"
+#include "protocol.h"
+#include "type.h"
 
 
 typedef enum
@@ -17,6 +20,12 @@ struct clientInfo
 	e_sock_state state;
 	struct sockaddr_in 	srv_addr;		// server 地址
 	//struct sockaddr_in 	cli_addr;		// client 地址
+
+	struct ringbuffer recvRingBuf;			// 接收环形缓冲区
+	//struct ringbuffer sendRingBuf;			// 发送环形缓冲区
+	struct detect_info detectInfo;
+	uint8_t packBuf[PROTO_PACK_MAX_LEN];		// 协议包数据缓冲区
+	int packLen;
 };
 
 int start_socket_client_task(void);
