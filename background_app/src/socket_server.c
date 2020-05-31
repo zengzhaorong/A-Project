@@ -2,6 +2,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <fcntl.h>
 #include <sys/socket.h>
 #include "socket_server.h"
 
@@ -11,15 +12,36 @@
 
 static struct serverInfo server_info;
 
-static char tmpBuf[1024];
+static uint8_t tmpBuf[1024] = {0};
+static int tmpLen = 0;
 
 
-int server_0x03_heartbeat(uint8_t *data, int len)
+int server_0x03_heartbeat(uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
 {
-	time_t time;
+	time_t tmpTime;
+	int tmplen = 0;
+	int ret;
 
-	proto_0x03_dataAnaly(data, len, &time);
-	printf("%s: time: %ld\n", __FUNCTION__, time);
+	if(data==NULL || len<=0)
+		return -1;
+
+	/* request part */
+	proto_0x03_dataAnaly(data, len, &tmpTime);
+	printf("%s: time: %ld\n", __FUNCTION__, tmpTime);
+
+	/* ack part */
+	if(ack_data==NULL || size<4+4 || ack_len==NULL)
+		return -2;
+
+	ret = 0;
+	memcpy(ack_data +tmplen, &ret, 4);
+	tmplen += 4;
+	
+	tmpTime = time(NULL);
+	memcpy(ack_data, &tmpTime, 4);
+	tmplen += 4;
+
+	*ack_len = tmplen;
 
 	return 0;
 }
@@ -95,16 +117,22 @@ int server_recvData(struct clientInfo *client)
 	len = recv(client->fd, tmpBuf, sizeof(tmpBuf), 0);
 	//printf("server recv %d bytes.\n", len);
 
-	len = ringbuf_write(&client->recvRingBuf, tmpBuf, len);
+	if(len > 0)
+	{
+		len = ringbuf_write(&client->recvRingBuf, tmpBuf, len);
+	}
 
 	return len;
 }
 
-int server_protoAnaly(uint8_t *pack, char len)
+int server_protoAnaly(struct clientInfo *client, uint8_t *pack, char len)
 {
 	uint8_t seq = 0, cmd = 0;
 	int data_len = 0;
 	uint8_t *data = 0;
+	uint8_t ack_buf[512] = {0};
+	int ack_len = 0;
+	int ret;
 
 	if(pack==NULL || len<=0)
 		return -1;
@@ -121,12 +149,19 @@ int server_protoAnaly(uint8_t *pack, char len)
 			break;
 
 		case 0x03:
-			server_0x03_heartbeat(data, len);
+			ret = server_0x03_heartbeat(data, data_len, ack_buf, sizeof(ack_buf), &ack_len);
 			break;
 
 		default:
 			printf("ERROR: protocol cmd[0x%02x] not exist!\n", cmd);
 			break;
+	}
+
+	/* send ack data */
+	if(ret==0 && ack_len>0)
+	{
+		proto_makeupPacket(seq, cmd, ack_len, ack_buf, tmpBuf, sizeof(tmpBuf), &tmpLen);
+		server_sendData(client->fd, tmpBuf, tmpLen);
 	}
 
 	return 0;
@@ -145,7 +180,7 @@ int server_protoHandle(struct clientInfo *client)
 							sizeof(client->packBuf), &client->packLen);
 	if(ret == 0)
 	{
-		server_protoAnaly(client->packBuf, client->packLen);
+		server_protoAnaly(client, client->packBuf, client->packLen);
 	}
 
 	return 0;
@@ -154,9 +189,13 @@ int server_protoHandle(struct clientInfo *client)
 void *socket_handle_thread(void *arg)
 {
 	struct clientInfo *client = (struct clientInfo *)arg;
+	int flags = 0;
 	int ret;
 
 	printf("%s %d: enter ++\n", __FUNCTION__, __LINE__);
+
+	flags = fcntl(client->fd, F_GETFL, 0);
+	fcntl(client->fd, F_SETFL, flags | O_NONBLOCK);
 
 	ret = ringbuf_init(&client->recvRingBuf, RECV_BUFFER_SIZE);
 	if(ret < 0)

@@ -73,7 +73,7 @@ int ringbuf_write(struct ringbuffer *ringbuf, void *buf, int len)
 	int tmplen = 0;
 	int retlen = 0;
 
-	if(ringbuf == NULL || buf == 0)
+	if(ringbuf == NULL || buf == 0 || len<0)
 		return -1;
 	
 	if(ringbuf->len == ringbuf->size || len == 0)

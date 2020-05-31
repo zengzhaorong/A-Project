@@ -1,7 +1,9 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <fcntl.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include "socket_client.h"
@@ -12,6 +14,7 @@
 #define DEFAULT_SERVER_PORT			9100
 
 #define RECV_BUFFER_SIZE			(10*1024)
+#define HEARTBEAT_INTERVAL_S		10
 
 struct clientInfo client_info;
 int global_seq;
@@ -20,6 +23,7 @@ static char tmpBuf[1024];
 
 int client_init(struct clientInfo *client, char *srv_ip, int srv_port)
 {
+	int flags = 0;
 	int ret;
 
 	memset(client, 0, sizeof(struct clientInfo));
@@ -32,6 +36,9 @@ int client_init(struct clientInfo *client, char *srv_ip, int srv_port)
 		ret = -1;
 		goto ERR_1;
 	}
+
+	flags = fcntl(client->fd, F_GETFL, 0);
+	fcntl(client->fd, F_SETFL, flags | O_NONBLOCK);
 
 	client->srv_addr.sin_family = AF_INET;
 	inet_pton(AF_INET, srv_ip, &client->srv_addr.sin_addr);
@@ -89,7 +96,10 @@ int client_recvData(struct clientInfo *client)
 	memset(tmpBuf, 0, sizeof(tmpBuf));
 	len = recv(client->fd, tmpBuf, sizeof(tmpBuf), 0);
 
-	len = ringbuf_write(&client->recvRingBuf, tmpBuf, len);
+	if(len > 0)
+	{
+		len = ringbuf_write(&client->recvRingBuf, tmpBuf, len);
+	}
 
 	return len;
 }
@@ -104,6 +114,7 @@ int client_protoAnaly(uint8_t *pack, char len)
 		return -1;
 
 	proto_analyPacket(pack, len, &seq, &cmd, &data_len, &data);
+	printf("get proto cmd: 0x%02x\n", cmd);
 
 	switch(cmd)
 	{
@@ -149,7 +160,8 @@ int client_protoHandle(struct clientInfo *client)
 void *socket_client_thread(void *arg)
 {
 	struct clientInfo *client = &client_info;
-	//char buf[64] = "hello server";
+	time_t heartbeat_time = 0;
+	time_t tmpTime;
 	int ret;
 
 	ret = client_init(client, DEFAULT_SERVER_IP, DEFAULT_SERVER_PORT);
@@ -178,13 +190,22 @@ void *socket_client_thread(void *arg)
 				break;
 
 			case STATE_CONNECTED:
-				proto_0x03_sendHeartBeat(client_sendData, client->fd);
-				sleep(3);
+				tmpTime = time(NULL);
+				if(abs(tmpTime - heartbeat_time) >= HEARTBEAT_INTERVAL_S)
+				{
+					proto_0x03_sendHeartBeat(client_sendData, client->fd);
+					heartbeat_time = tmpTime;
+				}
 				break;
 
 			default:
 				printf("%s %d: state ERROR !!!\n", __FUNCTION__, __LINE__);
 				break;
+		}
+
+		if(client->state == STATE_CONNECTED)
+		{
+			client_protoHandle(client);
 		}
 		
 		sleep(1);
