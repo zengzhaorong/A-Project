@@ -4,10 +4,11 @@
 
 TEMPLATE = app
 TARGET = foreground_app
-INCLUDEPATH += .
-INCLUDEPATH +=  ./include \
-		/usr/local/opencv4/include/opencv4 \
-		/usr/local/opencv4/include/opencv4/opencv2
+INCLUDEPATH += ./
+INCLUDEPATH += ./include \
+               ../common/include \
+               /usr/local/opencv4/include/opencv4 \
+               /usr/local/opencv4/include/opencv4/opencv2
 				
 LIBS += /usr/local/opencv4/lib/libopencv_*
 
@@ -26,12 +27,21 @@ DEFINES += QT_DEPRECATED_WARNINGS
 HEADERS += include/capture.h \
            include/mainwindow.h \
            include/opencv_test.h \
-           include/socket_client.h \
-           include/image_convert.h
+           include/socket_client.h
+HEADERS += ../common/include/image_convert.h \
+           ../common/include/protocol.h \
+           ../common/include/public.h \
+           ../common/include/ringbuffer.h \
+           ../common/include/type.h
+		   
 SOURCES += main.cpp \
            src/capture.c \
            src/mainwindow.cpp \
            src/opencv_test.cpp \
-           src/socket_client.c \
-           src/image_convert.cpp
+           src/socket_client.c
+SOURCES += ../common/src/image_convert.cpp \
+           ../common/src/protocol.c \
+           ../common/src/public.c \
+           ../common/src/ringbuffer.c
+		   
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets gui

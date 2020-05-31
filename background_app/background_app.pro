@@ -4,8 +4,9 @@
 
 TEMPLATE = app
 TARGET = background_app
-INCLUDEPATH += .
-INCLUDEPATH +=  ./include 
+INCLUDEPATH += ./
+INCLUDEPATH += ./include \
+               ../common/include
 
 # The following define makes your compiler warn you if you use any
 # feature of Qt which has been marked as deprecated (the exact warnings
@@ -20,4 +21,15 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 # Input
 HEADERS += include/socket_server.h
+HEADERS += ../common/include/image_convert.h \
+           ../common/include/protocol.h \
+           ../common/include/public.h \
+           ../common/include/ringbuffer.h \
+           ../common/include/type.h
+		   
 SOURCES += main.cpp src/socket_server.c
+SOURCES += ../common/src/image_convert.cpp \
+           ../common/src/protocol.c \
+           ../common/src/public.c \
+           ../common/src/ringbuffer.c
+        
