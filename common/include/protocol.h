@@ -18,6 +18,13 @@
 #define PROTO_TAIL		0xFE
 #define PROTO_VERIFY	"ABCD"
 
+/* protocol packet direction type */
+typedef enum
+{
+	PROTO_REQ = 0,
+	PROTO_ACK = 1,
+}ePacket_t;
+
 struct detect_info
 {
 	char head;
@@ -30,7 +37,7 @@ struct detect_info
 typedef int (*send_func_t)(int fd, uint8_t *data, int len);
 
 
-int proto_0x03_dataAnaly(uint8_t *data, int len, time_t *time);
+int proto_0x03_dataAnaly(uint8_t *data, int len, ePacket_t type, void *a, void *b);
 
 int proto_0x03_sendHeartBeat(send_func_t send_func, int fd);
 

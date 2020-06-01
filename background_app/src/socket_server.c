@@ -26,7 +26,7 @@ int server_0x03_heartbeat(uint8_t *data, int len, uint8_t *ack_data, int size, i
 		return -1;
 
 	/* request part */
-	proto_0x03_dataAnaly(data, len, &tmpTime);
+	proto_0x03_dataAnaly(data, len, PROTO_REQ, &tmpTime, NULL);
 	printf("%s: time: %ld\n", __FUNCTION__, tmpTime);
 
 	/* ack part */
@@ -38,7 +38,7 @@ int server_0x03_heartbeat(uint8_t *data, int len, uint8_t *ack_data, int size, i
 	tmplen += 4;
 	
 	tmpTime = time(NULL);
-	memcpy(ack_data, &tmpTime, 4);
+	memcpy(ack_data +tmplen, &tmpTime, 4);
 	tmplen += 4;
 
 	*ack_len = tmplen;

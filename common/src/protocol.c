@@ -22,16 +22,32 @@
   */
 
 
-int proto_0x03_dataAnaly(uint8_t *data, int len, time_t *time)
+/* flag: 0-request, 1-ack */
+int proto_0x03_dataAnaly(uint8_t *data, int len, ePacket_t type, void *a, void *b)
 {
 	int tmplen;
 
-	if(data==NULL || len<=0 || time==NULL)
+	if(data==NULL || len<=0)
 		return -1;
 
 	tmplen = 0;
 
-	memcpy(time, data +tmplen, 4);
+	if(type == PROTO_REQ)	// request
+	{
+		if(a == NULL)
+			return -1;
+			
+		memcpy(a, data +tmplen, 4);
+	}
+	else	// ack
+	{
+		if(a==NULL || b==NULL)
+			return -1;
+
+		memcpy(a, data +tmplen, 4);
+		tmplen += 4;
+		memcpy(b, data +tmplen, 4);
+	}
 
 	return 0;
 }

@@ -19,7 +19,27 @@
 struct clientInfo client_info;
 int global_seq;
 
-static char tmpBuf[1024];
+static uint8_t tmpBuf[1024];
+static int tmpLen = 0;
+
+
+int client_0x03_heartbeat(uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
+{
+	time_t tmpTime;
+	int ret;
+
+	if(data==NULL || len<=0)
+		return -1;
+
+	/* request part */
+	proto_0x03_dataAnaly(data, len, PROTO_ACK, &ret, &tmpTime);
+	printf("%s: [ret: %d], time: %ld\n", __FUNCTION__, ret, tmpTime);
+
+	if(ack_len != 0)
+		*ack_len = 0;
+
+	return 0;
+}
 
 int client_init(struct clientInfo *client, char *srv_ip, int srv_port)
 {
@@ -104,11 +124,14 @@ int client_recvData(struct clientInfo *client)
 	return len;
 }
 
-int client_protoAnaly(uint8_t *pack, char len)
+int client_protoAnaly(struct clientInfo *client, uint8_t *pack, char len)
 {
 	uint8_t seq = 0, cmd = 0;
 	int data_len = 0;
 	uint8_t *data = 0;
+	uint8_t ack_buf[512] = {0};
+	int ack_len = 0;
+	int ret;
 
 	if(pack==NULL || len<=0)
 		return -1;
@@ -125,11 +148,19 @@ int client_protoAnaly(uint8_t *pack, char len)
 			break;
 
 		case 0x03:
+			ret = client_0x03_heartbeat(data, data_len, ack_buf, sizeof(ack_buf), &ack_len);
 			break;
 
 		default:
 			printf("ERROR: protocol cmd[0x%02x] not exist!\n", cmd);
 			break;
+	}
+
+	/* send ack data */
+	if(ret==0 && ack_len>0)
+	{
+		proto_makeupPacket(seq, cmd, ack_len, ack_buf, tmpBuf, sizeof(tmpBuf), &tmpLen);
+		client_sendData(client->fd, tmpBuf, tmpLen);
 	}
 
 	return 0;
@@ -149,7 +180,7 @@ int client_protoHandle(struct clientInfo *client)
 	if(ret == 0)
 	{
 		printf("detect protocol pack len: %d\n", client->packLen);
-		client_protoAnaly(client->packBuf, client->packLen);
+		client_protoAnaly(client, client->packBuf, client->packLen);
 	}
 
 
