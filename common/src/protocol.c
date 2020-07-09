@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include <time.h>
 #include "protocol.h"
 #include "ringbuffer.h"
@@ -20,6 +21,9 @@
   * 0x03: heart beat
   *
   */
+
+#define MAX_PROTO_OBJ	3
+struct proto_object protoObject[MAX_PROTO_OBJ];
 
 
 /* flag: 0-request, 1-ack */
@@ -52,23 +56,54 @@ int proto_0x03_dataAnaly(uint8_t *data, int len, ePacket_t type, void *a, void *
 	return 0;
 }
 
-int proto_0x03_sendHeartBeat(send_func_t send_func, int fd)
+int proto_0x03_sendHeartBeat(int handle)
 {
-	uint8_t protoBuf[128] = {0};
-	uint8_t cmd;
+	uint8_t *protoBuf = NULL;
+	int buf_size = 0;
 	int packLen = 0;
 	time_t time_now;
 
-	cmd = 0x03;
+	if(handle < 0 || handle >=MAX_PROTO_OBJ)
+		return -1;
+	if(protoObject[handle].send_func == NULL)
+		return -1;
 
 	printf("%s: enter ++\n", __FUNCTION__);
 
 	time_now = time(NULL);
 
-	proto_makeupPacket(0, cmd, sizeof(time_now), (uint8_t *)&time_now, protoBuf, sizeof(protoBuf), &packLen);
+	protoBuf = protoObject[handle].send_buf;
+	buf_size = protoObject[handle].buf_size;
+	proto_makeupPacket(0, 0x03, sizeof(time_now), (uint8_t *)&time_now, protoBuf, buf_size, &packLen);
 
-	send_func(fd, protoBuf, packLen);
+	protoObject[handle].send_func(protoObject[handle].fd, protoBuf, packLen);
 	
+	return 0;
+}
+
+int proto_0x10_sendOneFrame(int handle, uint8_t type, uint8_t *data, int len)
+{
+	uint8_t *protoBuf = NULL;
+	int buf_size = 0;
+	int packLen = 0;
+
+	printf("%s: enter ++\n", __FUNCTION__);
+
+	if(data == NULL || len<=0)
+		return -1;
+	if(handle < 0 || handle >=MAX_PROTO_OBJ)
+		return -1;
+	if(protoObject[handle].send_func == NULL)
+		return -1;
+
+	printf("%s: data len: %d\n", __FUNCTION__, len);
+
+	protoBuf = protoObject[handle].send_buf;
+	buf_size = protoObject[handle].buf_size;
+	proto_makeupPacket(0, 0x10, len, (uint8_t *)data, protoBuf, buf_size, &packLen);
+
+	protoObject[handle].send_func(protoObject[handle].fd, protoBuf, packLen);
+
 	return 0;
 }
 
@@ -84,7 +119,10 @@ int proto_makeupPacket(uint8_t seq, uint8_t cmd, int len, uint8_t *data, \
 
 	/* if outbuf is not enough */
 	if(PROTO_DATA_OFFSET +len +1 > size)
+	{
+		printf("ERROR: %s: outbuf size [%d:%d] is not enough !!!\n", __FUNCTION__, size, PROTO_DATA_OFFSET +len +1);
 		return -2;
+	}
 
 	packBuf[PROTO_HEAD_OFFSET] = PROTO_HEAD;
 	packLen += 1;
@@ -140,7 +178,7 @@ int proto_analyPacket(uint8_t *pack, int packLen, uint8_t *seq, \
 int proto_detectPack(struct ringbuffer *ringbuf, struct detect_info *detect, \
 							uint8_t *proto_data, int size, int *proto_len)
 {
-	char buf[64];
+	char buf[256];
 	int len;
 	char veri_buf[] = PROTO_VERIFY;
 	int tmp_protoLen;
@@ -209,7 +247,8 @@ int proto_detectPack(struct ringbuffer *ringbuf, struct detect_info *detect, \
 		{
 			if(tmp_protoLen < PROTO_DATA_OFFSET)	// read data_len
 			{
-				len = ringbuf_read(ringbuf, buf, PROTO_DATA_OFFSET -tmp_protoLen);
+				len = ringbuf_read(ringbuf, buf, sizeof(buf) < PROTO_DATA_OFFSET -tmp_protoLen ? \
+													sizeof(buf) : PROTO_DATA_OFFSET -tmp_protoLen);
 				if(len > 0)
 				{
 					memcpy(proto_data +tmp_protoLen, buf, len);
@@ -219,11 +258,17 @@ int proto_detectPack(struct ringbuffer *ringbuf, struct detect_info *detect, \
 				{
 					memcpy(&len, proto_data +PROTO_LEN_OFFSET, 4);
 					detect->pack_len = PROTO_DATA_OFFSET +len +1;
+					if(detect->pack_len > size)
+					{
+						printf("ERROR: %s: pack len[%d] > buf size[%d]\n", __FUNCTION__, size, detect->pack_len);
+						memset(detect, 0, sizeof(struct detect_info));
+					}
 				}
 			}
 			else	// read data
 			{
-				len = ringbuf_read(ringbuf, buf, detect->pack_len -tmp_protoLen);
+				len = ringbuf_read(ringbuf, buf, sizeof(buf) < detect->pack_len -tmp_protoLen ? \
+													sizeof(buf) : detect->pack_len -tmp_protoLen);
 				if(len > 0)
 				{
 					memcpy(proto_data +tmp_protoLen, buf, len);
@@ -232,7 +277,7 @@ int proto_detectPack(struct ringbuffer *ringbuf, struct detect_info *detect, \
 					{
 						if(proto_data[tmp_protoLen-1] != PROTO_TAIL)
 						{
-							//printf("%s : packet data error, no detect tail!\n", __FUNCTION__);
+							printf("%s : packet data error, no detect tail!\n", __FUNCTION__);
 							memset(detect, 0, sizeof(struct detect_info));
 							tmp_protoLen = 0;
 							break;
@@ -252,7 +297,46 @@ int proto_detectPack(struct ringbuffer *ringbuf, struct detect_info *detect, \
 	return -1;
 }
 
+/* return: handle */
+int proto_register(int fd, send_func_t send_func, int buf_size)
+{
+	int handle = -1;
+	int i;
 
+	for(i=0; i<MAX_PROTO_OBJ; i++)
+	{
+		if(protoObject[i].used == 0)
+		{
+			protoObject[i].fd = fd;
+			protoObject[i].send_func = send_func;
 
+			protoObject[i].buf_size = buf_size;
+			protoObject[i].send_buf = malloc(buf_size);
+			if(protoObject[i].send_buf == NULL)
+				return -1;
+			
+			protoObject[i].used = 1;
+			handle = i;
+			break;
+		}
+	}
 
+	return handle;
+}
+
+void proto_unregister(int handle)
+{
+	protoObject[handle].used = 0;
+	
+	if(protoObject[handle].send_buf != NULL)
+		free(protoObject[handle].send_buf);
+	
+}
+
+int proto_init(void)
+{
+	memset(&protoObject, 0, sizeof(protoObject));
+
+	return 0;
+}
 

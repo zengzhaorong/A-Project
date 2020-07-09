@@ -12,12 +12,13 @@ typedef enum
 	STATE_DISABLE,
 	STATE_DISCONNECT,
 	STATE_CONNECTED,
-}e_sock_state;
+}sockState_e;
 
 struct clientInfo
 {
 	int fd;
-	e_sock_state state;
+	int protoHandle;
+	sockState_e state;
 	struct sockaddr_in 	srv_addr;		// server µÿ÷∑
 	//struct sockaddr_in 	cli_addr;		// client µÿ÷∑
 

@@ -8,11 +8,12 @@
 
 #define DEFAULT_SERVER_PORT 		9100
 #define MAX_LISTEN_NUM 				5
-#define RECV_BUFFER_SIZE			(10*1024)
+#define RECV_BUFFER_SIZE			(1 *1024 *1024)
+#define SEND_BUFFER_SIZE			(1 *1024 *1024)
 
 static struct serverInfo server_info;
 
-static uint8_t tmpBuf[1024] = {0};
+static uint8_t tmpBuf[1 *1024 *1024] = {0};
 static int tmpLen = 0;
 
 
@@ -77,6 +78,8 @@ int server_init(struct serverInfo *server, int port)
 		goto ERR_2;
 	}
 
+	proto_init();
+
 	return 0;
 
 ERR_2:
@@ -115,7 +118,6 @@ int server_recvData(struct clientInfo *client)
 
 	memset(tmpBuf, 0, sizeof(tmpBuf));
 	len = recv(client->fd, tmpBuf, sizeof(tmpBuf), 0);
-	//printf("server recv %d bytes.\n", len);
 
 	if(len > 0)
 	{
@@ -150,6 +152,10 @@ int server_protoAnaly(struct clientInfo *client, uint8_t *pack, char len)
 
 		case 0x03:
 			ret = server_0x03_heartbeat(data, data_len, ack_buf, sizeof(ack_buf), &ack_len);
+			break;
+
+		case 0x10:
+			printf(" *********** recv one frame data ...\n");
 			break;
 
 		default:
@@ -200,6 +206,8 @@ void *socket_handle_thread(void *arg)
 	ret = ringbuf_init(&client->recvRingBuf, RECV_BUFFER_SIZE);
 	if(ret < 0)
 		return NULL;
+
+	client->protoHandle = proto_register(client->fd, server_sendData, SEND_BUFFER_SIZE);
 
 	while(1)
 	{

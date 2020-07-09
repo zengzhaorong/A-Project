@@ -11,6 +11,7 @@
 struct clientInfo
 {
 	int fd;
+	int protoHandle;
 	struct sockaddr_in addr;
 	struct ringbuffer recvRingBuf;			// 接收环形缓冲区
 	struct detect_info detectInfo;

@@ -8,18 +8,20 @@
 #include <arpa/inet.h>
 #include "socket_client.h"
 #include "ringbuffer.h"
+#include "capture.h"
 
 
 #define DEFAULT_SERVER_IP			"127.0.0.1"
 #define DEFAULT_SERVER_PORT			9100
 
-#define RECV_BUFFER_SIZE			(10*1024)
+#define RECV_BUFFER_SIZE			(1 *1024 *1024)
+#define SEND_BUFFER_SIZE			(1 *1024 *1024)
 #define HEARTBEAT_INTERVAL_S		10
 
 struct clientInfo client_info;
 int global_seq;
 
-static uint8_t tmpBuf[1024];
+static uint8_t tmpBuf[1 *1024 *1024];
 static int tmpLen = 0;
 
 
@@ -70,6 +72,8 @@ int client_init(struct clientInfo *client, char *srv_ip, int srv_port)
 		ret = -2;
 		goto ERR_2;
 	}
+
+	proto_init();
 
 	return 0;
 
@@ -193,6 +197,7 @@ void *socket_client_thread(void *arg)
 	struct clientInfo *client = &client_info;
 	time_t heartbeat_time = 0;
 	time_t tmpTime;
+	int len;
 	int ret;
 
 	ret = client_init(client, DEFAULT_SERVER_IP, DEFAULT_SERVER_PORT);
@@ -214,8 +219,9 @@ void *socket_client_thread(void *arg)
 				ret = connect(client->fd, (struct sockaddr *)&client->srv_addr, sizeof(client->srv_addr));
 				if(ret == 0)
 				{
+					client->protoHandle = proto_register(client->fd, client_sendData, SEND_BUFFER_SIZE);
 					client->state = STATE_CONNECTED;
-					printf("********** socket connect successfully.\n");
+					printf("********** socket connect successfully, handle: %d.\n", client->protoHandle);
 				}
 				
 				break;
@@ -224,8 +230,15 @@ void *socket_client_thread(void *arg)
 				tmpTime = time(NULL);
 				if(abs(tmpTime - heartbeat_time) >= HEARTBEAT_INTERVAL_S)
 				{
-					proto_0x03_sendHeartBeat(client_sendData, client->fd);
+					proto_0x03_sendHeartBeat(client->protoHandle);
 					heartbeat_time = tmpTime;
+
+					ret = capture_getframe(tmpBuf, sizeof(tmpBuf), &len);
+					if(ret == 0)
+					{
+						sleep(1);
+						proto_0x10_sendOneFrame(client->protoHandle, 0, tmpBuf, len);
+					}
 				}
 				break;
 
