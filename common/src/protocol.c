@@ -24,6 +24,7 @@
 
 #define MAX_PROTO_OBJ	3
 struct proto_object protoObject[MAX_PROTO_OBJ];
+static uint8_t tmp_protoBuf[PROTO_PACK_MAX_LEN];
 
 
 /* flag: 0-request, 1-ack */
@@ -86,6 +87,7 @@ int proto_0x10_sendOneFrame(int handle, uint8_t type, uint8_t *data, int len)
 	uint8_t *protoBuf = NULL;
 	int buf_size = 0;
 	int packLen = 0;
+	int bufLen = 0;
 
 	printf("%s: enter ++\n", __FUNCTION__);
 
@@ -98,9 +100,16 @@ int proto_0x10_sendOneFrame(int handle, uint8_t type, uint8_t *data, int len)
 
 	printf("%s: data len: %d\n", __FUNCTION__, len);
 
+	tmp_protoBuf[0] = type;
+	bufLen += 1;
+	memcpy(tmp_protoBuf +1, &len, 4);
+	bufLen += 4;
+	memcpy(tmp_protoBuf +5, data, len);
+	bufLen += len;
+
 	protoBuf = protoObject[handle].send_buf;
 	buf_size = protoObject[handle].buf_size;
-	proto_makeupPacket(0, 0x10, len, (uint8_t *)data, protoBuf, buf_size, &packLen);
+	proto_makeupPacket(0, 0x10, bufLen, tmp_protoBuf, protoBuf, buf_size, &packLen);
 
 	protoObject[handle].send_func(protoObject[handle].fd, protoBuf, packLen);
 

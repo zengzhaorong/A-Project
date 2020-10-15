@@ -74,7 +74,7 @@ void MainWindow::showMainwindow()
 	if(ret == 0)
 	{
 		QImage videoQImage;
-		videoQImage = v4l2data_to_QImage(video_buf, len);
+		videoQImage = v4l2_to_QImage(video_buf, len);
 		
 		videoArea->setPixmap(QPixmap::fromImage(videoQImage));
 		videoArea->show();

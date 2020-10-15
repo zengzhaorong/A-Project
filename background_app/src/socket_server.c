@@ -5,6 +5,7 @@
 #include <fcntl.h>
 #include <sys/socket.h>
 #include "socket_server.h"
+#include "opencv_face_process.h"
 
 #define DEFAULT_SERVER_PORT 		9100
 #define MAX_LISTEN_NUM 				5
@@ -43,6 +44,30 @@ int server_0x03_heartbeat(uint8_t *data, int len, uint8_t *ack_data, int size, i
 	tmplen += 4;
 
 	*ack_len = tmplen;
+
+	return 0;
+}
+
+int server_0x10_getOneFrame(uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
+{
+	uint8_t type = 0;
+	uint32_t frame_len = 0;
+	uint8_t *frame = NULL;
+	int32_t tmpLen = 0;
+
+	type = data[tmpLen];
+	tmpLen += 1;
+
+	memcpy(&frame_len, data+tmpLen, 4);
+	tmpLen += 4;
+	
+	frame = data + tmpLen;
+	tmpLen += frame_len;
+
+	printf("*** recv one frame data: type: %d, data_len: %d\n", type, frame_len);
+
+	/* put frame to detect */
+	opencv_put_frame_detect(frame, frame_len);
 
 	return 0;
 }
@@ -127,20 +152,21 @@ int server_recvData(struct clientInfo *client)
 	return len;
 }
 
-int server_protoAnaly(struct clientInfo *client, uint8_t *pack, char len)
+int server_protoAnaly(struct clientInfo *client, uint8_t *pack, uint32_t pack_len)
 {
 	uint8_t seq = 0, cmd = 0;
 	int data_len = 0;
-	uint8_t *data = 0;
+	uint8_t *data = NULL;
 	uint8_t ack_buf[512] = {0};
 	int ack_len = 0;
 	int ret;
 
-	if(pack==NULL || len<=0)
+	if(pack==NULL || pack_len<=0)
 		return -1;
 
-	proto_analyPacket(pack, len, &seq, &cmd, &data_len, &data);
-	printf("%s: cmd: 0x%02x, seq: %d, len: %d\n", __FUNCTION__, cmd, seq, len);
+	proto_analyPacket(pack, pack_len, &seq, &cmd, &data_len, &data);
+	printf("%s: cmd: 0x%02x, seq: %d, pack_len: %d, data_len: %d\n", __FUNCTION__, \
+				cmd, seq, pack_len, data_len);
 
 	switch(cmd)
 	{
@@ -155,7 +181,7 @@ int server_protoAnaly(struct clientInfo *client, uint8_t *pack, char len)
 			break;
 
 		case 0x10:
-			printf(" *********** recv one frame data ...\n");
+			ret = server_0x10_getOneFrame(data, data_len, ack_buf, sizeof(ack_buf), &ack_len);
 			break;
 
 		default:

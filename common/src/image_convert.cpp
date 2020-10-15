@@ -2,7 +2,7 @@
 #include "image_convert.h"
 
 
-QImage v4l2data_to_QImage(unsigned char *data, int len)
+QImage v4l2_to_QImage(unsigned char *data, int len)
 {
 	QImage qtImage;
 

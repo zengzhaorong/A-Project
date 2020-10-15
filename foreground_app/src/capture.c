@@ -11,13 +11,12 @@
 #include <fcntl.h>
 #include <pthread.h>
 #include "capture.h"
+#include "config.h"
 
 
 #define VIDEO_DEV_NAME 		"/dev/video0"
 
-#define LCD_PIX_WIDTH		640
-#define LCD_PIC_HEIGHT		480
-#define FRAME_BUF_SIZE		(LCD_PIX_WIDTH*LCD_PIC_HEIGHT*3)
+#define FRAME_BUF_SIZE		(ONE_CAP_FRAME_SIZE*3)
 
 struct v4l2cap_info capture_info;
 
@@ -56,8 +55,8 @@ int capture_init(struct v4l2cap_info *capture)
 	/* configure video format */
 	memset(&format, 0, sizeof(struct v4l2_format));
 	format.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-	format.fmt.pix.width = LCD_PIX_WIDTH;
-	format.fmt.pix.height = LCD_PIC_HEIGHT;
+	format.fmt.pix.width = CAPTURE_PIX_WIDTH;
+	format.fmt.pix.height = CAPTURE_PIX_HEIGH;
 	format.fmt.pix.pixelformat = V4L2_PIX_FMT_JPEG;
 	format.fmt.pix.field = V4L2_FIELD_INTERLACED;
 	ret = ioctl(capture->fd, VIDIOC_S_FMT, &format);
