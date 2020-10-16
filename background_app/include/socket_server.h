@@ -2,9 +2,16 @@
 #define _SOCKET_SERVER_H_
 
 #include <netinet/in.h>
+
+/* C++ include C */
+#ifdef __cplusplus
+extern "C" {
+#endif
 #include "ringbuffer.h"
 #include "protocol.h"
-
+#ifdef __cplusplus
+}
+#endif
 
 #define MAX_CLIENT_NUM 		1
 

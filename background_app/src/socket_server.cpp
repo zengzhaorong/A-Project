@@ -4,8 +4,19 @@
 #include <pthread.h>
 #include <fcntl.h>
 #include <sys/socket.h>
-#include "socket_server.h"
 #include "opencv_face_process.h"
+#include "socket_server.h"
+
+
+/* C++ include C */
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#ifdef __cplusplus
+}
+#endif
+
 
 #define DEFAULT_SERVER_PORT 		9100
 #define MAX_LISTEN_NUM 				5

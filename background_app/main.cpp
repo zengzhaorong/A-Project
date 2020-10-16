@@ -1,13 +1,13 @@
 #include <iostream>
 #include <unistd.h>
 #include "opencv_face_process.h"
+#include "socket_server.h"
 #include <QApplication>
 
 /* C++ include C */
 #ifdef __cplusplus
 extern "C" {
 #endif
-#include "socket_server.h"
 #include "user_mngr.h"
 #ifdef __cplusplus
 }
@@ -28,7 +28,7 @@ int main(int argc, char* argv[])
 
 	start_socket_server_task();
 
-	start_opencv_face_task();
+	start_face_process_task();
 
 	user_mngr_init();
 	return qtApp.exec();		// 启动QT应用的执行，消息循环和事件处理

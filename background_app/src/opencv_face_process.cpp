@@ -4,7 +4,6 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <pthread.h>
-#include <semaphore.h>
 #include <iostream>
 #include "opencv2/core.hpp"
 #include "opencv2/imgproc.hpp"
@@ -17,36 +16,57 @@
 using namespace std;
 using namespace cv;
 
-static struct face_process_unit face_unit;
+class face_detect face_detect_unit;
+class face_recogn face_recogn_unit;
+
 static uint8_t detect_buf[ONE_CAP_FRAME_SIZE] = {0};
 
-static sem_t detect_sem;
 
-int opencv_face_init(void)
+face_detect::face_detect(void)
+{
+	printf("%s: enter ++\n", __FUNCTION__);
+}
+
+int face_detect::face_detect_init(void)
 {
 	int ret;
 
-	memset(detect_buf, 0, sizeof(detect_buf));
-
-	face_unit.frame_size = ONE_CAP_FRAME_SIZE;
-	face_unit.frame_buf = (uint8_t *)malloc(face_unit.frame_size);
-	if(face_unit.frame_buf == NULL)
+	this->frame_size = ONE_CAP_FRAME_SIZE;
+	this->frame_buf = (uint8_t *)malloc(this->frame_size);
+	if(this->frame_buf == NULL)
 		return -1;
 
-	ret = sem_init(&detect_sem, 0, 0);
+	ret = sem_init(&this->detect_sem, 0, 0);
 	if(ret != 0)
 	{
 		printf("sem_init detect_sem failed !\n");
 		return -1;
 	}
 
+	this->face_cascade.load("resource/haarcascade_frontalface_alt.xml");
 
 	return 0;
 }
 
-void opencv_face_deinit(void)
+void face_detect::face_detect_deinit(void)
 {
-	sem_destroy(&detect_sem);
+	sem_destroy(&this->detect_sem);
+}
+
+
+face_recogn::face_recogn(void)
+{
+	printf("%s: enter ++\n", __FUNCTION__);
+}
+
+
+int face_recogn::face_recogn_init(void)
+{
+	return 0;
+}
+
+void face_recogn::face_recogn_deinit(void)
+{
 }
 
 /* put frame to detect buffer */
@@ -60,7 +80,7 @@ int opencv_put_frame_detect(uint8_t *buf, uint32_t len)
 	tmpLen = (len>sizeof(detect_buf) ? sizeof(detect_buf):len);
 	memcpy(detect_buf, buf, tmpLen);
 
-	sem_post(&detect_sem);
+	sem_post(&face_detect_unit.detect_sem);
 
 	printf("opencv_put_frame_detect.\n");
 	
@@ -76,7 +96,7 @@ int opencv_get_frame_detect(uint8_t *buf, uint32_t size)
 	if(buf == NULL)
 		return -1;
 
-	ret = sem_trywait(&detect_sem);
+	ret = sem_trywait(&face_detect_unit.detect_sem);
 	if(ret != 0)
 		return -1;
 
@@ -93,24 +113,25 @@ int opencv_get_frame_detect(uint8_t *buf, uint32_t size)
 
 void *opencv_face_detect_thread(void *arg)
 {
+	class face_detect *detect_unit = &face_detect_unit;
 	int ret;
 
 	printf("%s enter ++\n", __FUNCTION__);
 	
-	opencv_face_init();
+	detect_unit->face_detect_init();
 
 	QLabel 		videoArea;			// 图像显示区
 	while(1)
 	{
 
 		/* 获取协议传输的原图像-进行检测 */
-		ret = opencv_get_frame_detect(face_unit.frame_buf, face_unit.frame_size);
+		ret = opencv_get_frame_detect(detect_unit->frame_buf, detect_unit->frame_size);
 		if(ret <= 0)
 			continue;
 
 #if 1	// ***** test for image transferation
 		QImage q_image;
-		q_image = v4l2_to_QImage(face_unit.frame_buf, ret);
+		q_image = v4l2_to_QImage(detect_unit->frame_buf, ret);
 		if(q_image.isNull())
 		{
 			printf("ERROR: q_image is null !\n");
@@ -123,15 +144,18 @@ void *opencv_face_detect_thread(void *arg)
 		sleep(1);
 	}
 
-	opencv_face_deinit();
+	detect_unit->face_detect_deinit();
 
 	return NULL;
 }
 
 void *opencv_face_recognize_thread(void *arg)
 {
+	class face_recogn *recogn_unit = &face_recogn_unit;
 
 	printf("%s enter ++\n", __FUNCTION__);
+
+	recogn_unit->face_recogn_init();
 
 	while(1)
 	{
@@ -143,7 +167,14 @@ void *opencv_face_recognize_thread(void *arg)
 	return NULL;
 }
 
-int start_opencv_face_task(void)
+int face_process_init()
+{
+	memset(detect_buf, 0, sizeof(detect_buf));
+
+	return 0;
+}
+
+int start_face_process_task(void)
 {
 	pthread_t tid;
 	int ret;
