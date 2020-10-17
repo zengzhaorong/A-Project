@@ -110,6 +110,24 @@ int opencv_get_frame_detect(uint8_t *buf, uint32_t size)
 }
 
 #include <QLabel>
+int test_showImage(uint8_t *frame, int len)
+{
+	static QLabel 		videoArea;			// 图像显示区
+	QImage q_image;
+	
+	q_image = v4l2_to_QImage(frame, len);
+	if(q_image.isNull())
+	{
+		printf("ERROR: q_image is null !\n");
+		return -1;
+	}
+	
+	videoArea.hide();
+	videoArea.setPixmap(QPixmap::fromImage(q_image));
+	videoArea.show();
+
+	return 0;
+}
 
 void *opencv_face_detect_thread(void *arg)
 {
@@ -120,28 +138,20 @@ void *opencv_face_detect_thread(void *arg)
 	
 	detect_unit->face_detect_init();
 
-	QLabel 		videoArea;			// 图像显示区
 	while(1)
 	{
 
 		/* 获取协议传输的原图像-进行检测 */
 		ret = opencv_get_frame_detect(detect_unit->frame_buf, detect_unit->frame_size);
 		if(ret <= 0)
-			continue;
-
-#if 1	// ***** test for image transferation
-		QImage q_image;
-		q_image = v4l2_to_QImage(detect_unit->frame_buf, ret);
-		if(q_image.isNull())
 		{
-			printf("ERROR: q_image is null !\n");
+			usleep(30*1000);
 			continue;
 		}
-		
-		videoArea.setPixmap(QPixmap::fromImage(q_image));
-		videoArea.show();
-#endif
-		sleep(1);
+
+		// ***** test for image transferation
+		test_showImage(detect_unit->frame_buf, ret);
+
 	}
 
 	detect_unit->face_detect_deinit();

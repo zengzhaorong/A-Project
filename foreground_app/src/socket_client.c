@@ -232,13 +232,12 @@ void *socket_client_thread(void *arg)
 				{
 					proto_0x03_sendHeartBeat(client->protoHandle);
 					heartbeat_time = tmpTime;
-
-					ret = capture_getframe(tmpBuf, sizeof(tmpBuf), &len);
-					if(ret == 0)
-					{
-						sleep(1);
-						proto_0x10_sendOneFrame(client->protoHandle, 0, tmpBuf, len);
-					}
+				}
+				
+				ret = capture_getframe(tmpBuf, sizeof(tmpBuf), &len);
+				if(ret == 0)
+				{
+					proto_0x10_sendOneFrame(client->protoHandle, 0, tmpBuf, len);
 				}
 				break;
 
