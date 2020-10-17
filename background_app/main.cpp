@@ -2,7 +2,6 @@
 #include <unistd.h>
 #include "opencv_face_process.h"
 #include "socket_server.h"
-#include <QApplication>
 
 /* C++ include C */
 #ifdef __cplusplus
@@ -22,7 +21,6 @@ int main(int argc, char* argv[])
 	
 	(void)argc;
 	(void)argv;
-    QApplication qtApp(argc, argv);
 
 	cout << "hello background_app" << endl;
 
@@ -31,7 +29,6 @@ int main(int argc, char* argv[])
 	start_face_process_task();
 
 	user_mngr_init();
-	return qtApp.exec();		// 启动QT应用的执行，消息循环和事件处理
 
 	while(1)
 	{

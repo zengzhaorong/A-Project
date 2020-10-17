@@ -109,29 +109,81 @@ int opencv_get_frame_detect(uint8_t *buf, uint32_t size)
 	return tmpLen;
 }
 
-#include <QLabel>
-int test_showImage(uint8_t *frame, int len)
+void opencv_face_detect( Mat& img, CascadeClassifier& cascade,
+                    double scale, bool tryflip )
 {
-	static QLabel 		videoArea;			// Í¼ÏñÏÔÊ¾Çø
-	QImage q_image;
-	
-	q_image = v4l2_to_QImage(frame, len);
-	if(q_image.isNull())
-	{
-		printf("ERROR: q_image is null !\n");
-		return -1;
-	}
-	
-	videoArea.hide();
-	videoArea.setPixmap(QPixmap::fromImage(q_image));
-	videoArea.show();
+    double t = 0;
+    vector<Rect> faces, faces2;
+    const static Scalar colors[] =
+    {
+        Scalar(255,0,0),
+        Scalar(255,128,0),
+        Scalar(255,255,0),
+        Scalar(0,255,0),
+        Scalar(0,128,255),
+        Scalar(0,255,255),
+        Scalar(0,0,255),
+        Scalar(255,0,255)
+    };
+    Mat gray, smallImg;
 
-	return 0;
+    cvtColor( img, gray, COLOR_BGR2GRAY );
+    double fx = 1 / scale;
+    resize( gray, smallImg, Size(), fx, fx, INTER_LINEAR_EXACT );
+    equalizeHist( smallImg, smallImg );
+
+    t = (double)getTickCount();
+    cascade.detectMultiScale( smallImg, faces,
+        1.1, 2, 0
+        //|CASCADE_FIND_BIGGEST_OBJECT
+        //|CASCADE_DO_ROUGH_SEARCH
+        |CASCADE_SCALE_IMAGE,
+        Size(30, 30) );
+    if( tryflip )
+    {
+        flip(smallImg, smallImg, 1);
+        cascade.detectMultiScale( smallImg, faces2,
+                                 1.1, 2, 0
+                                 //|CASCADE_FIND_BIGGEST_OBJECT
+                                 //|CASCADE_DO_ROUGH_SEARCH
+                                 |CASCADE_SCALE_IMAGE,
+                                 Size(30, 30) );
+        for( vector<Rect>::const_iterator r = faces2.begin(); r != faces2.end(); ++r )
+        {
+            faces.push_back(Rect(smallImg.cols - r->x - r->width, r->y, r->width, r->height));
+        }
+    }
+    t = (double)getTickCount() - t;
+    printf( "detection time = %g ms\n", t*1000/getTickFrequency());
+    for ( size_t i = 0; i < faces.size(); i++ )
+    {
+        Rect r = faces[i];
+        Mat smallImgROI;
+        Point center;
+        Scalar color = colors[i%8];
+        int radius;
+
+        double aspect_ratio = (double)r.width/r.height;
+        if( 0.75 < aspect_ratio && aspect_ratio < 1.3 )
+        {
+            center.x = cvRound((r.x + r.width*0.5)*scale);
+            center.y = cvRound((r.y + r.height*0.5)*scale);
+            radius = cvRound((r.width + r.height)*0.25*scale);
+            circle( img, center, radius, color, 3, 8, 0 );
+        }
+        else
+            rectangle( img, Point(cvRound(r.x*scale), cvRound(r.y*scale)),
+                       Point(cvRound((r.x + r.width-1)*scale), cvRound((r.y + r.height-1)*scale)),
+                       color, 3, 8, 0);
+    }
+    imshow( "result", img );
 }
 
 void *opencv_face_detect_thread(void *arg)
 {
 	class face_detect *detect_unit = &face_detect_unit;
+	QImage qImage;
+	Mat detectMat;
 	int ret;
 
 	printf("%s enter ++\n", __FUNCTION__);
@@ -149,9 +201,23 @@ void *opencv_face_detect_thread(void *arg)
 			continue;
 		}
 
-		// ***** test for image transferation
-		test_showImage(detect_unit->frame_buf, ret);
+		/* convert v4l2 data to qimage */
+		qImage = v4l2_to_QImage(detect_unit->frame_buf, ret);
+		if(qImage.isNull())
+		{
+			printf("ERROR: qImage is null !\n");
+			continue;
+		}
 
+		/* convert qimage to cvMat */
+		detectMat = QImage_to_cvMat(qImage).clone();
+		if(detectMat.empty())
+		{
+			printf("ERROR: detectMat is empty\n");
+			continue;
+		}
+		
+		opencv_face_detect(detectMat, face_detect_unit.face_cascade, 3, 0);
 	}
 
 	detect_unit->face_detect_deinit();
