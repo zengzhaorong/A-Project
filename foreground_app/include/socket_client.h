@@ -2,9 +2,17 @@
 #define _SOCKET_CLIENT_H_
 
 #include <netinet/in.h>
+#include "type.h"
+
+/* C++ include C */
+#ifdef __cplusplus
+extern "C" {
+#endif
 #include "ringbuffer.h"
 #include "protocol.h"
-#include "type.h"
+#ifdef __cplusplus
+}
+#endif
 
 
 typedef enum

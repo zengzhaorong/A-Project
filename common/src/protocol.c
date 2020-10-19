@@ -89,13 +89,9 @@ int proto_0x10_sendOneFrame(int handle, uint8_t type, uint8_t *data, int len)
 	int packLen = 0;
 	int bufLen = 0;
 
-	printf("%s: enter ++\n", __FUNCTION__);
-
 	if(data == NULL || len<=0)
 		return -1;
 	if(handle < 0 || handle >=MAX_PROTO_OBJ)
-		return -1;
-	if(protoObject[handle].send_func == NULL)
 		return -1;
 
 	printf("%s: data len: %d\n", __FUNCTION__, len);
@@ -110,6 +106,43 @@ int proto_0x10_sendOneFrame(int handle, uint8_t type, uint8_t *data, int len)
 	protoBuf = protoObject[handle].send_buf;
 	buf_size = protoObject[handle].buf_size;
 	proto_makeupPacket(0, 0x10, bufLen, tmp_protoBuf, protoBuf, buf_size, &packLen);
+
+	protoObject[handle].send_func(protoObject[handle].fd, protoBuf, packLen);
+
+	return 0;
+}
+
+int proto_0x11_sendFaceDetect(int handle, uint8_t count, struct Rect_params *face_rect)
+{
+	uint8_t *protoBuf = NULL;
+	int buf_size = 0;
+	int packLen = 0;
+	int bufLen = 0;
+
+	if(handle < 0 || handle >=MAX_PROTO_OBJ)
+		return -1;
+	if(face_rect == NULL)
+		return -1;
+
+	/* count */
+	tmp_protoBuf[0] = count;
+	bufLen += 1;
+
+	for(int i=0; i<count; i++)
+	{
+		memcpy(tmp_protoBuf+bufLen, &face_rect->x, 4);
+		bufLen += 4;
+		memcpy(tmp_protoBuf+bufLen, &face_rect->y, 4);
+		bufLen += 4;
+		memcpy(tmp_protoBuf+bufLen, &face_rect->w, 4);
+		bufLen += 4;
+		memcpy(tmp_protoBuf+bufLen, &face_rect->h, 4);
+		bufLen += 4;
+	}
+	
+	protoBuf = protoObject[handle].send_buf;
+	buf_size = protoObject[handle].buf_size;
+	proto_makeupPacket(0, 0x11, bufLen, tmp_protoBuf, protoBuf, buf_size, &packLen);
 
 	protoObject[handle].send_func(protoObject[handle].fd, protoBuf, packLen);
 

@@ -1,14 +1,13 @@
 #include <iostream>
 #include <QApplication>
-#include "opencv_test.h"
 #include "mainwindow.h"
+#include "socket_client.h"
 
 /* C++ include C */
 #ifdef __cplusplus
 extern "C" {
 #endif
 #include "capture.h"
-#include "socket_client.h"
 #ifdef __cplusplus
 }
 #endif
@@ -23,8 +22,6 @@ int main(int argc, char* argv[])
 	
 	cout << "hello foreground_app" << endl;
 	
-	//hello_opencv();
-
 	start_mainwindow_task();
 
 	start_capture_task();

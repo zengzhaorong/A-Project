@@ -11,10 +11,23 @@
 #include "opencv_face_process.h"
 #include "image_convert.h"
 #include "config.h"
+#include "socket_server.h"
 
+/* C++ include C */
+#ifdef __cplusplus
+extern "C" {
+#endif
+#include "protocol.h"
+#ifdef __cplusplus
+}
+#endif
 
 using namespace std;
 using namespace cv;
+
+/* ¡Ÿ ±≤‚ ‘ */
+struct clientInfo *face_client = NULL;
+
 
 class face_detect face_detect_unit;
 class face_recogn face_recogn_unit;
@@ -109,22 +122,11 @@ int opencv_get_frame_detect(uint8_t *buf, uint32_t size)
 	return tmpLen;
 }
 
-void opencv_face_detect( Mat& img, CascadeClassifier& cascade,
-                    double scale, bool tryflip )
+int opencv_face_detect( Mat& img, CascadeClassifier& cascade,
+                    double scale, bool tryflip, vector<Rect> &faces)
 {
     double t = 0;
-    vector<Rect> faces, faces2;
-    const static Scalar colors[] =
-    {
-        Scalar(255,0,0),
-        Scalar(255,128,0),
-        Scalar(255,255,0),
-        Scalar(0,255,0),
-        Scalar(0,128,255),
-        Scalar(0,255,255),
-        Scalar(0,0,255),
-        Scalar(255,0,255)
-    };
+    vector<Rect> faces2;
     Mat gray, smallImg;
 
     cvtColor( img, gray, COLOR_BGR2GRAY );
@@ -155,33 +157,23 @@ void opencv_face_detect( Mat& img, CascadeClassifier& cascade,
     }
     t = (double)getTickCount() - t;
     printf( "detection time = %g ms\n", t*1000/getTickFrequency());
-    for ( size_t i = 0; i < faces.size(); i++ )
-    {
-        Rect r = faces[i];
-        Mat smallImgROI;
-        Point center;
-        Scalar color = colors[i%8];
-        int radius;
 
-        double aspect_ratio = (double)r.width/r.height;
-        if( 0.75 < aspect_ratio && aspect_ratio < 1.3 )
-        {
-            center.x = cvRound((r.x + r.width*0.5)*scale);
-            center.y = cvRound((r.y + r.height*0.5)*scale);
-            radius = cvRound((r.width + r.height)*0.25*scale);
-            circle( img, center, radius, color, 3, 8, 0 );
-        }
-        else
-            rectangle( img, Point(cvRound(r.x*scale), cvRound(r.y*scale)),
-                       Point(cvRound((r.x + r.width-1)*scale), cvRound((r.y + r.height-1)*scale)),
-                       color, 3, 8, 0);
-    }
-    imshow( "result", img );
+	/* restore face size */
+	for(int i=0; i<faces.size(); i++)
+	{
+		faces[i].x *= scale;
+		faces[i].y *= scale;
+		faces[i].width *= scale;
+		faces[i].height *= scale;
+	}
+
+	return faces.size();
 }
 
 void *opencv_face_detect_thread(void *arg)
 {
 	class face_detect *detect_unit = &face_detect_unit;
+	vector<Rect> faces;
 	QImage qImage;
 	Mat detectMat;
 	int ret;
@@ -217,7 +209,20 @@ void *opencv_face_detect_thread(void *arg)
 			continue;
 		}
 		
-		opencv_face_detect(detectMat, face_detect_unit.face_cascade, 3, 0);
+		ret = opencv_face_detect(detectMat, face_detect_unit.face_cascade, 3, 0, faces);
+		if(ret > 0)
+		{
+			struct Rect_params rect;
+			for(uint32_t i=0; i<faces.size(); i++)
+			{
+				rect.x = faces[i].x;
+				rect.y = faces[i].y;
+				rect.w = faces[i].width;
+				rect.h = faces[i].height;
+				printf("face: x=%d, y=%d, w=%d, h=%d\n", faces[i].x, faces[i].y, faces[i].width, faces[i].height);
+			}
+			proto_0x11_sendFaceDetect(face_client->protoHandle, 1, &rect);
+		}
 	}
 
 	detect_unit->face_detect_deinit();

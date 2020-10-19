@@ -7,8 +7,17 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include "socket_client.h"
+#include "opencv_image_process.h"
+
+/* C++ include C */
+#ifdef __cplusplus
+extern "C" {
+#endif
 #include "ringbuffer.h"
 #include "capture.h"
+#ifdef __cplusplus
+}
+#endif
 
 
 #define DEFAULT_SERVER_IP			"127.0.0.1"
@@ -39,6 +48,37 @@ int client_0x03_heartbeat(uint8_t *data, int len, uint8_t *ack_data, int size, i
 
 	if(ack_len != 0)
 		*ack_len = 0;
+
+	return 0;
+}
+
+int client_0x11_faceDetect(uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
+{
+	Rect rects;
+	uint8_t count;
+	int offset = 0;
+
+	printf("%s: enter ++\n", __FUNCTION__);
+
+	count = data[0];
+	offset += 1;
+
+	for(int i=0; i<count; i++)
+	{
+		rects.x = *((int*)(data+offset));
+		printf("rect[%d]->x: %d\n", i, rects.x);
+		offset += 4;
+		rects.y = *((int*)(data+offset));
+		printf("rect[%d]->y: %d\n", i, rects.y);
+		offset += 4;
+		rects.width = *((int*)(data+offset));
+		printf("rect[%d]->w: %d\n", i, rects.width);
+		offset += 4;
+		rects.height = *((int*)(data+offset));
+		printf("rect[%d]->h: %d\n", i, rects.height);
+		offset += 4;
+	}
+	set_rect_param(rects);
 
 	return 0;
 }
@@ -155,6 +195,10 @@ int client_protoAnaly(struct clientInfo *client, uint8_t *pack, char len)
 			ret = client_0x03_heartbeat(data, data_len, ack_buf, sizeof(ack_buf), &ack_len);
 			break;
 
+		case 0x11:
+			ret = client_0x11_faceDetect(data, data_len, ack_buf, sizeof(ack_buf), &ack_len);
+			break;
+
 		default:
 			printf("ERROR: protocol cmd[0x%02x] not exist!\n", cmd);
 			break;
@@ -200,7 +244,7 @@ void *socket_client_thread(void *arg)
 	int len;
 	int ret;
 
-	ret = client_init(client, DEFAULT_SERVER_IP, DEFAULT_SERVER_PORT);
+	ret = client_init(client, (char *)DEFAULT_SERVER_IP, DEFAULT_SERVER_PORT);
 	if(ret != 0)
 	{
 		return NULL;
@@ -269,33 +313,6 @@ int start_socket_client_task(void)
 	{
 		return -1;
 	}
-
-	/* test !!!! */
-	struct ringbuffer ringbuf;
-	char buf[10] = {0};
-	ret = ringbuf_init(&ringbuf, 10);
-	if(ret != 0)
-	{
-		printf("ERROR: ringbuf_init failed !\n");
-		return -1;
-	}
-	ret = ringbuf_space(&ringbuf);
-	printf("ringbuf_space: %d\n", ret);
-	
-	for(int i=0; i<10; i++)
-	{
-		ret = ringbuf_write(&ringbuf, "abc123", 6);
-		printf("ringbuf_write: %d.\n", ret);
-		ret = ringbuf_datalen(&ringbuf);
-		printf("ringbuf_datalen: %d.\n", ret);
-		ret = ringbuf_space(&ringbuf);
-		printf("ringbuf_space: %d.\n", ret);
-		memset(buf, 0, sizeof(buf));
-		ret = ringbuf_read(&ringbuf, buf, sizeof(buf));
-		printf("ringbuf_read: %d: %s.\n", ret, buf);
-	}
-	ringbuf_deinit(&ringbuf);
-
 
 	return 0;
 }

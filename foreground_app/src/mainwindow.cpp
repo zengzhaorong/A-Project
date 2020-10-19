@@ -4,6 +4,7 @@
 #include <iostream>
 #include "mainwindow.h"
 #include "image_convert.h"
+#include "opencv_image_process.h"
 
 /* C++ include C */
 #ifdef __cplusplus
@@ -75,7 +76,10 @@ void MainWindow::showMainwindow()
 	{
 		QImage videoQImage;
 		videoQImage = v4l2_to_QImage(video_buf, len);
-		
+
+		Rect rects;
+		opencv_image_add_rect(videoQImage, rects);
+			
 		videoArea->setPixmap(QPixmap::fromImage(videoQImage));
 		videoArea->show();
 	}

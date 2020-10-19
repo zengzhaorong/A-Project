@@ -28,6 +28,7 @@ static struct serverInfo server_info;
 static uint8_t tmpBuf[1 *1024 *1024] = {0};
 static int tmpLen = 0;
 
+extern struct clientInfo *face_client;
 
 int server_0x03_heartbeat(uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
 {
@@ -236,6 +237,10 @@ void *socket_handle_thread(void *arg)
 	int ret;
 
 	printf("%s %d: enter ++\n", __FUNCTION__, __LINE__);
+
+	// for test
+	face_client = client;
+
 
 	flags = fcntl(client->fd, F_GETFL, 0);
 	fcntl(client->fd, F_SETFL, flags | O_NONBLOCK);

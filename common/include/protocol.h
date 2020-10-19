@@ -46,9 +46,19 @@ struct proto_object
 };
 
 
+struct Rect_params
+{
+	int x;
+	int y;
+	int w;
+	int h;
+};
+
 int proto_0x03_dataAnaly(uint8_t *data, int len, ePacket_t type, void *a, void *b);
 int proto_0x03_sendHeartBeat(int handle);
+
 int proto_0x10_sendOneFrame(int handle, uint8_t type, uint8_t *data, int len);
+int proto_0x11_sendFaceDetect(int handle, uint8_t count, struct Rect_params *face_rect);
 
 int proto_makeupPacket(uint8_t seq, uint8_t cmd, int len, uint8_t *data, \
 								uint8_t *outbuf, int size, int *outlen);
