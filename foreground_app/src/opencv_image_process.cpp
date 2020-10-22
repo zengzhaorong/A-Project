@@ -23,12 +23,26 @@ int set_rect_param(Rect &rects)
 	return 0;
 }
 
+int get_rect_param(Rect &rects)
+{
+
+	if(face_rect.width == 0)
+	{
+		return -1;
+	}
+
+	rects = face_rect;
+
+	/* set invalid */
+	face_rect.width = 0;
+
+	return 0;
+}
+
 int opencv_image_add_rect(QImage &qimage, Rect &rects)
 {
 	Mat matImage;
 
-	rects = face_rect;
-	
 	matImage = QImage_to_cvMat(qimage).clone();
 
 	//for(uint32_t i=0; i<rects.size(); i++)

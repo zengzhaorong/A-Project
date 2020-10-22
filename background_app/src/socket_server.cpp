@@ -26,6 +26,7 @@ extern "C" {
 static struct serverInfo server_info;
 
 static uint8_t tmpBuf[1 *1024 *1024] = {0};
+static uint8_t ack_buf[1 *1024 *1024] = {0};
 static int tmpLen = 0;
 
 extern struct clientInfo *face_client;
@@ -66,6 +67,10 @@ int server_0x10_getOneFrame(uint8_t *data, int len, uint8_t *ack_data, int size,
 	uint32_t frame_len = 0;
 	uint8_t *frame = NULL;
 	int32_t tmpLen = 0;
+	int ret;
+
+	memcpy(&ret, data, 4);
+	tmpLen += 4;
 
 	type = data[tmpLen];
 	tmpLen += 1;
@@ -169,7 +174,6 @@ int server_protoAnaly(struct clientInfo *client, uint8_t *pack, uint32_t pack_le
 	uint8_t seq = 0, cmd = 0;
 	int data_len = 0;
 	uint8_t *data = NULL;
-	uint8_t ack_buf[512] = {0};
 	int ack_len = 0;
 	int ret;
 

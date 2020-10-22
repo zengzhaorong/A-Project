@@ -103,13 +103,21 @@ int opencv_put_frame_detect(uint8_t *buf, uint32_t len)
 /* get frame from detect buffer */
 int opencv_get_frame_detect(uint8_t *buf, uint32_t size)
 {
+	struct timespec ts;
 	int tmpLen;
 	int ret;
 
 	if(buf == NULL)
 		return -1;
 
-	ret = sem_trywait(&face_detect_unit.detect_sem);
+	if(clock_gettime(CLOCK_REALTIME, &ts) == -1)
+	{
+		return -1;
+	}
+
+	ts.tv_sec += 3;
+	ret = sem_timedwait(&face_detect_unit.detect_sem, &ts);
+	//ret = sem_trywait(&face_detect_unit.detect_sem);
 	if(ret != 0)
 		return -1;
 
@@ -159,7 +167,7 @@ int opencv_face_detect( Mat& img, CascadeClassifier& cascade,
     printf( "detection time = %g ms\n", t*1000/getTickFrequency());
 
 	/* restore face size */
-	for(int i=0; i<faces.size(); i++)
+	for(uint32_t i=0; i<faces.size(); i++)
 	{
 		faces[i].x *= scale;
 		faces[i].y *= scale;
@@ -182,14 +190,19 @@ void *opencv_face_detect_thread(void *arg)
 	
 	detect_unit->face_detect_init();
 
+	while(face_client == NULL)
+	{
+		usleep(300*1000);
+	}
+
 	while(1)
 	{
+		proto_0x10_getOneFrame(face_client->protoHandle);
 
 		/* 获取协议传输的原图像-进行检测 */
 		ret = opencv_get_frame_detect(detect_unit->frame_buf, detect_unit->frame_size);
 		if(ret <= 0)
 		{
-			usleep(30*1000);
 			continue;
 		}
 

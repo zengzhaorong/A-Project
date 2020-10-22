@@ -31,6 +31,7 @@ struct clientInfo client_info;
 int global_seq;
 
 static uint8_t tmpBuf[1 *1024 *1024];
+static uint8_t ack_buf[1 *1024 *1024] = {0};
 static int tmpLen = 0;
 
 
@@ -46,8 +47,43 @@ int client_0x03_heartbeat(uint8_t *data, int len, uint8_t *ack_data, int size, i
 	proto_0x03_dataAnaly(data, len, PROTO_ACK, &ret, &tmpTime);
 	printf("%s: [ret: %d], time: %ld\n", __FUNCTION__, ret, tmpTime);
 
-	if(ack_len != 0)
+	if(ack_len != NULL)
 		*ack_len = 0;
+
+	return 0;
+}
+
+int client_0x10_getOneFrame(uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
+{
+	int frame_len = 0;
+	int tmplen = 0;
+	int ret = 0;
+
+	/* request part */
+	// NULL
+
+	/* ack part */
+	/* return value */
+	memcpy(ack_data +tmplen, &ret, 4);
+	tmplen += 4;
+
+	/* type */
+	ack_data[tmplen] = 0;
+	tmplen += 1;
+
+	/* frame data */
+	ret = capture_getframe(ack_data +tmplen +4, size-tmplen, &frame_len);
+	if(ret == -1)
+		return -1;
+
+	/* frame len */
+	memcpy(ack_data +tmplen, &frame_len, 4);
+	tmplen += 4;
+
+	tmplen += frame_len;
+
+	if(ack_len != NULL)
+		*ack_len = tmplen;
 
 	return 0;
 }
@@ -58,24 +94,18 @@ int client_0x11_faceDetect(uint8_t *data, int len, uint8_t *ack_data, int size, 
 	uint8_t count;
 	int offset = 0;
 
-	printf("%s: enter ++\n", __FUNCTION__);
-
 	count = data[0];
 	offset += 1;
 
 	for(int i=0; i<count; i++)
 	{
 		rects.x = *((int*)(data+offset));
-		printf("rect[%d]->x: %d\n", i, rects.x);
 		offset += 4;
 		rects.y = *((int*)(data+offset));
-		printf("rect[%d]->y: %d\n", i, rects.y);
 		offset += 4;
 		rects.width = *((int*)(data+offset));
-		printf("rect[%d]->w: %d\n", i, rects.width);
 		offset += 4;
 		rects.height = *((int*)(data+offset));
-		printf("rect[%d]->h: %d\n", i, rects.height);
 		offset += 4;
 	}
 	set_rect_param(rects);
@@ -173,7 +203,6 @@ int client_protoAnaly(struct clientInfo *client, uint8_t *pack, char len)
 	uint8_t seq = 0, cmd = 0;
 	int data_len = 0;
 	uint8_t *data = 0;
-	uint8_t ack_buf[512] = {0};
 	int ack_len = 0;
 	int ret;
 
@@ -193,6 +222,10 @@ int client_protoAnaly(struct clientInfo *client, uint8_t *pack, char len)
 
 		case 0x03:
 			ret = client_0x03_heartbeat(data, data_len, ack_buf, sizeof(ack_buf), &ack_len);
+			break;
+
+		case 0x10:
+			ret = client_0x10_getOneFrame(data, data_len, ack_buf, sizeof(ack_buf), &ack_len);
 			break;
 
 		case 0x11:
@@ -241,7 +274,6 @@ void *socket_client_thread(void *arg)
 	struct clientInfo *client = &client_info;
 	time_t heartbeat_time = 0;
 	time_t tmpTime;
-	int len;
 	int ret;
 
 	ret = client_init(client, (char *)DEFAULT_SERVER_IP, DEFAULT_SERVER_PORT);
@@ -278,11 +310,6 @@ void *socket_client_thread(void *arg)
 					heartbeat_time = tmpTime;
 				}
 				
-				ret = capture_getframe(tmpBuf, sizeof(tmpBuf), &len);
-				if(ret == 0)
-				{
-					proto_0x10_sendOneFrame(client->protoHandle, 0, tmpBuf, len);
-				}
 				break;
 
 			default:
@@ -295,7 +322,6 @@ void *socket_client_thread(void *arg)
 			client_protoHandle(client);
 		}
 		
-		sleep(1);
 	}
 
 	client_deinit(client);

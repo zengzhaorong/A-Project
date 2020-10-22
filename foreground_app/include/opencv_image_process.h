@@ -9,6 +9,7 @@ using namespace std;
 using namespace cv;
 
 int set_rect_param(Rect &rects);
+int get_rect_param(Rect &rects);
 int opencv_image_add_rect(QImage &qimage, Rect &rects);
 
 

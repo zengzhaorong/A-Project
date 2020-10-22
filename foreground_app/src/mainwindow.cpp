@@ -66,6 +66,8 @@ MainWindow::~MainWindow()
 
 void MainWindow::showMainwindow()
 {
+	static Rect old_rect;
+	static int old_rect_cnt = 0;
 	int len;
 	int ret;
 
@@ -78,7 +80,22 @@ void MainWindow::showMainwindow()
 		videoQImage = v4l2_to_QImage(video_buf, len);
 
 		Rect rects;
-		opencv_image_add_rect(videoQImage, rects);
+		ret = get_rect_param(rects);
+		if(ret == 0)
+		{
+			opencv_image_add_rect(videoQImage, rects);
+			old_rect = rects;
+		}
+		else if(old_rect.width > 0)
+		{
+			opencv_image_add_rect(videoQImage, old_rect);
+			old_rect_cnt ++;
+			if(old_rect_cnt *TIMER_INTERV_MS > 100)
+			{
+				old_rect.width = 0;
+				old_rect_cnt = 0;
+			}
+		}
 			
 		videoArea->setPixmap(QPixmap::fromImage(videoQImage));
 		videoArea->show();

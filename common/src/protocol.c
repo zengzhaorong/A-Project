@@ -82,30 +82,18 @@ int proto_0x03_sendHeartBeat(int handle)
 	return 0;
 }
 
-int proto_0x10_sendOneFrame(int handle, uint8_t type, uint8_t *data, int len)
+int proto_0x10_getOneFrame(int handle)
 {
 	uint8_t *protoBuf = NULL;
 	int buf_size = 0;
 	int packLen = 0;
-	int bufLen = 0;
 
-	if(data == NULL || len<=0)
-		return -1;
 	if(handle < 0 || handle >=MAX_PROTO_OBJ)
 		return -1;
 
-	printf("%s: data len: %d\n", __FUNCTION__, len);
-
-	tmp_protoBuf[0] = type;
-	bufLen += 1;
-	memcpy(tmp_protoBuf +1, &len, 4);
-	bufLen += 4;
-	memcpy(tmp_protoBuf +5, data, len);
-	bufLen += len;
-
 	protoBuf = protoObject[handle].send_buf;
 	buf_size = protoObject[handle].buf_size;
-	proto_makeupPacket(0, 0x10, bufLen, tmp_protoBuf, protoBuf, buf_size, &packLen);
+	proto_makeupPacket(0, 0x10, 0, NULL, protoBuf, buf_size, &packLen);
 
 	protoObject[handle].send_func(protoObject[handle].fd, protoBuf, packLen);
 
