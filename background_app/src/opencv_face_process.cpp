@@ -12,6 +12,7 @@
 #include "image_convert.h"
 #include "config.h"
 #include "socket_server.h"
+#include "user_mngr.h"
 
 /* C++ include C */
 #ifdef __cplusplus
@@ -75,6 +76,10 @@ face_recogn::face_recogn(void)
 
 int face_recogn::face_recogn_init(void)
 {
+
+	fdb_csv = string(FACES_CSV_FILE);
+
+
 	return 0;
 }
 
@@ -232,7 +237,7 @@ void *opencv_face_detect_thread(void *arg)
 				rect.y = faces[i].y;
 				rect.w = faces[i].width;
 				rect.h = faces[i].height;
-				printf("face: x=%d, y=%d, w=%d, h=%d\n", faces[i].x, faces[i].y, faces[i].width, faces[i].height);
+				//printf("face: x=%d, y=%d, w=%d, h=%d\n", faces[i].x, faces[i].y, faces[i].width, faces[i].height);
 			}
 			proto_0x11_sendFaceDetect(face_client->protoHandle, 1, &rect);
 		}

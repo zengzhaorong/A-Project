@@ -51,7 +51,7 @@ int opencv_image_add_rect(QImage &qimage, Rect &rects)
 			Point(rects.x + rects.width, 
 			rects.y + rects.height), 
 			Scalar(0, 0, 255), 3, 8);	 // ¿ò³öÈËÁ³
-		printf("******* Rect face: x=%d, y=%d, w=%d, h=%d\n", rects.x, rects.y, rects.width, rects.height);
+		//printf("******* Rect face: x=%d, y=%d, w=%d, h=%d\n", rects.x, rects.y, rects.width, rects.height);
 	}
 
 	qimage = cvMat_to_QImage(matImage);

@@ -90,7 +90,7 @@ void MainWindow::showMainwindow()
 		{
 			opencv_image_add_rect(videoQImage, old_rect);
 			old_rect_cnt ++;
-			if(old_rect_cnt *TIMER_INTERV_MS > 100)
+			if(old_rect_cnt *TIMER_INTERV_MS > 10)
 			{
 				old_rect.width = 0;
 				old_rect_cnt = 0;

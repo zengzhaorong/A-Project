@@ -2,12 +2,13 @@
 #include <unistd.h>
 #include "opencv_face_process.h"
 #include "socket_server.h"
+#include "user_mngr.h"
 
 /* C++ include C */
 #ifdef __cplusplus
 extern "C" {
 #endif
-#include "user_mngr.h"
+/* CÍ·ÎÄ¼þ */
 #ifdef __cplusplus
 }
 #endif

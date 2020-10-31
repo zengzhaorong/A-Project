@@ -5,6 +5,7 @@
 #include "opencv2/objdetect.hpp"
 #include "type.h"
 
+using namespace std;
 using namespace cv;
 
 class face_detect
@@ -29,6 +30,7 @@ public:
 	void face_recogn_deinit(void);
 	
 	public:
+		string fdb_csv;			// face database csv file
 };
 
 int opencv_put_frame_detect(uint8_t *buf, uint32_t len);
