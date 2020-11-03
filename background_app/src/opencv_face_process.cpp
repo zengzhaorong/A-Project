@@ -5,9 +5,6 @@
 #include <fcntl.h>
 #include <pthread.h>
 #include <iostream>
-#include "opencv2/core.hpp"
-#include "opencv2/imgproc.hpp"
-#include "opencv2/highgui.hpp"
 #include "opencv_face_process.h"
 #include "image_convert.h"
 #include "config.h"
@@ -76,9 +73,25 @@ face_recogn::face_recogn(void)
 
 int face_recogn::face_recogn_init(void)
 {
+    vector<Mat> images;
+    vector<int> labels;
 
 	fdb_csv = string(FACES_CSV_FILE);
 
+	user_read_csv(fdb_csv, images, labels, ';');
+
+	if(images.size() <= 1)
+	{
+		printf("images size: %d, not support !\n", (int)images.size());
+		return -1;
+	}
+
+	this->mod_LBPH = LBPHFaceRecognizer::create();
+	this->mod_LBPH->train(images, labels);
+
+	this->mod_LBPH->setThreshold(FACE_RECO_THRES);
+
+	printf("%s: --------- Face model train succeed ---------\n", __FUNCTION__);
 
 	return 0;
 }

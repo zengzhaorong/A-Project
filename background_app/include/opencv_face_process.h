@@ -4,9 +4,14 @@
 #include <semaphore.h>
 #include "opencv2/objdetect.hpp"
 #include "type.h"
+#include "opencv2/core.hpp"
+#include "opencv2/imgproc.hpp"
+#include "opencv2/highgui.hpp"
+#include "opencv2/face.hpp"
 
 using namespace std;
 using namespace cv;
+using namespace cv::face;
 
 class face_detect
 {
@@ -24,6 +29,9 @@ public:
 
 class face_recogn
 {
+	private:
+		Ptr<LBPHFaceRecognizer> mod_LBPH;
+	
 public:
 	face_recogn(void);
 	int face_recogn_init(void);

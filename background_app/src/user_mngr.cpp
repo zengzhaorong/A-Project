@@ -8,6 +8,8 @@
 #include "user_mngr.h"
 
 
+struct userMngr_Stru		user_mngr_unit;
+
 
 // 获取用户名单列表, ppUserList输出指针, Count数量
 int user_get_userList(char *faces_lib, struct userInfo_Stru **ppUserList, int *Count)
@@ -281,11 +283,43 @@ int user_create_csv(char *dir_path, char *csv_file)
 }
 
 
+void user_read_csv(const string& filename, vector<Mat>& images, vector<int>& labels, char separator = ';') 
+{
+    std::ifstream file(filename.c_str(), ifstream::in);
+    if (!file) {
+        string error_message = "No valid input file was given, please check the given filename.";
+        CV_Error(Error::StsBadArg, error_message);
+    }
+    string line, path, classlabel;
+    while (getline(file, line)) {
+        stringstream liness(line);
+        getline(liness, path, separator);
+        getline(liness, classlabel);
+        if(!path.empty() && !classlabel.empty()) {
+            images.push_back(imread(path, 0));
+            labels.push_back(atoi(classlabel.c_str()));
+        }
+    }
+}
+
+
+
 int user_mngr_init(void)
 {
+	struct userMngr_Stru *user_mngr = &user_mngr_unit;
+
 	int ret;
 
-	ret = user_create_csv(FACES_LIB_PATH, FACES_CSV_FILE);
+	user_mngr->pstUserInfo = NULL;
+	user_mngr->userCnt = 0;
+
+	user_get_userList((char *)FACES_LIB_PATH, &user_mngr->pstUserInfo, &user_mngr->userCnt);
+	for(int i=0; i<user_mngr->userCnt; i++)
+	{
+		printf("[%d].seq=%d, name: %s\n", i, user_mngr->pstUserInfo[i].seq, user_mngr->pstUserInfo[i].name);
+	}
+
+	ret = user_create_csv((char *)FACES_LIB_PATH, (char *)FACES_CSV_FILE);
 	if(ret != 0)
 		return -1;
 	
