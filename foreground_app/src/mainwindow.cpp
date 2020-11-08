@@ -44,6 +44,19 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 	videoArea->setGeometry(0, 0, VIDEO_AREA_ROW, VIDEO_AREA_COL);
 	videoArea->show();
 
+	/* user name QString */
+	userNameStr = QString("welcome");
+	
+	/* label to show user name */
+	userInfoLab = new QLabel(mainWindow);
+	userInfoLab->setGeometry(650,140,250,30);
+	userInfoLab->setText(userNameStr);
+	userInfoLab->hide();
+	/* set font size */
+	QFont font;
+	font.setPointSize(16);
+	userInfoLab->setFont(font);
+
 	buf_size = VIDEO_AREA_ROW*VIDEO_AREA_COL*3;
 	video_buf = (unsigned char *)malloc(buf_size);
 	if(video_buf == NULL)
@@ -73,6 +86,7 @@ void MainWindow::showMainwindow()
 
 	timer->stop();
 
+	/* show capture image */
 	ret = capture_getframe(video_buf, buf_size, &len);
 	if(ret == 0)
 	{
@@ -100,11 +114,26 @@ void MainWindow::showMainwindow()
 		videoArea->setPixmap(QPixmap::fromImage(videoQImage));
 		videoArea->show();
 	}
+
+	/* show other label */
+	userInfoLab->setText(userNameStr);
+	userInfoLab->show();
 	
 	timer->start(TIMER_INTERV_MS);
 	
 }
 
+
+int mainwin_set_userInfo(int id, char *usr_name)
+{
+
+	if(usr_name == NULL)
+		return -1;
+
+	mainwindow->userNameStr = QString("[id:%1] name:%2").arg(id).arg(usr_name);
+
+	return 0;
+}
 
 int mainwindow_init(void)
 {

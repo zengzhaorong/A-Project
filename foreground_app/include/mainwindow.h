@@ -26,12 +26,17 @@ private:
 	QLabel 		*videoArea;			// 图像显示区
 	QImage		initWinImg;			// 初始背景图
 	QTimer 		*timer;				// 刷新显示定时器
+	QLabel		*userInfoLab;		// label to show user info
 
 	unsigned char *video_buf;
 	unsigned int buf_size;
+	
+public:
+	QString		userNameStr;		// recognize user face name
 };
 
 
+int mainwin_set_userInfo(int id, char *usr_name);
 
 int start_mainwindow_task(void);
 

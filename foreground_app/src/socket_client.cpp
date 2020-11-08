@@ -8,6 +8,7 @@
 #include <arpa/inet.h>
 #include "socket_client.h"
 #include "opencv_image_process.h"
+#include "mainwindow.h"
 
 /* C++ include C */
 #ifdef __cplusplus
@@ -116,7 +117,7 @@ int client_0x11_faceDetect(uint8_t *data, int len, uint8_t *ack_data, int size, 
 int client_0x12_faceRecogn(uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
 {
 	int face_id = 0;
-	uint8_t face_name[32] = {0};
+	char face_name[32] = {0};
 	int offset = 0;
 
 	/* face id */
@@ -128,6 +129,7 @@ int client_0x12_faceRecogn(uint8_t *data, int len, uint8_t *ack_data, int size, 
 	offset += 32;
 
 	printf("[recogn]: ****** face id: %d, face name: %s\n", face_id, face_name);
+	mainwin_set_userInfo(face_id, face_name);
 
 	return 0;
 }

@@ -378,7 +378,7 @@ void *opencv_face_recogn_thread(void *arg)
 		ret = opencv_face_recogn(face_mat, &face_id);
 		if(ret == 0)
 		{
-			proto_0x12_sendFaceRecogn(face_client->protoHandle, face_id, "mynametest");
+			proto_0x12_sendFaceRecogn(face_client->protoHandle, face_id, "Tony");
 		}
 	}
 
