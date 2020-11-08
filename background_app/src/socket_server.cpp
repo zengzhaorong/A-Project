@@ -81,7 +81,7 @@ int server_0x10_getOneFrame(uint8_t *data, int len, uint8_t *ack_data, int size,
 	frame = data + tmpLen;
 	tmpLen += frame_len;
 
-	printf("*** recv one frame data: type: %d, data_len: %d\n", type, frame_len);
+	//printf("*** recv one frame data: type: %d, data_len: %d\n", type, frame_len);
 
 	/* put frame to detect */
 	opencv_put_frame_detect(frame, frame_len);

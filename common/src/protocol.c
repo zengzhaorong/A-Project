@@ -137,6 +137,35 @@ int proto_0x11_sendFaceDetect(int handle, uint8_t count, struct Rect_params *fac
 	return 0;
 }
 
+int proto_0x12_sendFaceRecogn(int handle, int face_id, char *face_name)
+{
+	uint8_t *protoBuf = NULL;
+	int buf_size = 0;
+	int packLen = 0;
+	int bufLen = 0;
+
+	if(handle < 0 || handle >=MAX_PROTO_OBJ)
+		return -1;
+	if(face_name == NULL)
+		return -1;
+
+	/* face id */
+	memcpy(tmp_protoBuf +bufLen, &face_id, 4);
+	bufLen += 4;
+
+	/* face name */
+	memcpy(tmp_protoBuf +bufLen, face_name, 32);
+	bufLen += 32;
+	
+	protoBuf = protoObject[handle].send_buf;
+	buf_size = protoObject[handle].buf_size;
+
+	proto_makeupPacket(0, 0x12, bufLen, tmp_protoBuf, protoBuf, buf_size, &packLen);
+
+	protoObject[handle].send_func(protoObject[handle].fd, protoBuf, packLen);
+
+	return 0;
+}
 
 int proto_makeupPacket(uint8_t seq, uint8_t cmd, int len, uint8_t *data, \
 								uint8_t *outbuf, int size, int *outlen)

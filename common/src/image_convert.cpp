@@ -12,7 +12,7 @@ QImage v4l2_to_QImage(unsigned char *data, int len)
 	qtImage.loadFromData(data, len);
 	if(qtImage.isNull())
 	{
-		printf("ERROR: QImage is null !\n");
+		printf("ERROR: %s: QImage is null !\n", __FUNCTION__);
 	}
 
 	return qtImage;
@@ -25,7 +25,7 @@ cv::Mat QImage_to_cvMat(QImage qimage)
 
 	if(qimage.isNull())
 	{
-		printf("ERROR: QImage is null !\n");
+		printf("ERROR: %s: QImage is null !\n", __FUNCTION__);
 		return mat;
 	}
 	

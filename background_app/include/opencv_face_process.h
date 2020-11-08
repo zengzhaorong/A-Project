@@ -29,16 +29,18 @@ public:
 
 class face_recogn
 {
-	private:
-		Ptr<LBPHFaceRecognizer> mod_LBPH;
+private:
 	
 public:
 	face_recogn(void);
 	int face_recogn_init(void);
 	void face_recogn_deinit(void);
 	
-	public:
-		string fdb_csv;			// face database csv file
+public:
+	Ptr<LBPHFaceRecognizer> mod_LBPH;
+	string fdb_csv;			// face database csv file
+	Mat face_mat;
+	sem_t recogn_sem;
 };
 
 int opencv_put_frame_detect(uint8_t *buf, uint32_t len);

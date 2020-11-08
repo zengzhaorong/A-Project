@@ -113,6 +113,26 @@ int client_0x11_faceDetect(uint8_t *data, int len, uint8_t *ack_data, int size, 
 	return 0;
 }
 
+int client_0x12_faceRecogn(uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
+{
+	int face_id = 0;
+	uint8_t face_name[32] = {0};
+	int offset = 0;
+
+	/* face id */
+	memcpy(&face_id, data +offset, 4);
+	offset += 4;
+
+	/* face name */
+	memcpy(face_name, data +offset, 32);
+	offset += 32;
+
+	printf("[recogn]: ****** face id: %d, face name: %s\n", face_id, face_name);
+
+	return 0;
+}
+
+
 int client_init(struct clientInfo *client, char *srv_ip, int srv_port)
 {
 	int flags = 0;
@@ -230,6 +250,10 @@ int client_protoAnaly(struct clientInfo *client, uint8_t *pack, char len)
 
 		case 0x11:
 			ret = client_0x11_faceDetect(data, data_len, ack_buf, sizeof(ack_buf), &ack_len);
+			break;
+
+		case 0x12:
+			ret = client_0x12_faceRecogn(data, data_len, ack_buf, sizeof(ack_buf), &ack_len);
 			break;
 
 		default:
