@@ -25,11 +25,11 @@ int main(int argc, char* argv[])
 
 	cout << "hello background_app" << endl;
 
-	start_socket_server_task();
+	user_mngr_init();
 
 	start_face_process_task();
 
-	user_mngr_init();
+	start_socket_server_task();
 
 	while(1)
 	{

@@ -108,6 +108,7 @@ void MainWindow::showMainwindow()
 			{
 				old_rect.width = 0;
 				old_rect_cnt = 0;
+				mainwin_set_userInfo(-1, "welcome");
 			}
 		}
 			
@@ -123,14 +124,21 @@ void MainWindow::showMainwindow()
 	
 }
 
-
+/* id: -1, only show usr_name */
 int mainwin_set_userInfo(int id, char *usr_name)
 {
 
 	if(usr_name == NULL)
 		return -1;
 
-	mainwindow->userNameStr = QString("[id:%1] name:%2").arg(id).arg(usr_name);
+	if(id == -1)
+	{
+		mainwindow->userNameStr = QString("%1").arg(usr_name);
+	}
+	else
+	{
+		mainwindow->userNameStr = QString("[id:%1] name:%2").arg(id).arg(usr_name);
+	}
 
 	return 0;
 }

@@ -27,6 +27,7 @@ using namespace cv;
 /* ÁÙÊ±²âÊÔ */
 struct clientInfo *face_client = NULL;
 
+extern struct userMngr_Stru		user_mngr_unit;
 
 class face_detect face_detect_unit;
 class face_recogn face_recogn_unit;
@@ -359,6 +360,7 @@ void *opencv_face_recogn_thread(void *arg)
 	Mat face_mat;
 	int face_id;
 	int ret;
+	int i;
 
 	printf("%s enter ++\n", __FUNCTION__);
 
@@ -378,7 +380,12 @@ void *opencv_face_recogn_thread(void *arg)
 		ret = opencv_face_recogn(face_mat, &face_id);
 		if(ret == 0)
 		{
-			proto_0x12_sendFaceRecogn(face_client->protoHandle, face_id, "Tony");
+			for(i=0; i<user_mngr_unit.userCnt; i++)
+			{
+				if(user_mngr_unit.pstUserInfo[i].seq == face_id)
+					break;
+			}
+			proto_0x12_sendFaceRecogn(face_client->protoHandle, face_id, user_mngr_unit.pstUserInfo[i].name);
 		}
 	}
 
