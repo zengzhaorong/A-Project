@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <iostream>
+#include "config.h"
 #include "mainwindow.h"
 #include "image_convert.h"
 #include "opencv_image_process.h"
@@ -46,6 +47,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 
 	/* user name QString */
 	userNameStr = QString("welcome");
+	showUserTick = 0;
 	
 	/* label to show user name */
 	userInfoLab = new QLabel(mainWindow);
@@ -91,7 +93,13 @@ void MainWindow::showMainwindow()
 	if(ret == 0)
 	{
 		QImage videoQImage;
-		videoQImage = v4l2_to_QImage(video_buf, len);
+#if defined(CAP_V4L2_FMT_JPEG)
+		videoQImage = jpeg_to_QImage(video_buf, len);
+#elif defined(CAP_V4L2_FMT_YUV)
+		videoQImage = yuv_to_QImage(0, video_buf, CAPTURE_PIX_WIDTH, CAPTURE_PIX_HEIGH);
+#elif defined(CAP_V4L2_FMT_MJPEG)
+		videoQImage = jpeg_to_QImage(video_buf, len);
+#endif
 
 		Rect rects;
 		ret = get_rect_param(rects);
@@ -108,8 +116,16 @@ void MainWindow::showMainwindow()
 			{
 				old_rect.width = 0;
 				old_rect_cnt = 0;
-				mainwin_set_userInfo(-1, "welcome");
 			}
+		}
+
+		if(showUserTick > 30)
+		{
+			mainwin_set_userInfo(-1, (char *)"welcome");
+		}
+		else
+		{
+			showUserTick ++;
 		}
 			
 		videoArea->setPixmap(QPixmap::fromImage(videoQImage));
@@ -138,6 +154,7 @@ int mainwin_set_userInfo(int id, char *usr_name)
 	else
 	{
 		mainwindow->userNameStr = QString("[id:%1] name:%2").arg(id).arg(usr_name);
+		mainwindow->showUserTick = 0;
 	}
 
 	return 0;

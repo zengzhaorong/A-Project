@@ -282,7 +282,13 @@ void *opencv_face_detect_thread(void *arg)
 		}
 
 		/* convert v4l2 data to qimage */
-		qImage = v4l2_to_QImage(detect_unit->frame_buf, ret);
+#if defined(CAP_V4L2_FMT_JPEG)
+		qImage = jpeg_to_QImage(detect_unit->frame_buf, ret);
+#elif defined(CAP_V4L2_FMT_YUV)
+		qImage = yuv_to_QImage(0, detect_unit->frame_buf, CAPTURE_PIX_WIDTH, CAPTURE_PIX_HEIGH);
+#elif defined(CAP_V4L2_FMT_MJPEG)
+		qImage = jpeg_to_QImage(detect_unit->frame_buf, ret);
+#endif
 		if(qImage.isNull())
 		{
 			printf("ERROR: qImage is null !\n");

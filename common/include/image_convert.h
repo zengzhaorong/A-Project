@@ -7,7 +7,9 @@
 #include <QImage>
 
 
-QImage v4l2_to_QImage(unsigned char *data, int len);
+QImage yuv_to_QImage(int type, unsigned char *data, int width, int height);
+
+QImage jpeg_to_QImage(unsigned char *data, int len);
 
 cv::Mat QImage_to_cvMat(QImage image);
 

@@ -313,11 +313,10 @@ void *socket_client_thread(void *arg)
 		switch (client->state)
 		{
 			case STATE_DISABLE:
-				printf("%s %d: state STATE_DISABLE ...\n", __FUNCTION__, __LINE__);
+				//printf("%s %d: state STATE_DISABLE ...\n", __FUNCTION__, __LINE__);
 				break;
 
 			case STATE_DISCONNECT:
-				printf("%s %d: state STATE_DISCONNECT ...\n", __FUNCTION__, __LINE__);
 				ret = connect(client->fd, (struct sockaddr *)&client->srv_addr, sizeof(client->srv_addr));
 				if(ret == 0)
 				{
@@ -325,7 +324,11 @@ void *socket_client_thread(void *arg)
 					client->state = STATE_CONNECTED;
 					printf("********** socket connect successfully, handle: %d.\n", client->protoHandle);
 				}
-				
+				else
+				{
+					//printf("%s %d: state STATE_DISCONNECT ...\n", __FUNCTION__, __LINE__);
+					usleep(1000 *100);
+				}
 				break;
 
 			case STATE_CONNECTED:

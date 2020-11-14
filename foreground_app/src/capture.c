@@ -14,10 +14,6 @@
 #include "config.h"
 
 
-#define VIDEO_DEV_NAME 		"/dev/video0"
-
-#define FRAME_BUF_SIZE		(ONE_CAP_FRAME_SIZE*3)
-
 struct v4l2cap_info capture_info;
 
 
@@ -48,8 +44,11 @@ int capture_init(struct v4l2cap_info *capture)
 	fmtdesc.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 	do{
 		ret = ioctl(capture->fd, VIDIOC_ENUM_FMT, &fmtdesc);
-		printf("[ret:%d]video description: %s\n", ret, fmtdesc.description);
-		fmtdesc.index ++;
+		if(ret == 0)
+		{
+			printf("[ret:%d]video description: %s\n", ret, fmtdesc.description);
+			fmtdesc.index ++;
+		}
 	}while(ret == 0);
 
 	/* configure video format */
@@ -57,7 +56,7 @@ int capture_init(struct v4l2cap_info *capture)
 	format.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 	format.fmt.pix.width = CAPTURE_PIX_WIDTH;
 	format.fmt.pix.height = CAPTURE_PIX_HEIGH;
-	format.fmt.pix.pixelformat = V4L2_PIX_FMT_JPEG;
+	format.fmt.pix.pixelformat = VIDEO_V4L2_PIX_FMT;
 	format.fmt.pix.field = V4L2_FIELD_INTERLACED;
 	ret = ioctl(capture->fd, VIDIOC_S_FMT, &format);
 	if(ret < 0)
@@ -91,7 +90,14 @@ int capture_init(struct v4l2cap_info *capture)
 		default:
 			printf("ERROR: value is illegal !\n");
 	}
-
+/*
+	if(capture->format.fmt.pix.pixelformat != VIDEO_V4L2_PIX_FMT)
+	{
+		printf("ERROR: Not support settomg foramt !!!\n");
+		ret = -3;
+		goto ERR_3;
+	}
+*/
 	capture->frameBuf = (unsigned char *)calloc(1, FRAME_BUF_SIZE);
 	if(capture->frameBuf == NULL)
 	{

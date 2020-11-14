@@ -33,6 +33,7 @@ private:
 	
 public:
 	QString		userNameStr;		// recognize user face name
+	int 		showUserTick;		// show user name time
 };
 
 
