@@ -24,10 +24,8 @@ extern "C" {
 using namespace std;
 using namespace cv;
 
-/* 临时测试 */
-struct clientInfo *face_client = NULL;
-
-extern struct userMngr_Stru		user_mngr_unit;
+extern struct main_mngr_info main_mngr;
+extern struct userMngr_Stru	user_mngr_unit;
 
 class face_detect face_detect_unit;
 class face_recogn face_recogn_unit;
@@ -75,6 +73,7 @@ face_recogn::face_recogn(void)
 
 int face_recogn::face_recogn_init(void)
 {
+	string fdb_csv;
     vector<Mat> images;
     vector<int> labels;
 	int ret;
@@ -129,8 +128,6 @@ int opencv_put_frame_detect(uint8_t *buf, uint32_t len)
 
 	sem_post(&face_detect_unit.detect_sem);
 
-	printf("opencv_put_frame_detect.\n");
-	
 	return 0;
 }
 
@@ -158,8 +155,6 @@ int opencv_get_frame_detect(uint8_t *buf, uint32_t size)
 	tmpLen = (size>sizeof(detect_buf) ? sizeof(detect_buf):size);
 
 	memcpy(buf, detect_buf, tmpLen);
-
-	printf("opencv_get_frame_detect success.\n");
 
 	return tmpLen;
 }
@@ -196,6 +191,70 @@ int opencv_get_frame_recogn(Mat& face_mat)
 
 	face_mat = face_recogn_unit.face_mat;
 	
+	return 0;
+}
+
+int face_resize_save(Mat& faceImg, char *path, int index)
+{
+	string file_path;
+	Mat faceSave;
+	int ret;
+
+	if(faceImg.empty())
+		return -1;
+
+	if(faceImg.cols < 100)
+	{
+		printf("face image is too small, skip!\n");
+		return -1;
+	}
+
+	resize(faceImg, faceSave, Size(92, 112));
+	file_path = format("%s/%d.jpg", path, index);
+	ret = imwrite(file_path, faceSave);
+	if(ret == false)
+		return -1;
+
+	printf("[Add user]***save face: %s\n", file_path.c_str());
+	
+	return 0;
+}
+
+int face_database_retrain(void)
+{
+	struct userMngr_Stru *user_mngr = &user_mngr_unit;
+	string fdb_csv;
+    vector<Mat> images;
+    vector<int> labels;
+	int ret;
+
+	if(user_mngr->pstUserInfo != NULL)
+		free(user_mngr->pstUserInfo);
+
+	user_get_userList((char *)FACES_LIB_PATH, &user_mngr->pstUserInfo, &user_mngr->userCnt);
+	for(int i=0; i<user_mngr->userCnt; i++)
+	{
+		printf("[%d].seq=%d, name: %s\n", i, user_mngr->pstUserInfo[i].seq, user_mngr->pstUserInfo[i].name);
+	}
+
+	ret = user_create_csv((char *)FACES_LIB_PATH, (char *)FACES_CSV_FILE);
+	if(ret != 0)
+		return -1;
+
+	fdb_csv = string(FACES_CSV_FILE);
+
+	user_read_csv(fdb_csv, images, labels, ';');
+
+	if(images.size() <= 1)
+	{
+		printf("images size: %d, not support !\n", (int)images.size());
+		return -1;
+	}
+
+	face_recogn_unit.mod_LBPH->train(images, labels);
+	
+	printf("face_database_retrain successfully.\n");
+
 	return 0;
 }
 
@@ -237,7 +296,7 @@ int opencv_face_detect( Mat& img, CascadeClassifier& cascade,
         }
     }
     t = (double)getTickCount() - t;
-    printf( "detection time = %g ms\n", t*1000/getTickFrequency());
+    //printf( "detection time = %g ms\n", t*1000/getTickFrequency());
 
 	/* restore face size */
 	for(uint32_t i=0; i<faces.size(); i++)
@@ -265,14 +324,15 @@ void *opencv_face_detect_thread(void *arg)
 	
 	detect_unit->face_detect_init();
 
-	while(face_client == NULL)
-	{
-		usleep(300*1000);
-	}
-
 	while(1)
 	{
-		proto_0x10_getOneFrame(face_client->protoHandle);
+		if(main_mngr.socket_handle < 0)
+		{
+			usleep(300*1000);
+			continue;
+		}
+		
+		proto_0x10_getOneFrame(main_mngr.socket_handle);
 
 		/* 获取协议传输的原图像-进行检测 */
 		ret = opencv_get_frame_detect(detect_unit->frame_buf, detect_unit->frame_size);
@@ -306,9 +366,6 @@ void *opencv_face_detect_thread(void *arg)
 		ret = opencv_face_detect(detectMat, face_detect_unit.face_cascade, 3, 0, face_mat, faces);
 		if(ret > 0)
 		{
-			opencv_put_frame_recogn(face_mat);
-			printf("put frame recogn successfully.\n");
-		
 			struct Rect_params rect;
 			for(uint32_t i=0; i<faces.size(); i++)
 			{
@@ -318,7 +375,31 @@ void *opencv_face_detect_thread(void *arg)
 				rect.h = faces[i].height;
 				//printf("face: x=%d, y=%d, w=%d, h=%d\n", faces[i].x, faces[i].y, faces[i].width, faces[i].height);
 			}
-			proto_0x11_sendFaceDetect(face_client->protoHandle, 1, &rect);
+			proto_0x11_sendFaceDetect(main_mngr.socket_handle, 1, &rect);
+			
+			if(main_mngr.work_state == WORK_STA_NORMAL)
+			{
+				opencv_put_frame_recogn(face_mat);
+			}
+			else if(main_mngr.work_state == WORK_STA_ADDUSER)
+			{
+				ret = face_resize_save(face_mat, user_mngr_unit.add_userdir, user_mngr_unit.add_index +1);
+				if(ret != 0)
+					continue;
+				
+				user_mngr_unit.add_index ++;
+
+				/* finish add user, change work state */
+				if(user_mngr_unit.add_index >= FACE_CNT_PER_USER)
+				{
+					proto_0x04_switchWorkSta(main_mngr.socket_handle, WORK_STA_NORMAL, NULL);
+					main_mngr.work_state = WORK_STA_NORMAL;
+					face_database_retrain();
+				}
+			}
+			else
+			{
+			}
 		}
 	}
 
@@ -374,14 +455,19 @@ void *opencv_face_recogn_thread(void *arg)
 
 	while(1)
 	{
+		if(main_mngr.work_state != WORK_STA_NORMAL)
+		{
+			usleep(300 *1000);
+			continue;
+		}
+
+	
 		/* 获取经人脸检测图像-进行识别 */
 		ret = opencv_get_frame_recogn(face_mat);
 		if(ret != 0)
 		{
 			continue;
 		}
-
-		printf("get frame recogn successfully.\n");
 
 		ret = opencv_face_recogn(face_mat, &face_id);
 		if(ret == 0)
@@ -391,7 +477,7 @@ void *opencv_face_recogn_thread(void *arg)
 				if(user_mngr_unit.pstUserInfo[i].seq == face_id)
 					break;
 			}
-			proto_0x12_sendFaceRecogn(face_client->protoHandle, face_id, user_mngr_unit.pstUserInfo[i].name);
+			proto_0x12_sendFaceRecogn(main_mngr.socket_handle, face_id, user_mngr_unit.pstUserInfo[i].name);
 		}
 	}
 

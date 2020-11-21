@@ -26,9 +26,13 @@ struct userMngr_Stru
 {
 	int		userCnt;		// user count
 	struct userInfo_Stru	*pstUserInfo;		// user name information
+	char 	add_userdir[64];	// use when add user
+	int 	add_index;		// add user num
 };
 
 
+int user_get_userList(char *faces_lib, struct userInfo_Stru **ppUserList, int *Count);
+int user_create_dir(char *base_dir, char *usr_name, char *usr_dir);
 int user_mngr_init(void);
 int user_create_csv(char *dir_path, char *csv_file);
 void user_read_csv(const string& filename, vector<Mat>& images, vector<int>& labels, char separator);

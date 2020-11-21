@@ -69,8 +69,6 @@ int proto_0x03_sendHeartBeat(int handle)
 	if(protoObject[handle].send_func == NULL)
 		return -1;
 
-	printf("%s: enter ++\n", __FUNCTION__);
-
 	time_now = time(NULL);
 
 	protoBuf = protoObject[handle].send_buf;
@@ -81,6 +79,38 @@ int proto_0x03_sendHeartBeat(int handle)
 	
 	return 0;
 }
+
+int proto_0x04_switchWorkSta(int handle, workstate_e state, uint8_t *arg)
+{
+	uint8_t *protoBuf = NULL;
+	uint8_t data[36];
+	int data_len = 0;
+	int buf_size = 0;
+	int packLen = 0;
+
+	if(handle < 0 || handle >=MAX_PROTO_OBJ)
+		return -1;
+	if(protoObject[handle].send_func == NULL)
+		return -1;
+
+	memcpy(data, &state, 4);
+	data_len += 4;
+	
+	if(arg != NULL)
+	{
+		memcpy(data +data_len, arg, 32);
+		data_len += 32;
+	}
+
+	protoBuf = protoObject[handle].send_buf;
+	buf_size = protoObject[handle].buf_size;
+	proto_makeupPacket(0, 0x04, data_len, data, protoBuf, buf_size, &packLen);
+
+	protoObject[handle].send_func(protoObject[handle].fd, protoBuf, packLen);
+	
+	return 0;
+}
+
 
 int proto_0x10_getOneFrame(int handle)
 {

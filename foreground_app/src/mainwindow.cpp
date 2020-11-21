@@ -11,7 +11,9 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+#include "protocol.h"
 #include "capture.h"
+#include "public.h"
 #ifdef __cplusplus
 }
 #endif
@@ -26,12 +28,13 @@ extern "C" {
 #define WIN_BACKGRD_IMG				"resource/gdut.jpg"		// 界面背景图
 
 static MainWindow *mainwindow;		// 主界面
+extern struct main_mngr_info main_mngr;
 
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 {
 	
-	setWindowTitle("mainwindow");
+	setWindowTitle(tr(MAINWIN_TITLE));
 	
 	resize(MAIN_WIN_ROW, MAIN_WIN_COL);
 
@@ -46,7 +49,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 	videoArea->show();
 
 	/* user name QString */
-	userNameStr = QString("welcome");
+	userNameStr = QString(tr("welcome"));
 	showUserTick = 0;
 	
 	/* label to show user name */
@@ -58,6 +61,15 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 	QFont font;
 	font.setPointSize(16);
 	userInfoLab->setFont(font);
+
+	userNameEdit = new QLineEdit(mainWindow);
+	userNameEdit->setPlaceholderText(tr("Add User Name"));
+	userNameEdit->setGeometry(650, 230, 150, 40);
+
+	addUserBtn = new QPushButton(mainWindow);
+	addUserBtn->setText(tr("Add user"));
+    connect(addUserBtn, SIGNAL(clicked()), this, SLOT(addUser()));
+	addUserBtn->setGeometry(810, 230, 80, 40);
 
 	buf_size = VIDEO_AREA_ROW*VIDEO_AREA_COL*3;
 	video_buf = (unsigned char *)malloc(buf_size);
@@ -127,7 +139,7 @@ void MainWindow::showMainwindow()
 		{
 			showUserTick ++;
 		}
-			
+
 		videoArea->setPixmap(QPixmap::fromImage(videoQImage));
 		videoArea->show();
 	}
@@ -139,6 +151,24 @@ void MainWindow::showMainwindow()
 	timer->start(TIMER_INTERV_MS);
 	
 }
+
+void MainWindow::addUser()
+{
+	QString editStr;
+	QByteArray ba;
+	uint8_t username[32];
+
+	/* get QLineEdit input text */
+	editStr = userNameEdit->text();
+	ba = editStr.toLatin1();
+	memset(username, 0, sizeof(username));
+	strncpy((char *)username, ba.data(), strlen(ba.data()));
+
+	main_mngr.work_state = WORK_STA_ADDUSER;
+
+	proto_0x04_switchWorkSta(main_mngr.socket_handle, main_mngr.work_state, username);
+}
+
 
 /* id: -1, only show usr_name */
 int mainwin_set_userInfo(int id, char *usr_name)

@@ -2,6 +2,7 @@
 #define _PROTOCOL_H_
 
 #include "ringbuffer.h"
+#include "public.h"
 #include "type.h"
 
 #define PROTO_HEAD_OFFSET		0
@@ -56,6 +57,7 @@ struct Rect_params
 
 int proto_0x03_dataAnaly(uint8_t *data, int len, ePacket_t type, void *a, void *b);
 int proto_0x03_sendHeartBeat(int handle);
+int proto_0x04_switchWorkSta(int handle, workstate_e state, uint8_t *arg);
 
 int proto_0x10_getOneFrame(int handle);
 int proto_0x11_sendFaceDetect(int handle, uint8_t count, struct Rect_params *face_rect);

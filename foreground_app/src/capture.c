@@ -90,14 +90,14 @@ int capture_init(struct v4l2cap_info *capture)
 		default:
 			printf("ERROR: value is illegal !\n");
 	}
-/*
+
 	if(capture->format.fmt.pix.pixelformat != VIDEO_V4L2_PIX_FMT)
 	{
 		printf("ERROR: Not support settomg foramt !!!\n");
 		ret = -3;
 		goto ERR_3;
 	}
-*/
+
 	capture->frameBuf = (unsigned char *)calloc(1, FRAME_BUF_SIZE);
 	if(capture->frameBuf == NULL)
 	{

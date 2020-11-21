@@ -39,6 +39,7 @@ int get_rect_param(Rect &rects)
 	return 0;
 }
 
+/* add rectangle to image */
 int opencv_image_add_rect(QImage &qimage, Rect &rects)
 {
 	Mat matImage;

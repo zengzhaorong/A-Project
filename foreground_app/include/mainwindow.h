@@ -5,6 +5,8 @@
 #include <QWidget>
 #include <QLabel>
 #include <QTimer>
+#include <QPushButton>
+#include <QLineEdit>
 
 
 class MainWindow : public QMainWindow
@@ -17,19 +19,22 @@ public:
 
 private slots:
 	void showMainwindow();
+	void addUser();
 	
 public:
 	void showVideo(QImage vdoImg);
 
 private:
-	QWidget		*mainWindow;		// 中心窗口
-	QLabel 		*videoArea;			// 图像显示区
-	QImage		initWinImg;			// 初始背景图
-	QTimer 		*timer;				// 刷新显示定时器
-	QLabel		*userInfoLab;		// label to show user info
+	QWidget			*mainWindow;		// 中心窗口
+	QLabel 			*videoArea;			// 图像显示区
+	QImage			initWinImg;			// 初始背景图
+	QTimer 			*timer;				// 刷新显示定时器
+	QLabel			*userInfoLab;		// label to show user info
+	QLineEdit		*userNameEdit;		// edit add user name
+	QPushButton 	*addUserBtn;		// add user button
 
-	unsigned char *video_buf;
-	unsigned int buf_size;
+	unsigned char 	*video_buf;
+	unsigned int 	buf_size;
 	
 public:
 	QString		userNameStr;		// recognize user face name

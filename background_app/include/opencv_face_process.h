@@ -38,7 +38,6 @@ public:
 	
 public:
 	Ptr<LBPHFaceRecognizer> mod_LBPH;
-	string fdb_csv;			// face database csv file
 	Mat face_mat;
 	sem_t recogn_sem;
 };

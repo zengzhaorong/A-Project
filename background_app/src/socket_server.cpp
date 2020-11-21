@@ -6,6 +6,7 @@
 #include <sys/socket.h>
 #include "opencv_face_process.h"
 #include "socket_server.h"
+#include "user_mngr.h"
 
 
 /* C++ include C */
@@ -29,7 +30,8 @@ static uint8_t tmpBuf[1 *1024 *1024] = {0};
 static uint8_t ack_buf[1 *1024 *1024] = {0};
 static int tmpLen = 0;
 
-extern struct clientInfo *face_client;
+extern struct main_mngr_info main_mngr;
+extern struct userMngr_Stru	user_mngr_unit;
 
 int server_0x03_heartbeat(uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
 {
@@ -61,6 +63,31 @@ int server_0x03_heartbeat(uint8_t *data, int len, uint8_t *ack_data, int size, i
 	return 0;
 }
 
+int server_0x04_switchWorkSta(uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
+{
+	uint8_t arg[32];
+	int state = 0;
+	int tmplen = 0;
+
+	/* work state */
+	memcpy(&state, data, 4);
+	tmplen += 4;
+
+	memcpy(arg, data +tmplen, 32);
+	tmplen += 4;
+
+	/* create user dir */
+	memset(user_mngr_unit.add_userdir, 0, sizeof(user_mngr_unit.add_userdir));
+	user_create_dir((char *)FACES_LIB_PATH, (char *)arg, user_mngr_unit.add_userdir);
+	user_mngr_unit.add_index = 0;
+
+	main_mngr.work_state = (workstate_e)state;
+	
+	printf("%s: get work state: %d, name: %s\n", __FUNCTION__, state, arg);
+
+	return 0;
+}
+
 int server_0x10_getOneFrame(uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
 {
 	uint8_t type = 0;
@@ -74,6 +101,7 @@ int server_0x10_getOneFrame(uint8_t *data, int len, uint8_t *ack_data, int size,
 
 	type = data[tmpLen];
 	tmpLen += 1;
+	(void)type;
 
 	memcpy(&frame_len, data+tmpLen, 4);
 	tmpLen += 4;
@@ -181,8 +209,7 @@ int server_protoAnaly(struct clientInfo *client, uint8_t *pack, uint32_t pack_le
 		return -1;
 
 	proto_analyPacket(pack, pack_len, &seq, &cmd, &data_len, &data);
-	printf("%s: cmd: 0x%02x, seq: %d, pack_len: %d, data_len: %d\n", __FUNCTION__, \
-				cmd, seq, pack_len, data_len);
+	//printf("%s: cmd: 0x%02x, seq: %d, pack_len: %d, data_len: %d\n", __FUNCTION__, cmd, seq, pack_len, data_len);
 
 	switch(cmd)
 	{
@@ -194,6 +221,10 @@ int server_protoAnaly(struct clientInfo *client, uint8_t *pack, uint32_t pack_le
 
 		case 0x03:
 			ret = server_0x03_heartbeat(data, data_len, ack_buf, sizeof(ack_buf), &ack_len);
+			break;
+
+		case 0x04:
+			ret = server_0x04_switchWorkSta(data, data_len, ack_buf, sizeof(ack_buf), &ack_len);
 			break;
 
 		case 0x10:
@@ -242,9 +273,6 @@ void *socket_handle_thread(void *arg)
 
 	printf("%s %d: enter ++\n", __FUNCTION__, __LINE__);
 
-	// for test
-	face_client = client;
-
 
 	flags = fcntl(client->fd, F_GETFL, 0);
 	fcntl(client->fd, F_SETFL, flags | O_NONBLOCK);
@@ -254,6 +282,7 @@ void *socket_handle_thread(void *arg)
 		return NULL;
 
 	client->protoHandle = proto_register(client->fd, server_sendData, SEND_BUFFER_SIZE);
+	main_mngr.socket_handle = client->protoHandle;
 
 	while(1)
 	{

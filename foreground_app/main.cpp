@@ -15,12 +15,18 @@ extern "C" {
 
 using namespace std;
 
+struct main_mngr_info main_mngr;
+
 
 int main(int argc, char* argv[])
 {
     QApplication qtApp(argc, argv);
 	
 	cout << "hello foreground_app" << endl;
+
+	memset(&main_mngr, 0, sizeof(struct main_mngr_info));
+	main_mngr.work_state = WORK_STA_NORMAL;
+	main_mngr.socket_handle = -1;
 	
 	start_mainwindow_task();
 

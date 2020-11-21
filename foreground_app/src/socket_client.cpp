@@ -35,6 +35,7 @@ static uint8_t tmpBuf[1 *1024 *1024];
 static uint8_t ack_buf[1 *1024 *1024] = {0};
 static int tmpLen = 0;
 
+extern struct main_mngr_info main_mngr;
 
 int client_0x03_heartbeat(uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
 {
@@ -51,6 +52,20 @@ int client_0x03_heartbeat(uint8_t *data, int len, uint8_t *ack_data, int size, i
 	if(ack_len != NULL)
 		*ack_len = 0;
 
+	return 0;
+}
+
+int client_0x04_switchWorkSta(uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
+{
+	int state = 0;
+	int tmplen = 0;
+
+	/* work state */
+	memcpy(&state, data, 4);
+	tmplen += 4;
+
+	main_mngr.work_state = (workstate_e)state;
+	
 	return 0;
 }
 
@@ -232,7 +247,7 @@ int client_protoAnaly(struct clientInfo *client, uint8_t *pack, char len)
 		return -1;
 
 	proto_analyPacket(pack, len, &seq, &cmd, &data_len, &data);
-	printf("get proto cmd: 0x%02x\n", cmd);
+	//printf("get proto cmd: 0x%02x\n", cmd);
 
 	switch(cmd)
 	{
@@ -244,6 +259,10 @@ int client_protoAnaly(struct clientInfo *client, uint8_t *pack, char len)
 
 		case 0x03:
 			ret = client_0x03_heartbeat(data, data_len, ack_buf, sizeof(ack_buf), &ack_len);
+			break;
+
+		case 0x04:
+			ret = client_0x04_switchWorkSta(data, data_len, ack_buf, sizeof(ack_buf), &ack_len);
 			break;
 
 		case 0x10:
@@ -286,7 +305,7 @@ int client_protoHandle(struct clientInfo *client)
 							sizeof(client->packBuf), &client->packLen);
 	if(ret == 0)
 	{
-		printf("detect protocol pack len: %d\n", client->packLen);
+		//printf("detect protocol pack len: %d\n", client->packLen);
 		client_protoAnaly(client, client->packBuf, client->packLen);
 	}
 
@@ -322,6 +341,7 @@ void *socket_client_thread(void *arg)
 				{
 					client->protoHandle = proto_register(client->fd, client_sendData, SEND_BUFFER_SIZE);
 					client->state = STATE_CONNECTED;
+					main_mngr.socket_handle = client->protoHandle;
 					printf("********** socket connect successfully, handle: %d.\n", client->protoHandle);
 				}
 				else

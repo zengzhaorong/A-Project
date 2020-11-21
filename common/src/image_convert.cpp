@@ -1,48 +1,52 @@
 #include "image_convert.h"
 
+/* C++ include C */
+#ifdef __cplusplus
 extern "C" {
-#include "libavcodec/avcodec.h"
-#include "libavformat/avformat.h"
-#include "libswscale/swscale.h"
-#include "libavdevice/avdevice.h"
+#endif
+/* C头文件 */
+#if defined(CAP_V4L2_FMT_YUV)
+	#include "libavcodec/avcodec.h"
+	#include "libavformat/avformat.h"
+	#include "libswscale/swscale.h"
+	#include "libavdevice/avdevice.h"
+	#include "libavutil/imgutils.h"
+#endif
+#ifdef __cplusplus
 }
+#endif
 
 //using namespace cv;
 
 
-
-
-void yuv422_to_rgb24(void *yuv, void **rgb, int width, int height)
+#if defined(CAP_V4L2_FMT_YUV)
+void yuv422_to_rgb24(uint8_t *yuv, void **rgb, int width, int height)
 {
-	static uint8_t *yuvBuffer;
 	static uint8_t * rgbBuffer;
-	static AVFrame *pFrame ;
+	static AVFrame *pFrame;
 	static AVFrame *pFrameRGB;
 	static SwsContext *img_convert_ctx;
 	static int init_flag = 0;
 
 	if(init_flag == 0)
 	{
-		//width和heigt为传入的分辨率的大小
-		int yuvSize = width * height * 3 /2;
-		yuvBuffer = (uint8_t *)malloc(yuvSize);
 		//为每帧图像分配内存
 		pFrame = av_frame_alloc();
 		pFrameRGB = av_frame_alloc();
-		int numBytes = avpicture_get_size(AV_PIX_FMT_RGB24, width, height);
+		//int numBytes = avpicture_get_size(AV_PIX_FMT_RGB24, width, height);	// deprecated
+		int numBytes = av_image_get_buffer_size(AV_PIX_FMT_RGB24, width, height, 1);
 		rgbBuffer = (uint8_t *) av_malloc(numBytes * sizeof(uint8_t));
-		avpicture_fill((AVPicture *) pFrameRGB, rgbBuffer, AV_PIX_FMT_RGB24, width, height);
-		//特别注意 img_convert_ctx 该在做H264流媒体解码时候，发现sws_getContext /sws_scale内存泄露问题，
-		//注意sws_getContext只能调用一次，在初始化时候调用即可，另外调用完后，在析构函数中使用sws_free_Context，将它的内存释放。
-		//设置图像转换上下文
+		//avpicture_fill((AVPicture *) pFrameRGB, rgbBuffer, AV_PIX_FMT_RGB24, width, height);	// deprecated
+		av_image_fill_arrays(pFrameRGB->data, pFrameRGB->linesize, rgbBuffer, AV_PIX_FMT_RGB24, width, height, 1);
 		img_convert_ctx = sws_getContext(width, height, AV_PIX_FMT_YUYV422, width, height, AV_PIX_FMT_RGB24, SWS_BICUBIC, NULL, NULL, NULL);
 
 		init_flag = 1;
 	}
 
 	*rgb = rgbBuffer;
-    avpicture_fill((AVPicture *) pFrame, (uint8_t *)yuv, AV_PIX_FMT_YUYV422, width, height);//这里的长度和高度跟之前保持一致
-    //转换图像格式，将解压出来的YUV422的图像转换为RGB的图像
+    //avpicture_fill((AVPicture *) pFrame, (uint8_t *)yuv, AV_PIX_FMT_YUYV422, width, height);	// deprecated
+	av_image_fill_arrays(pFrame->data, pFrame->linesize, (uint8_t *)yuv, AV_PIX_FMT_YUYV422, width, height, 1);
+
     sws_scale(img_convert_ctx,
             (uint8_t const * const *) pFrame->data,
             pFrame->linesize, 0, height, pFrameRGB->data,
@@ -50,7 +54,7 @@ void yuv422_to_rgb24(void *yuv, void **rgb, int width, int height)
 }
 
 /* type: yuv type, only support yuyv422 format */
-QImage yuv_to_QImage(int type, unsigned char *data, int width, int height)
+QImage yuv_to_QImage(int type, uint8_t *data, int width, int height)
 {
 	uint8_t *rgbBuffer;
 
@@ -60,6 +64,7 @@ QImage yuv_to_QImage(int type, unsigned char *data, int width, int height)
 	
 	return tmpImg;
 }
+#endif
 
 QImage jpeg_to_QImage(unsigned char *data, int len)
 {

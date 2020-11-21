@@ -302,12 +302,107 @@ void user_read_csv(const string& filename, vector<Mat>& images, vector<int>& lab
     }
 }
 
+/* check dir begin with "%d_" exist or not */
+/* 0 -exist, -1 -not exist */
+int user_checkdir(char *base_dir, char *dir_head)
+{
+	struct stat statbuf;
+	DIR *dir;
+	struct dirent *dirent;
+	int ret;
 
+	ret = lstat(base_dir, &statbuf);
+	if(ret < 0)
+		return -1;
+
+	if(S_ISDIR(statbuf.st_mode) != 1)
+		return -1;
+
+	dir = opendir(base_dir);
+	if(dir == NULL)
+		return -1;
+
+	/* traversal dir */
+	while((dirent=readdir(dir)) != NULL)
+	{
+		/* skip "." and ".." */
+		if(!strncmp(dirent->d_name, ".", strlen(dirent->d_name)) ||
+			!strncmp(dirent->d_name, "..", strlen(dirent->d_name)))
+		{
+			continue;
+		}
+
+		if(strncmp(dirent->d_name, dir_head, strlen(dir_head)) == 0)
+		{
+			return 0;
+		}
+	}
+
+	return -1;
+}
+
+/* create user dir by user name, format: i_username, like: 1_Tony, 2_Jenny ... */
+int user_create_dir(char *base_dir, char *usr_name, char *usr_dir)
+{
+	struct stat statbuf;
+	char dir_path[64] = {0};
+	char dir_head[8] = {0};
+	int dir_index = 0;
+	int ret;
+
+	if(base_dir==NULL || usr_name==NULL || usr_dir==NULL)
+		return -1;
+
+	ret = lstat(base_dir, &statbuf);
+	if(ret < 0)
+	{
+		return -1;
+	}
+
+	/* check if dir or not */
+	if(S_ISDIR(statbuf.st_mode) != 1)
+	{
+		return -1;
+	}
+
+	/* find index not use */
+	while(1)
+	{
+		dir_index ++;
+
+		/* check wether dir "i_xxx" exist or not */
+		memset(dir_head, 0, sizeof(dir_head));
+		sprintf(dir_head, "%d_", dir_index);
+		ret = user_checkdir(base_dir, dir_head);
+		if(ret == 0)
+			continue;
+
+		break;
+	}
+
+	/* current dir is valid */
+	memset(dir_path, 0, sizeof(dir_path));
+	strcat(dir_path, base_dir);
+	strcat(dir_path, "/");
+	strcat(dir_path, dir_head);
+	strcat(dir_path, usr_name);
+	
+	// create directory
+	ret = mkdir((char *)dir_path, 0777);
+	if(ret == -1)
+	{
+		return -1;
+	}
+
+	memcpy(usr_dir, dir_path, strlen(dir_path));
+	printf("mkdir: %s\n", dir_path);
+
+	return 0;
+}
 
 int user_mngr_init(void)
 {
 	struct userMngr_Stru *user_mngr = &user_mngr_unit;
-
 	int ret;
 
 	user_mngr->pstUserInfo = NULL;
