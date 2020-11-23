@@ -12,6 +12,7 @@ struct userMngr_Stru		user_mngr_unit;
 
 
 // 获取用户名单列表, ppUserList输出指针, Count数量
+/* if ppUserList is not null, it will free it and malloc new for it */
 int user_get_userList(char *faces_lib, struct userInfo_Stru **ppUserList, int *Count)
 {
 	struct stat statbuf;

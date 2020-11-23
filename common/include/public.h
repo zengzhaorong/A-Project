@@ -5,8 +5,9 @@
 
 
 typedef enum {
-	WORK_STA_NORMAL,
-	WORK_STA_ADDUSER,
+	WORK_STA_NORMAL,		// normal work
+	WORK_STA_ADDUSER,		// add user
+	WORK_STA_RECOGN,		// has recognize success
 }workstate_e;
 
 struct main_mngr_info

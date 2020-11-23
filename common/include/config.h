@@ -3,7 +3,7 @@
 
 
 /********** MAIN WINDOW **********/
-#define MAINWIN_TITLE		"FACE RECOGNIZER"
+#define MAINWIN_TITLE		"人脸识别系统"			// support Chinese
 
 
 /********** LCD **********/
@@ -36,5 +36,7 @@
 #define FACE_ROW_MIN			45
 
 #define FACE_CNT_PER_USER		10		// face image count per user
+
+#define RECOGN_OK_DELAY_MS		(5*1000)	// delay time after rocognize success
 
 #endif	// _CONFIG_H_

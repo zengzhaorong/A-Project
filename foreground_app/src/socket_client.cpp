@@ -66,6 +66,8 @@ int client_0x04_switchWorkSta(uint8_t *data, int len, uint8_t *ack_data, int siz
 
 	main_mngr.work_state = (workstate_e)state;
 	
+	mainwin_change_worksta(state);
+
 	return 0;
 }
 
@@ -145,6 +147,7 @@ int client_0x12_faceRecogn(uint8_t *data, int len, uint8_t *ack_data, int size, 
 
 	printf("[recogn]: ****** face id: %d, face name: %s\n", face_id, face_name);
 	mainwin_set_userInfo(face_id, face_name);
+	mainwin_change_worksta(WORK_STA_RECOGN);
 
 	return 0;
 }

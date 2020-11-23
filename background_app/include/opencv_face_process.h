@@ -40,6 +40,7 @@ public:
 	Ptr<LBPHFaceRecognizer> mod_LBPH;
 	Mat face_mat;
 	sem_t recogn_sem;
+	int recogn_state;	// 0-invalid 1-valid
 };
 
 int opencv_put_frame_detect(uint8_t *buf, uint32_t len);

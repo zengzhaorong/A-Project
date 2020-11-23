@@ -7,6 +7,7 @@
 #include "image_convert.h"
 #include "opencv_image_process.h"
 
+
 /* C++ include C */
 #ifdef __cplusplus
 extern "C" {
@@ -18,14 +19,6 @@ extern "C" {
 }
 #endif
 
-#define MAIN_WIN_ROW			900
-#define MAIN_WIN_COL			480
-#define VIDEO_AREA_ROW			640
-#define VIDEO_AREA_COL			480
-
-#define TIMER_INTERV_MS			1
-
-#define WIN_BACKGRD_IMG				"resource/gdut.jpg"		// 界面背景图
 
 static MainWindow *mainwindow;		// 主界面
 extern struct main_mngr_info main_mngr;
@@ -33,8 +26,12 @@ extern struct main_mngr_info main_mngr;
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 {
-	
-	setWindowTitle(tr(MAINWIN_TITLE));
+	QFont font;
+	QPalette pa;
+
+	/* can show Chinese word */
+	QTextCodec *codec = QTextCodec::codecForName("GBK");
+	setWindowTitle(codec->toUnicode(MAINWIN_TITLE));
 	
 	resize(MAIN_WIN_ROW, MAIN_WIN_COL);
 
@@ -43,24 +40,17 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 
 	initWinImg.load(WIN_BACKGRD_IMG);
 
+	/* show video area */
 	videoArea = new QLabel(mainWindow);
 	videoArea->setPixmap(QPixmap::fromImage(initWinImg));
 	videoArea->setGeometry(0, 0, VIDEO_AREA_ROW, VIDEO_AREA_COL);
 	videoArea->show();
-
-	/* user name QString */
-	userNameStr = QString(tr("welcome"));
-	showUserTick = 0;
 	
-	/* label to show user name */
-	userInfoLab = new QLabel(mainWindow);
-	userInfoLab->setGeometry(650,140,250,30);
-	userInfoLab->setText(userNameStr);
-	userInfoLab->hide();
-	/* set font size */
-	QFont font;
-	font.setPointSize(16);
-	userInfoLab->setFont(font);
+	font.setPointSize(26);
+	pa.setColor(QPalette::WindowText,Qt::yellow);
+	textOnVideo = new QLabel(mainWindow);
+	textOnVideo->setFont(font);
+	textOnVideo->setPalette(pa);
 
 	userNameEdit = new QLineEdit(mainWindow);
 	userNameEdit->setPlaceholderText(tr("Add User Name"));
@@ -84,6 +74,10 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 	connect(timer, SIGNAL(timeout()), this, SLOT(showMainwindow()));
 	timer->start(TIMER_INTERV_MS);
 
+	tmpShowTimer = new QTimer(this);
+
+	mainwin_state = WORK_STA_NORMAL;
+
 }
 
 MainWindow::~MainWindow()
@@ -95,6 +89,8 @@ void MainWindow::showMainwindow()
 {
 	static Rect old_rect;
 	static int old_rect_cnt = 0;
+	static int old_state = WORK_STA_NORMAL;
+	mainwin_mode_e mode;
 	int len;
 	int ret;
 
@@ -131,23 +127,33 @@ void MainWindow::showMainwindow()
 			}
 		}
 
-		if(showUserTick > 30)
-		{
-			mainwin_set_userInfo(-1, (char *)"welcome");
-		}
-		else
-		{
-			showUserTick ++;
-		}
-
 		videoArea->setPixmap(QPixmap::fromImage(videoQImage));
 		videoArea->show();
 	}
 
-	/* show other label */
-	userInfoLab->setText(userNameStr);
-	userInfoLab->show();
-	
+	if(mainwin_state != old_state)
+	{
+		if(mainwin_state == WORK_STA_ADDUSER)
+		{
+			mode = MAINWIN_MODE_ADDUSER;
+		}
+		else if(old_state==WORK_STA_ADDUSER && mainwin_state==WORK_STA_NORMAL)
+		{
+			mode = MAINWIN_MODE_ADDUSER_OK;
+		}
+		else if(mainwin_state == WORK_STA_RECOGN)
+		{
+			mode = MAINWIN_MODE_RECOGN;
+		}
+		else
+		{
+			mode = MAINWIN_MODE_NORAML;
+		}
+		
+		switch_mainwin_mode(mode);
+		old_state = mainwin_state;
+	}
+
 	timer->start(TIMER_INTERV_MS);
 	
 }
@@ -165,10 +171,64 @@ void MainWindow::addUser()
 	strncpy((char *)username, ba.data(), strlen(ba.data()));
 
 	main_mngr.work_state = WORK_STA_ADDUSER;
+	mainwin_change_worksta(WORK_STA_ADDUSER);
 
 	proto_0x04_switchWorkSta(main_mngr.socket_handle, main_mngr.work_state, username);
 }
 
+void MainWindow::textOnVideo_show_over()
+{
+	tmpShowTimer->stop();
+	textOnVideo->hide();
+	mainwin_state = WORK_STA_NORMAL;
+}
+
+int MainWindow::switch_mainwin_mode(mainwin_mode_e mode)
+{
+	int addface_x;
+
+	if(mode == MAINWIN_MODE_ADDUSER)
+	{
+		tmpShowTimer->stop();
+		addface_x = 200;
+		textOnVideo->setGeometry(addface_x, 0, VIDEO_AREA_ROW -addface_x, 50);
+		QTextCodec *codec = QTextCodec::codecForName("GBK");
+		textOnVideo->setText(codec->toUnicode(BEGIN_ADD_FACE_TEXT));
+		textOnVideo->show();
+	}
+	else if(mode == MAINWIN_MODE_ADDUSER_OK)
+	{
+		addface_x = 230;
+		textOnVideo->setGeometry(addface_x, 0, VIDEO_AREA_ROW -addface_x, 50);
+		QTextCodec *codec = QTextCodec::codecForName("GBK");
+		textOnVideo->setText(codec->toUnicode(SUCCESS_ADD_FACE_TEXT));
+		textOnVideo->show();
+		QObject::connect(tmpShowTimer, SIGNAL(timeout()), this, SLOT(textOnVideo_show_over()));
+		tmpShowTimer->start(TIMER_ADDUSER_OK_MS);
+	}
+	else if(mode == MAINWIN_MODE_RECOGN)
+	{
+		addface_x = 200;
+		textOnVideo->setGeometry(addface_x, 0, VIDEO_AREA_ROW -addface_x, 50);
+		QTextCodec *codec = QTextCodec::codecForName("GBK");
+		textOnVideo->setText(codec->toUnicode(userName));
+		textOnVideo->show();
+		QObject::connect(tmpShowTimer, SIGNAL(timeout()), this, SLOT(textOnVideo_show_over()));
+		tmpShowTimer->start(RECOGN_OK_DELAY_MS);
+	}
+	else
+	{
+	}
+
+	return 0;
+}
+
+int mainwin_change_worksta(int state)
+{
+	mainwindow->mainwin_state = state;
+
+	return 0;
+}
 
 /* id: -1, only show usr_name */
 int mainwin_set_userInfo(int id, char *usr_name)
@@ -177,14 +237,15 @@ int mainwin_set_userInfo(int id, char *usr_name)
 	if(usr_name == NULL)
 		return -1;
 
+	memset(mainwindow->userName, 0, sizeof(mainwindow->userName));
+	
 	if(id == -1)
 	{
-		mainwindow->userNameStr = QString("%1").arg(usr_name);
+		sprintf(mainwindow->userName, "%s", usr_name);
 	}
 	else
 	{
-		mainwindow->userNameStr = QString("[id:%1] name:%2").arg(id).arg(usr_name);
-		mainwindow->showUserTick = 0;
+		sprintf(mainwindow->userName, "%d: %s", id, usr_name);
 	}
 
 	return 0;
