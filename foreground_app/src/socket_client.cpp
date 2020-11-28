@@ -66,7 +66,57 @@ int client_0x04_switchWorkSta(uint8_t *data, int len, uint8_t *ack_data, int siz
 
 	main_mngr.work_state = (workstate_e)state;
 	
-	mainwin_change_worksta(state);
+	return 0;
+}
+
+int client_0x05_addUser(uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
+{
+	char username[USER_NAME_LEN] = {0};
+	int userCnt = 0;
+	int tmplen = 0;
+	int i;
+
+	/* user count */
+	memcpy(&userCnt, data, 4);
+	tmplen += 4;
+
+	/* user name */
+	printf("addUser: [%d]\n", userCnt);
+	for(i=0; i<userCnt; i++)
+	{
+		memcpy(username, data +tmplen, USER_NAME_LEN);
+		printf("[%d]name: %s\n", i, username);
+		mainwin_set_userList(1, 1, username);
+		tmplen += USER_NAME_LEN;
+	}
+
+	return 0;
+}
+
+int client_0x07_getUserList(uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
+{
+	char name[USER_NAME_LEN] = {0};
+	int userCnt = 0;
+	int tmplen = 0;
+	int ret;
+	int i;
+
+	/* return value */
+	memcpy(&ret, data, 4);
+	tmplen += 4;
+
+	/* user count */
+	memcpy(&userCnt, data +tmplen, 4);
+	tmplen += 4;
+
+	printf("getUserList: [%d]\n", userCnt);
+	for(i=0; i<userCnt; i++)
+	{
+		memcpy(name, data +tmplen, USER_NAME_LEN);
+		printf("[%d]name: %s\n", i, name);
+		mainwin_set_userList(1, 1, name);
+		tmplen += USER_NAME_LEN;
+	}
 
 	return 0;
 }
@@ -134,6 +184,7 @@ int client_0x11_faceDetect(uint8_t *data, int len, uint8_t *ack_data, int size, 
 int client_0x12_faceRecogn(uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
 {
 	int face_id = 0;
+	uint8_t confidence = 0;
 	char face_name[32] = {0};
 	int offset = 0;
 
@@ -141,13 +192,17 @@ int client_0x12_faceRecogn(uint8_t *data, int len, uint8_t *ack_data, int size, 
 	memcpy(&face_id, data +offset, 4);
 	offset += 4;
 
+	/* confidence */
+	confidence = data[offset];
+	offset += 1;
+
 	/* face name */
 	memcpy(face_name, data +offset, 32);
 	offset += 32;
 
-	printf("[recogn]: ****** face id: %d, face name: %s\n", face_id, face_name);
-	mainwin_set_userInfo(face_id, face_name);
-	mainwin_change_worksta(WORK_STA_RECOGN);
+	printf("[recogn]: ****** face id: %d, confid: %d, face name: %s\n", face_id, confidence, face_name);
+	mainwin_set_recognInfo(face_id, confidence, face_name);
+	main_mngr.work_state = WORK_STA_RECOGN;
 
 	return 0;
 }
@@ -238,7 +293,7 @@ int client_recvData(struct clientInfo *client)
 	return len;
 }
 
-int client_protoAnaly(struct clientInfo *client, uint8_t *pack, char len)
+int client_protoAnaly(struct clientInfo *client, uint8_t *pack, uint32_t pack_len)
 {
 	uint8_t seq = 0, cmd = 0;
 	int data_len = 0;
@@ -246,10 +301,12 @@ int client_protoAnaly(struct clientInfo *client, uint8_t *pack, char len)
 	int ack_len = 0;
 	int ret;
 
-	if(pack==NULL || len<=0)
+	if(pack==NULL || pack_len<=0)
 		return -1;
 
-	proto_analyPacket(pack, len, &seq, &cmd, &data_len, &data);
+	ret = proto_analyPacket(pack, pack_len, &seq, &cmd, &data_len, &data);
+	if(ret != 0)
+		return -1;
 	//printf("get proto cmd: 0x%02x\n", cmd);
 
 	switch(cmd)
@@ -266,6 +323,14 @@ int client_protoAnaly(struct clientInfo *client, uint8_t *pack, char len)
 
 		case 0x04:
 			ret = client_0x04_switchWorkSta(data, data_len, ack_buf, sizeof(ack_buf), &ack_len);
+			break;
+
+		case 0x05:
+			ret = client_0x05_addUser(data, data_len, ack_buf, sizeof(ack_buf), &ack_len);
+			break;
+
+		case 0x07:
+			ret = client_0x07_getUserList(data, data_len, ack_buf, sizeof(ack_buf), &ack_len);
 			break;
 
 		case 0x10:
@@ -346,6 +411,7 @@ void *socket_client_thread(void *arg)
 					client->state = STATE_CONNECTED;
 					main_mngr.socket_handle = client->protoHandle;
 					printf("********** socket connect successfully, handle: %d.\n", client->protoHandle);
+					proto_0x07_getUserList(client->protoHandle);
 				}
 				else
 				{

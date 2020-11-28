@@ -83,7 +83,6 @@ int proto_0x03_sendHeartBeat(int handle)
 int proto_0x04_switchWorkSta(int handle, workstate_e state, uint8_t *arg)
 {
 	uint8_t *protoBuf = NULL;
-	uint8_t data[36];
 	int data_len = 0;
 	int buf_size = 0;
 	int packLen = 0;
@@ -93,24 +92,95 @@ int proto_0x04_switchWorkSta(int handle, workstate_e state, uint8_t *arg)
 	if(protoObject[handle].send_func == NULL)
 		return -1;
 
-	memcpy(data, &state, 4);
+	memcpy(tmp_protoBuf +data_len, &state, 4);
 	data_len += 4;
 	
 	if(arg != NULL)
 	{
-		memcpy(data +data_len, arg, 32);
+		memcpy(tmp_protoBuf +data_len, arg, 32);
 		data_len += 32;
 	}
 
 	protoBuf = protoObject[handle].send_buf;
 	buf_size = protoObject[handle].buf_size;
-	proto_makeupPacket(0, 0x04, data_len, data, protoBuf, buf_size, &packLen);
+	proto_makeupPacket(0, 0x04, data_len, tmp_protoBuf, protoBuf, buf_size, &packLen);
 
 	protoObject[handle].send_func(protoObject[handle].fd, protoBuf, packLen);
 	
 	return 0;
 }
 
+int proto_0x05_addUser(int handle, int userCnt, char *userlist)
+{
+	uint8_t *protoBuf = NULL;
+	int data_len = 0;
+	int buf_size = 0;
+	int packLen = 0;
+
+	if(handle < 0 || handle >=MAX_PROTO_OBJ)
+		return -1;
+	if(protoObject[handle].send_func == NULL)
+		return -1;
+
+	memcpy(tmp_protoBuf +data_len, &userCnt, 4);
+	data_len += 4;
+
+	memcpy(tmp_protoBuf +data_len, userlist, userCnt*USER_NAME_LEN);
+	data_len += userCnt*USER_NAME_LEN;
+
+	protoBuf = protoObject[handle].send_buf;
+	buf_size = protoObject[handle].buf_size;
+	proto_makeupPacket(0, 0x05, data_len, tmp_protoBuf, protoBuf, buf_size, &packLen);
+
+	protoObject[handle].send_func(protoObject[handle].fd, protoBuf, packLen);
+	
+	return 0;
+}
+
+int proto_0x06_deleteUser(int handle, int userCnt, char *userlist)
+{
+	uint8_t *protoBuf = NULL;
+	int data_len = 0;
+	int buf_size = 0;
+	int packLen = 0;
+
+	if(handle < 0 || handle >=MAX_PROTO_OBJ)
+		return -1;
+	if(protoObject[handle].send_func == NULL)
+		return -1;
+
+	memcpy(tmp_protoBuf +data_len, &userCnt, 4);
+	data_len += 4;
+
+	memcpy(tmp_protoBuf +data_len, userlist, userCnt*USER_NAME_LEN);
+	data_len += userCnt*USER_NAME_LEN;
+
+	protoBuf = protoObject[handle].send_buf;
+	buf_size = protoObject[handle].buf_size;
+	proto_makeupPacket(0, 0x06, data_len, tmp_protoBuf, protoBuf, buf_size, &packLen);
+
+	protoObject[handle].send_func(protoObject[handle].fd, protoBuf, packLen);
+	
+	return 0;
+}
+
+int proto_0x07_getUserList(int handle)
+{
+	uint8_t *protoBuf = NULL;
+	int buf_size = 0;
+	int packLen = 0;
+
+	if(handle < 0 || handle >=MAX_PROTO_OBJ)
+		return -1;
+
+	protoBuf = protoObject[handle].send_buf;
+	buf_size = protoObject[handle].buf_size;
+	proto_makeupPacket(0, 0x07, 0, NULL, protoBuf, buf_size, &packLen);
+
+	protoObject[handle].send_func(protoObject[handle].fd, protoBuf, packLen);
+
+	return 0;
+}
 
 int proto_0x10_getOneFrame(int handle)
 {
@@ -167,7 +237,7 @@ int proto_0x11_sendFaceDetect(int handle, uint8_t count, struct Rect_params *fac
 	return 0;
 }
 
-int proto_0x12_sendFaceRecogn(int handle, int face_id, char *face_name)
+int proto_0x12_sendFaceRecogn(int handle, int face_id, uint8_t confid, char *face_name)
 {
 	uint8_t *protoBuf = NULL;
 	int buf_size = 0;
@@ -182,6 +252,10 @@ int proto_0x12_sendFaceRecogn(int handle, int face_id, char *face_name)
 	/* face id */
 	memcpy(tmp_protoBuf +bufLen, &face_id, 4);
 	bufLen += 4;
+
+	/* confidence */
+	tmp_protoBuf[bufLen] = confid;
+	bufLen += 1;
 
 	/* face name */
 	memcpy(tmp_protoBuf +bufLen, face_name, 32);
@@ -256,7 +330,9 @@ int proto_analyPacket(uint8_t *pack, int packLen, uint8_t *seq, \
 	memcpy(len, pack +PROTO_LEN_OFFSET, 4);
 
 	if(*len +PROTO_PACK_MIN_LEN != packLen)
+	{
 		return -1;
+	}
 
 	if(*len > 0)
 		*data = pack + PROTO_DATA_OFFSET;

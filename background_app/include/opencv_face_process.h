@@ -13,6 +13,11 @@ using namespace std;
 using namespace cv;
 using namespace cv::face;
 
+
+#define FACE_RECOGN_THRES_00		125.0	// LBPH设定阈值/相似度0
+#define FACE_RECOGN_THRES_80		85.0	// LBPH识别过滤阈值/相似度80
+#define FACE_RECOGN_THRES_100		55.0	// LBPH相似度100阈值
+
 class face_detect
 {
 public:
@@ -43,6 +48,7 @@ public:
 	int recogn_state;	// 0-invalid 1-valid
 };
 
+int face_database_retrain(void);
 int opencv_put_frame_detect(uint8_t *buf, uint32_t len);
 int opencv_get_frame_detect(uint8_t *buf, uint32_t size);
 int start_face_process_task(void);

@@ -65,7 +65,6 @@ int server_0x03_heartbeat(uint8_t *data, int len, uint8_t *ack_data, int size, i
 
 int server_0x04_switchWorkSta(uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
 {
-	uint8_t arg[32];
 	int state = 0;
 	int tmplen = 0;
 
@@ -73,17 +72,78 @@ int server_0x04_switchWorkSta(uint8_t *data, int len, uint8_t *ack_data, int siz
 	memcpy(&state, data, 4);
 	tmplen += 4;
 
-	memcpy(arg, data +tmplen, 32);
+	memcpy(user_mngr_unit.newuser, data +tmplen, 32);
 	tmplen += 4;
 
 	/* create user dir */
 	memset(user_mngr_unit.add_userdir, 0, sizeof(user_mngr_unit.add_userdir));
-	user_create_dir((char *)FACES_LIB_PATH, (char *)arg, user_mngr_unit.add_userdir);
+	user_create_dir((char *)FACES_LIB_PATH, user_mngr_unit.newuser, user_mngr_unit.add_userdir);
 	user_mngr_unit.add_index = 0;
 
 	main_mngr.work_state = (workstate_e)state;
 	
-	printf("%s: get work state: %d, name: %s\n", __FUNCTION__, state, arg);
+	printf("%s: get work state: %d, name: %s\n", __FUNCTION__, state, user_mngr_unit.newuser);
+
+	return 0;
+}
+
+int client_0x06_deleteUser(uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
+{
+	char username[USER_NAME_LEN] = {0};
+	int userCnt = 0;
+	int tmplen = 0;
+	int i;
+
+	/* user count */
+	memcpy(&userCnt, data, 4);
+	tmplen += 4;
+
+	/* user name */
+	printf("deleteUser: [%d]\n", userCnt);
+	for(i=0; i<userCnt; i++)
+	{
+		memcpy(username, data +tmplen, USER_NAME_LEN);
+		printf("[%d]name: %s\n", i, username);
+		user_delete(1, username);
+		tmplen += USER_NAME_LEN;
+	}
+
+	/* retrain face data base */
+	face_database_retrain();
+
+	return 0;
+}
+
+int server_0x07_getUserList(uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
+{
+	int userCnt = 0;
+	int tmplen = 0;
+	int ret = 0;
+	int i;
+
+	/* request part */
+	// NULL
+
+	/* ack part */
+	/* return value */
+	ret = 0;
+	memcpy(ack_data, &ret, 4);
+	tmplen += 4;
+	
+	/* user count */
+	userCnt = user_mngr_unit.userCnt;
+	memcpy(ack_data +tmplen, &userCnt, 4);
+	tmplen += 4;
+
+	/* user name */
+	for(i=0; i<userCnt; i++)
+	{
+		memcpy(ack_data +tmplen, user_mngr_unit.userInfo[i].name, 32);
+		tmplen += 32;
+	}
+
+	if(ack_len != NULL)
+		*ack_len = tmplen;
 
 	return 0;
 }
@@ -208,7 +268,9 @@ int server_protoAnaly(struct clientInfo *client, uint8_t *pack, uint32_t pack_le
 	if(pack==NULL || pack_len<=0)
 		return -1;
 
-	proto_analyPacket(pack, pack_len, &seq, &cmd, &data_len, &data);
+	ret = proto_analyPacket(pack, pack_len, &seq, &cmd, &data_len, &data);
+	if(ret != 0)
+		return -1;
 	//printf("%s: cmd: 0x%02x, seq: %d, pack_len: %d, data_len: %d\n", __FUNCTION__, cmd, seq, pack_len, data_len);
 
 	switch(cmd)
@@ -225,6 +287,14 @@ int server_protoAnaly(struct clientInfo *client, uint8_t *pack, uint32_t pack_le
 
 		case 0x04:
 			ret = server_0x04_switchWorkSta(data, data_len, ack_buf, sizeof(ack_buf), &ack_len);
+			break;
+
+		case 0x06:
+			ret = client_0x06_deleteUser(data, data_len, ack_buf, sizeof(ack_buf), &ack_len);
+			break;
+
+		case 0x07:
+			ret = server_0x07_getUserList(data, data_len, ack_buf, sizeof(ack_buf), &ack_len);
 			break;
 
 		case 0x10:

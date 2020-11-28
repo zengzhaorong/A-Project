@@ -4,6 +4,9 @@
 #include "type.h"
 
 
+#define USER_NAME_LEN		32
+
+
 typedef enum {
 	WORK_STA_NORMAL,		// normal work
 	WORK_STA_ADDUSER,		// add user

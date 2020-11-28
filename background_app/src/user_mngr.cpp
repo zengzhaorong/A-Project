@@ -10,6 +10,81 @@
 
 struct userMngr_Stru		user_mngr_unit;
 
+// 删除非空目录
+int remove_dir(const char *dir)
+{
+    char cur_dir[] = ".";
+    char up_dir[] = "..";
+    char dir_name[128];
+    DIR *dirp;
+    struct dirent *dp;
+    struct stat dir_stat;
+
+    // 参数传递进来的目录不存在，直接返回
+    if ( 0 != access(dir, F_OK) ) {
+        return 0;
+    }
+
+    // 获取目录属性失败，返回错误
+    if ( 0 > stat(dir, &dir_stat) ) {
+        perror("get directory stat error");
+        return -1;
+    }
+
+    if ( S_ISREG(dir_stat.st_mode) ) {  // 普通文件直接删除
+        remove(dir);
+    } else if ( S_ISDIR(dir_stat.st_mode) ) {   // 目录文件，递归删除目录中内容
+        dirp = opendir(dir);
+        while ( (dp=readdir(dirp)) != NULL ) {
+            // 忽略 . 和 ..
+            if ( (0 == strcmp(cur_dir, dp->d_name)) || (0 == strcmp(up_dir, dp->d_name)) ) {
+                continue;
+            }
+
+			memset(dir_name, 0, sizeof(dir_name));
+			strcat(dir_name, dir);
+			strcat(dir_name, "/");
+			strcat(dir_name, dp->d_name);
+            //sprintf(dir_name, "%s/%s", dir, dp->d_name);
+            remove_dir(dir_name);   // 递归调用
+        }
+        closedir(dirp);
+
+        rmdir(dir);     // 删除空目录
+    } else {
+        perror("unknow file type!");    
+    }
+
+    return 0;
+}
+
+int user_delete(int userCnt, char *username)
+{
+	struct userMngr_Stru *user_mngr = &user_mngr_unit;
+	char dir_name[64];
+	int i, j;
+
+	for(i=0; i<userCnt; i++)
+	{
+		for(j=0; j<user_mngr->userCnt; j++)
+		{
+			if(0 == memcmp(username+i*USER_NAME_LEN, user_mngr->userInfo[j].name, USER_NAME_LEN))
+			{
+				break;
+			}
+		}
+		if(j == user_mngr->userCnt)	// not found
+		{
+			continue;
+		}
+
+		memset(dir_name, 0, sizeof(dir_name));
+		sprintf(dir_name, "%s/%d_%s", FACES_LIB_PATH, user_mngr->userInfo[j].id, user_mngr->userInfo[j].name);
+		remove_dir(dir_name);
+	}
+
+	return 0;
+}
 
 // 获取用户名单列表, ppUserList输出指针, Count数量
 /* if ppUserList is not null, it will free it and malloc new for it */
@@ -113,14 +188,14 @@ int user_get_userList(char *faces_lib, struct userInfo_Stru **ppUserList, int *C
 		if(i == 10)
 			continue; 
 
-		// get seq
+		// get id
 		memset(&tmpUserInfo, 0, sizeof(tmpUserInfo));
-		tmpUserInfo.seq = atoi(label);
+		tmpUserInfo.id = atoi(label);
 		strncpy(tmpUserInfo.name, dirp->d_name + i+1, strlen(dirp->d_name)-(i+1));
 
 		memcpy(pUserMem+dirNum, &tmpUserInfo, sizeof(struct userInfo_Stru));
 		dirNum ++;
-//		printf("seq: %d\t name: %s\n", (pUserMem+dirNum)->seq , (pUserMem+dirNum)->name);
+//		printf("id: %d\t name: %s\n", (pUserMem+dirNum)->id , (pUserMem+dirNum)->name);
 	}
 
 	closedir(dir);
@@ -406,13 +481,13 @@ int user_mngr_init(void)
 	struct userMngr_Stru *user_mngr = &user_mngr_unit;
 	int ret;
 
-	user_mngr->pstUserInfo = NULL;
+	user_mngr->userInfo = NULL;
 	user_mngr->userCnt = 0;
 
-	user_get_userList((char *)FACES_LIB_PATH, &user_mngr->pstUserInfo, &user_mngr->userCnt);
+	user_get_userList((char *)FACES_LIB_PATH, &user_mngr->userInfo, &user_mngr->userCnt);
 	for(int i=0; i<user_mngr->userCnt; i++)
 	{
-		printf("[%d].seq=%d, name: %s\n", i, user_mngr->pstUserInfo[i].seq, user_mngr->pstUserInfo[i].name);
+		printf("[%d].id=%d, name: %s\n", i, user_mngr->userInfo[i].id, user_mngr->userInfo[i].name);
 	}
 
 	ret = user_create_csv((char *)FACES_LIB_PATH, (char *)FACES_CSV_FILE);

@@ -8,6 +8,17 @@
 #include <QPushButton>
 #include <QLineEdit>
 #include <QTextCodec>
+#include <QComboBox>
+#include <QMessageBox>
+
+/* C++ include C */
+#ifdef __cplusplus
+extern "C" {
+#endif
+#include "public.h"
+#ifdef __cplusplus
+}
+#endif
 
 
 #define MAIN_WIN_ROW			900
@@ -41,6 +52,7 @@ public:
 private slots:
 	void showMainwindow();
 	void addUser();
+	void deleteUser();
 	void textOnVideo_show_over();
 	
 public:
@@ -53,22 +65,26 @@ private:
 	QTimer 			*timer;				// 刷新显示定时器
 	QLineEdit		*userNameEdit;		// edit add user name
 	QPushButton 	*addUserBtn;		// add user button
+	QPushButton 	*delUserBtn;		// delete user button
 
 	unsigned char 	*video_buf;
 	unsigned int 	buf_size;
 	
 public:
+	QComboBox		*userListBox;		// user list box
 	QLabel 			*textOnVideo;		// text show on video
 	QTimer 			*tmpShowTimer;		// control temple show, few second
-	char 			userName[64];
-	int 			mainwin_state;
+	int 			face_id;
+	char 			userRecogn[USER_NAME_LEN];
+	uint8_t			confidence;
+	workstate_e		*sys_state;			// is system work state (main_mngr.work_state)
+	int 			mainwin_mode;
 	int 			stateTick;			// 
 };
 
+int mainwin_set_userList(int flag, int userCnt, char *usr_name);
 
-int mainwin_change_worksta(int state);
-
-int mainwin_set_userInfo(int id, char *usr_name);
+int mainwin_set_recognInfo(int id, uint8_t confid, char *usr_name);
 
 int start_mainwindow_task(void);
 

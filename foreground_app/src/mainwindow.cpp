@@ -61,6 +61,17 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     connect(addUserBtn, SIGNAL(clicked()), this, SLOT(addUser()));
 	addUserBtn->setGeometry(810, 230, 80, 40);
 
+	/* user list box */
+	userListBox = new QComboBox(mainWindow);
+	userListBox->setGeometry(650, 290, 150, 40);
+	userListBox->setEditable(true);
+
+	/* delete user button */
+	delUserBtn = new QPushButton(mainWindow);
+	delUserBtn->setText(tr("Delete user"));
+    connect(delUserBtn, SIGNAL(clicked()), this, SLOT(deleteUser()));
+	delUserBtn->setGeometry(810, 290, 80, 40);
+
 	buf_size = VIDEO_AREA_ROW*VIDEO_AREA_COL*3;
 	video_buf = (unsigned char *)malloc(buf_size);
 	if(video_buf == NULL)
@@ -76,7 +87,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 
 	tmpShowTimer = new QTimer(this);
 
-	mainwin_state = WORK_STA_NORMAL;
+	sys_state = &main_mngr.work_state;
 
 }
 
@@ -131,17 +142,17 @@ void MainWindow::showMainwindow()
 		videoArea->show();
 	}
 
-	if(mainwin_state != old_state)
+	if(*sys_state != old_state)
 	{
-		if(mainwin_state == WORK_STA_ADDUSER)
+		if(*sys_state == WORK_STA_ADDUSER)
 		{
 			mode = MAINWIN_MODE_ADDUSER;
 		}
-		else if(old_state==WORK_STA_ADDUSER && mainwin_state==WORK_STA_NORMAL)
+		else if(old_state==WORK_STA_ADDUSER && *sys_state==WORK_STA_NORMAL)
 		{
 			mode = MAINWIN_MODE_ADDUSER_OK;
 		}
-		else if(mainwin_state == WORK_STA_RECOGN)
+		else if(*sys_state == WORK_STA_RECOGN)
 		{
 			mode = MAINWIN_MODE_RECOGN;
 		}
@@ -151,7 +162,7 @@ void MainWindow::showMainwindow()
 		}
 		
 		switch_mainwin_mode(mode);
-		old_state = mainwin_state;
+		old_state = *sys_state;
 	}
 
 	timer->start(TIMER_INTERV_MS);
@@ -162,7 +173,7 @@ void MainWindow::addUser()
 {
 	QString editStr;
 	QByteArray ba;
-	uint8_t username[32];
+	uint8_t username[USER_NAME_LEN];
 
 	/* get QLineEdit input text */
 	editStr = userNameEdit->text();
@@ -171,21 +182,48 @@ void MainWindow::addUser()
 	strncpy((char *)username, ba.data(), strlen(ba.data()));
 
 	main_mngr.work_state = WORK_STA_ADDUSER;
-	mainwin_change_worksta(WORK_STA_ADDUSER);
 
 	proto_0x04_switchWorkSta(main_mngr.socket_handle, main_mngr.work_state, username);
+}
+
+void MainWindow::deleteUser()
+{
+	QString qstrUsrName;
+	char user_name[USER_NAME_LEN] = {0};
+	QByteArray ba;
+
+	qstrUsrName = userListBox->currentText();
+	ba = qstrUsrName.toLatin1();
+	strncpy(user_name, ba.data(), strlen(ba.data()));
+	if(strlen(user_name) <= 0)
+		return ;
+
+	if(QMessageBox::warning(this,"Warning", "Delete "+userListBox->currentText()+" ?",QMessageBox::Yes,QMessageBox::No)==QMessageBox::No)
+	{
+		return ;
+	}
+
+	proto_0x06_deleteUser(main_mngr.socket_handle, 1, user_name);
+	
+	mainwin_set_userList(0, 1, user_name);
+		
 }
 
 void MainWindow::textOnVideo_show_over()
 {
 	tmpShowTimer->stop();
 	textOnVideo->hide();
-	mainwin_state = WORK_STA_NORMAL;
+	*sys_state = WORK_STA_NORMAL;
+	mainwin_mode = MAINWIN_MODE_NORAML;
 }
 
+/* switch mainwindow display mode: normal, add user, add user ok, recognzie ... */
 int MainWindow::switch_mainwin_mode(mainwin_mode_e mode)
 {
+	char showText[128] = {0};
 	int addface_x;
+
+	mainwin_mode = mode;
 
 	if(mode == MAINWIN_MODE_ADDUSER)
 	{
@@ -211,7 +249,8 @@ int MainWindow::switch_mainwin_mode(mainwin_mode_e mode)
 		addface_x = 200;
 		textOnVideo->setGeometry(addface_x, 0, VIDEO_AREA_ROW -addface_x, 50);
 		QTextCodec *codec = QTextCodec::codecForName("GBK");
-		textOnVideo->setText(codec->toUnicode(userName));
+		sprintf(showText, "%d: %s - %d%c", face_id, userRecogn, confidence, '%');
+		textOnVideo->setText(codec->toUnicode(showText));
 		textOnVideo->show();
 		QObject::connect(tmpShowTimer, SIGNAL(timeout()), this, SLOT(textOnVideo_show_over()));
 		tmpShowTimer->start(RECOGN_OK_DELAY_MS);
@@ -223,30 +262,53 @@ int MainWindow::switch_mainwin_mode(mainwin_mode_e mode)
 	return 0;
 }
 
-int mainwin_change_worksta(int state)
+/* flag: 0-delete, 1-add */
+int mainwin_set_userList(int flag, int userCnt, char *usr_name)
 {
-	mainwindow->mainwin_state = state;
+	int index;
+	int i;
+
+	if(usr_name == NULL)
+		return -1;
+
+	for(i=0; i<userCnt; i++)
+	{
+		if(flag == 0)
+		{
+			/* delete user */
+			index = mainwindow->userListBox->currentIndex();
+			mainwindow->userListBox->removeItem(index);
+		}
+		else
+		{
+			/* add user */
+			mainwindow->userListBox->addItem(usr_name +i*USER_NAME_LEN);
+		}
+	}
 
 	return 0;
 }
 
 /* id: -1, only show usr_name */
-int mainwin_set_userInfo(int id, char *usr_name)
+int mainwin_set_recognInfo(int id, uint8_t confid, char *usr_name)
 {
 
 	if(usr_name == NULL)
 		return -1;
 
-	memset(mainwindow->userName, 0, sizeof(mainwindow->userName));
+	memset(mainwindow->userRecogn, 0, sizeof(mainwindow->userRecogn));
 	
 	if(id == -1)
 	{
-		sprintf(mainwindow->userName, "%s", usr_name);
+		sprintf(mainwindow->userRecogn, "%s", usr_name);
 	}
 	else
 	{
-		sprintf(mainwindow->userName, "%d: %s", id, usr_name);
+		mainwindow->face_id = id;
+		strncpy(mainwindow->userRecogn, usr_name, strlen(usr_name));
 	}
+
+	mainwindow->confidence = confid;
 
 	return 0;
 }

@@ -104,7 +104,7 @@ int face_recogn::face_recogn_init(void)
     //this->mod_LBPH->write("MyFaceLBPHModel.xml");  
 	//this->mod_LBPH->read("MyFaceLBPHModel.xml");
 
-	this->mod_LBPH->setThreshold(FACE_RECO_THRES);
+	this->mod_LBPH->setThreshold(FACE_RECOGN_THRES);
 
 	recogn_state = 1;
 	printf("%s: --------- Face model train succeed ---------\n", __FUNCTION__);
@@ -239,10 +239,10 @@ int face_database_retrain(void)
     vector<int> labels;
 	int ret;
 
-	user_get_userList((char *)FACES_LIB_PATH, &user_mngr->pstUserInfo, &user_mngr->userCnt);
+	user_get_userList((char *)FACES_LIB_PATH, &user_mngr->userInfo, &user_mngr->userCnt);
 	for(int i=0; i<user_mngr->userCnt; i++)
 	{
-		printf("[%d].seq=%d, name: %s\n", i, user_mngr->pstUserInfo[i].seq, user_mngr->pstUserInfo[i].name);
+		printf("[%d].id=%d, name: %s\n", i, user_mngr->userInfo[i].id, user_mngr->userInfo[i].name);
 	}
 
 	ret = user_create_csv((char *)FACES_LIB_PATH, (char *)FACES_CSV_FILE);
@@ -401,6 +401,7 @@ void *opencv_face_detect_thread(void *arg)
 				if(user_mngr_unit.add_index >= FACE_CNT_PER_USER)
 				{
 					proto_0x04_switchWorkSta(main_mngr.socket_handle, WORK_STA_NORMAL, NULL);
+					proto_0x05_addUser(main_mngr.socket_handle, 1, user_mngr_unit.newuser);
 					main_mngr.work_state = WORK_STA_NORMAL;
 					face_recogn_unit.recogn_state = 0;
 					ret = face_database_retrain();
@@ -421,7 +422,7 @@ void *opencv_face_detect_thread(void *arg)
 	return NULL;
 }
 
-int opencv_face_recogn(Mat &face_mat, int *face_id)
+int opencv_face_recogn(Mat &face_mat, int *face_id, uint8_t *confid)
 {
 	Mat recogn_mat;
 	int predict;
@@ -449,7 +450,26 @@ int opencv_face_recogn(Mat &face_mat, int *face_id)
 		return -1;
 	
 	*face_id = predict;
-	printf("[recogn]*** predict: %d, confidence: %f\n", predict, confidence);
+
+	/* calculate confidence */
+	if(confidence < FACE_RECOGN_THRES_100)
+	{
+		*confid = 100;
+	}
+	else if(confidence < FACE_RECOGN_THRES_80)
+	{
+		*confid = 80 +(FACE_RECOGN_THRES_80 -confidence)*20/(FACE_RECOGN_THRES_80 -FACE_RECOGN_THRES_100);
+	}
+	else if(confidence < FACE_RECOGN_THRES_00)
+	{
+		*confid = (FACE_RECOGN_THRES_00 -confidence)*80 /(FACE_RECOGN_THRES_00 -FACE_RECOGN_THRES_80);
+	}
+	else
+	{
+		*confid = 0;
+	}
+	
+	printf("[recogn]*** predict: %d, confidence: %f = %d%%\n", predict, confidence, *confid);
 	
 	return 0;
 }
@@ -459,6 +479,7 @@ void *opencv_face_recogn_thread(void *arg)
 	class face_recogn *recogn_unit = &face_recogn_unit;
 	Mat face_mat;
 	int face_id;
+	uint8_t confidence;
 	int ret;
 	int i;
 
@@ -482,16 +503,16 @@ void *opencv_face_recogn_thread(void *arg)
 			continue;
 		}
 
-		ret = opencv_face_recogn(face_mat, &face_id);
+		ret = opencv_face_recogn(face_mat, &face_id, &confidence);
 		if(ret == 0)
 		{
 			for(i=0; i<user_mngr_unit.userCnt; i++)
 			{
-				if(user_mngr_unit.pstUserInfo[i].seq == face_id)
+				if(user_mngr_unit.userInfo[i].id == face_id)
 					break;
 			}
-			proto_0x12_sendFaceRecogn(main_mngr.socket_handle, face_id, user_mngr_unit.pstUserInfo[i].name);
-			sleep(RECOGN_OK_DELAY_MS/1000 +3);	// more 3 second
+			proto_0x12_sendFaceRecogn(main_mngr.socket_handle, face_id, confidence, user_mngr_unit.userInfo[i].name);
+			sleep(RECOGN_OK_DELAY_MS/1000 +1);	// more 1 second
 		}
 	}
 
