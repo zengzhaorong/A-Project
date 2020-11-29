@@ -31,8 +31,10 @@ extern "C" {
 
 #define WIN_BACKGRD_IMG			"resource/gdut.jpg"		// 界面背景图
 
-#define BEGIN_ADD_FACE_TEXT		"录入人脸：请正对摄像头"				// support Chinese
-#define SUCCESS_ADD_FACE_TEXT	"录入人脸成功"				// support Chinese
+/* tips text, support Chinese */
+#define BEGIN_ADD_FACE_TEXT		"录入人脸：请正对摄像头"
+#define SUCCESS_ADD_FACE_TEXT	"录入人脸成功"
+#define SUCCESS_RECOGN_TEXT		"识别成功"			// “签到成功”、“欢迎回家”
 
 typedef enum {
 	MAINWIN_MODE_NORAML,

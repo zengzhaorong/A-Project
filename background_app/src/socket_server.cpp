@@ -77,7 +77,7 @@ int server_0x04_switchWorkSta(uint8_t *data, int len, uint8_t *ack_data, int siz
 
 	/* create user dir */
 	memset(user_mngr_unit.add_userdir, 0, sizeof(user_mngr_unit.add_userdir));
-	user_create_dir((char *)FACES_LIB_PATH, user_mngr_unit.newuser, user_mngr_unit.add_userdir);
+	user_create_dir((char *)FACES_DATABASE_PATH, user_mngr_unit.newuser, user_mngr_unit.add_userdir);
 	user_mngr_unit.add_index = 0;
 
 	main_mngr.work_state = (workstate_e)state;
@@ -109,7 +109,7 @@ int client_0x06_deleteUser(uint8_t *data, int len, uint8_t *ack_data, int size, 
 	}
 
 	/* retrain face data base */
-	face_database_retrain();
+	face_database_train();
 
 	return 0;
 }

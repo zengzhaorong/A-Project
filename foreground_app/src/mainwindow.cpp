@@ -246,10 +246,10 @@ int MainWindow::switch_mainwin_mode(mainwin_mode_e mode)
 	}
 	else if(mode == MAINWIN_MODE_RECOGN)
 	{
-		addface_x = 200;
+		addface_x = 180;
 		textOnVideo->setGeometry(addface_x, 0, VIDEO_AREA_ROW -addface_x, 50);
 		QTextCodec *codec = QTextCodec::codecForName("GBK");
-		sprintf(showText, "%d: %s - %d%c", face_id, userRecogn, confidence, '%');
+		sprintf(showText, "%s: %s - %d%c", SUCCESS_RECOGN_TEXT, userRecogn, confidence, '%');
 		textOnVideo->setText(codec->toUnicode(showText));
 		textOnVideo->show();
 		QObject::connect(tmpShowTimer, SIGNAL(timeout()), this, SLOT(textOnVideo_show_over()));

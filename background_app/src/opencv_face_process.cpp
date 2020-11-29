@@ -81,24 +81,17 @@ int face_recogn::face_recogn_init(void)
 	ret = sem_init(&this->recogn_sem, 0, 0);
 	if(ret != 0)
 	{
-		printf("sem_init recogn_sem failed !\n");
-		return -1;
-	}
-
-	recogn_state = 0;
-
-	fdb_csv = string(FACES_CSV_FILE);
-
-	user_read_csv(fdb_csv, images, labels, ';');
-
-	if(images.size() <= 1)
-	{
-		printf("images size: %d, not support !\n", (int)images.size());
 		return -1;
 	}
 
 	this->mod_LBPH = LBPHFaceRecognizer::create();
-	this->mod_LBPH->train(images, labels);
+	recogn_state = 0;
+
+	ret = face_database_train();
+	if(ret < 0)
+	{
+		return -1;
+	}
 
 	/* wether save model file */
     //this->mod_LBPH->write("MyFaceLBPHModel.xml");  
@@ -231,7 +224,7 @@ int face_resize_save(Mat& faceImg, char *path, int index)
 	return 0;
 }
 
-int face_database_retrain(void)
+int face_database_train(void)
 {
 	struct userMngr_Stru *user_mngr = &user_mngr_unit;
 	string fdb_csv;
@@ -239,31 +232,40 @@ int face_database_retrain(void)
     vector<int> labels;
 	int ret;
 
-	user_get_userList((char *)FACES_LIB_PATH, &user_mngr->userInfo, &user_mngr->userCnt);
+	ret = user_get_userList((char *)FACES_DATABASE_PATH, &user_mngr->userInfo, &user_mngr->userCnt);
+	if(ret < 0)
+		goto ERR_TRAIN;
+
 	for(int i=0; i<user_mngr->userCnt; i++)
 	{
 		printf("[%d].id=%d, name: %s\n", i, user_mngr->userInfo[i].id, user_mngr->userInfo[i].name);
 	}
 
-	ret = user_create_csv((char *)FACES_LIB_PATH, (char *)FACES_CSV_FILE);
+	ret = user_create_csv((char *)FACES_DATABASE_PATH, (char *)FACES_DB_CSV_FILE);
 	if(ret != 0)
-		return -1;
+		goto ERR_TRAIN;
 
-	fdb_csv = string(FACES_CSV_FILE);
+	fdb_csv = string(FACES_DB_CSV_FILE);
 
-	user_read_csv(fdb_csv, images, labels, ';');
-
-	if(images.size() <= 1)
+	ret = user_read_csv(fdb_csv, images, labels, ';');
+	if(ret<0 || images.size() <= 0)
 	{
-		printf("images size: %d, not support !\n", (int)images.size());
-		return -1;
+		printf("read csv: No images !\n");
+		goto ERR_TRAIN;
 	}
 
 	face_recogn_unit.mod_LBPH->train(images, labels);
+
+	face_recogn_unit.mod_LBPH->setThreshold(FACE_RECOGN_THRES);
 	
 	printf("face_database_retrain successfully.\n");
 
 	return 0;
+
+ERR_TRAIN	:
+	face_recogn_unit.recogn_state = 0;
+
+	return -1;
 }
 
 int opencv_face_detect( Mat& img, CascadeClassifier& cascade,
@@ -404,7 +406,7 @@ void *opencv_face_detect_thread(void *arg)
 					proto_0x05_addUser(main_mngr.socket_handle, 1, user_mngr_unit.newuser);
 					main_mngr.work_state = WORK_STA_NORMAL;
 					face_recogn_unit.recogn_state = 0;
-					ret = face_database_retrain();
+					ret = face_database_train();
 					if(ret == 0)
 					{
 						face_recogn_unit.recogn_state = 1;

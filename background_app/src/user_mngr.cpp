@@ -79,7 +79,7 @@ int user_delete(int userCnt, char *username)
 		}
 
 		memset(dir_name, 0, sizeof(dir_name));
-		sprintf(dir_name, "%s/%d_%s", FACES_LIB_PATH, user_mngr->userInfo[j].id, user_mngr->userInfo[j].name);
+		sprintf(dir_name, "%s/%d_%s", FACES_DATABASE_PATH, user_mngr->userInfo[j].id, user_mngr->userInfo[j].name);
 		remove_dir(dir_name);
 	}
 
@@ -87,7 +87,7 @@ int user_delete(int userCnt, char *username)
 }
 
 // 获取用户名单列表, ppUserList输出指针, Count数量
-/* if ppUserList is not null, it will free it and malloc new for it */
+/* if ppUserList is not null, it will be free and malloc new for it */
 int user_get_userList(char *faces_lib, struct userInfo_Stru **ppUserList, int *Count)
 {
 	struct stat statbuf;
@@ -359,13 +359,15 @@ int user_create_csv(char *dir_path, char *csv_file)
 }
 
 
-void user_read_csv(const string& filename, vector<Mat>& images, vector<int>& labels, char separator = ';') 
+int user_read_csv(const string& filename, vector<Mat>& images, vector<int>& labels, char separator = ';') 
 {
     std::ifstream file(filename.c_str(), ifstream::in);
-    if (!file) {
-        string error_message = "No valid input file was given, please check the given filename.";
-        CV_Error(Error::StsBadArg, error_message);
+    if (!file) 
+	{
+        printf("No csv file!");
+		return -1;
     }
+	
     string line, path, classlabel;
     while (getline(file, line)) {
         stringstream liness(line);
@@ -376,6 +378,8 @@ void user_read_csv(const string& filename, vector<Mat>& images, vector<int>& lab
             labels.push_back(atoi(classlabel.c_str()));
         }
     }
+
+	return 0;
 }
 
 /* check dir begin with "%d_" exist or not */
@@ -429,16 +433,19 @@ int user_create_dir(char *base_dir, char *usr_name, char *usr_dir)
 	if(base_dir==NULL || usr_name==NULL || usr_dir==NULL)
 		return -1;
 
+	/* check if dir or not */
 	ret = lstat(base_dir, &statbuf);
 	if(ret < 0)
 	{
-		return -1;
+		ret = mkdir(base_dir, 0777);
+		if(ret != 0)
+			return -1;
 	}
-
-	/* check if dir or not */
-	if(S_ISDIR(statbuf.st_mode) != 1)
+	else if(S_ISDIR(statbuf.st_mode) != 1)
 	{
-		return -1;
+		ret = mkdir(base_dir, 0777);
+		if(ret != 0)
+			return -1;
 	}
 
 	/* find index not use */
@@ -479,23 +486,9 @@ int user_create_dir(char *base_dir, char *usr_name, char *usr_dir)
 int user_mngr_init(void)
 {
 	struct userMngr_Stru *user_mngr = &user_mngr_unit;
-	int ret;
 
 	user_mngr->userInfo = NULL;
 	user_mngr->userCnt = 0;
-
-	user_get_userList((char *)FACES_LIB_PATH, &user_mngr->userInfo, &user_mngr->userCnt);
-	for(int i=0; i<user_mngr->userCnt; i++)
-	{
-		printf("[%d].id=%d, name: %s\n", i, user_mngr->userInfo[i].id, user_mngr->userInfo[i].name);
-	}
-
-	ret = user_create_csv((char *)FACES_LIB_PATH, (char *)FACES_CSV_FILE);
-	if(ret != 0)
-		return -1;
-	
-	printf("create faces csv file successfully.\n");
-
 
 	return 0;
 }

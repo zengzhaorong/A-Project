@@ -17,8 +17,8 @@ extern "C" {
 }
 #endif
 
-#define FACES_LIB_PATH		"faces"
-#define FACES_CSV_FILE		"faces.csv"
+#define FACES_DATABASE_PATH		"faces"
+#define FACES_DB_CSV_FILE			(FACES_DATABASE_PATH"/""faces.csv")
 
 
 using namespace cv;
@@ -45,7 +45,7 @@ int user_get_userList(char *faces_lib, struct userInfo_Stru **ppUserList, int *C
 int user_create_dir(char *base_dir, char *usr_name, char *usr_dir);
 int user_mngr_init(void);
 int user_create_csv(char *dir_path, char *csv_file);
-void user_read_csv(const string& filename, vector<Mat>& images, vector<int>& labels, char separator);
+int user_read_csv(const string& filename, vector<Mat>& images, vector<int>& labels, char separator);
 
 
 #endif	// _USER_MNGR_H_
