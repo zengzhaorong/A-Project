@@ -97,8 +97,7 @@ int user_get_userList(char *faces_lib, struct userInfo_Stru **ppUserList, int *C
 	char	label[10] = {0};
 	struct userInfo_Stru 	tmpUserInfo;
 	struct userInfo_Stru 	*pUserMem;
-	int 	dirCnt = 0;
-	int		dirNum = 0;
+	int 	dirno = 0;
 	int 	i;
 
 	// 获取文件属性
@@ -130,13 +129,11 @@ int user_get_userList(char *faces_lib, struct userInfo_Stru **ppUserList, int *C
 			 strncmp(dirp->d_name, "..", strlen(dirp->d_name))==0 )
 			continue;
 		
-		dirCnt ++;
+		dirno ++;
 	}
 	closedir(dir);
 
-	*Count = dirCnt;	// total dir count
-	
-	pUserMem = (struct userInfo_Stru *)malloc((*Count) *sizeof(struct userInfo_Stru));
+	pUserMem = (struct userInfo_Stru *)malloc(dirno *sizeof(struct userInfo_Stru));
 	if(pUserMem == NULL)
 	{
 		printf("%s: malloc for pUserMem failed.\n", __FUNCTION__);
@@ -152,6 +149,7 @@ int user_get_userList(char *faces_lib, struct userInfo_Stru **ppUserList, int *C
 		return -1;
 	}
 	// 遍历一级目录，获取信息
+	dirno = 0;
 	while((dirp = readdir(dir)) != NULL)
 	{
 		// 忽略 '.' '..'文件（linux）
@@ -167,13 +165,11 @@ int user_get_userList(char *faces_lib, struct userInfo_Stru **ppUserList, int *C
 
 		if(lstat(tmpDirPath, &statbuf) < 0)
 		{
-			printf("%s: lstat(%s) failed !\n", __FUNCTION__, tmpDirPath);
 			continue;
 		}
 
 		if(S_ISDIR(statbuf.st_mode) != 1)
 		{
-			printf("%s: %s is not dir !\n", __FUNCTION__, tmpDirPath); 
 			continue;
 		}
 
@@ -193,8 +189,8 @@ int user_get_userList(char *faces_lib, struct userInfo_Stru **ppUserList, int *C
 		tmpUserInfo.id = atoi(label);
 		strncpy(tmpUserInfo.name, dirp->d_name + i+1, strlen(dirp->d_name)-(i+1));
 
-		memcpy(pUserMem+dirNum, &tmpUserInfo, sizeof(struct userInfo_Stru));
-		dirNum ++;
+		memcpy(pUserMem+dirno, &tmpUserInfo, sizeof(struct userInfo_Stru));
+		dirno ++;
 //		printf("id: %d\t name: %s\n", (pUserMem+dirNum)->id , (pUserMem+dirNum)->name);
 	}
 
@@ -206,6 +202,7 @@ int user_get_userList(char *faces_lib, struct userInfo_Stru **ppUserList, int *C
 		*ppUserList = NULL;
 	}
 	*ppUserList = pUserMem;
+	*Count = dirno;
 
 	return 0;
 }
@@ -280,13 +277,11 @@ int user_create_csv(char *dir_path, char *csv_file)
 
 		if(lstat(dir_path2, &statbuf) < 0)
 		{
-			printf("lstat(%s) failed !\n", dir_path2);
 			continue;
 		}
 
 		if(S_ISDIR(statbuf.st_mode) != 1)
 		{
-			printf("%s is not dir !\n", dir_path2); 
 			continue;
 		}
 

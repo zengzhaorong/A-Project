@@ -31,7 +31,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 
 	/* can show Chinese word */
 	QTextCodec *codec = QTextCodec::codecForName("GBK");
-	setWindowTitle(codec->toUnicode(MAINWIN_TITLE));
+	setWindowTitle(codec->toUnicode(MAINWINDOW_TITLE));
 	
 	resize(MAIN_WIN_ROW, MAIN_WIN_COL);
 

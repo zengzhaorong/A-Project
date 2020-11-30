@@ -3,7 +3,7 @@
 
 
 /********** MAIN WINDOW **********/
-#define MAINWIN_TITLE		"人脸识别系统"			// support Chinese
+#define MAINWINDOW_TITLE		"人脸识别系统"			// support Chinese
 
 
 /********** LCD **********/
@@ -27,6 +27,10 @@
 
 
 /********** FACE RECOGNIZE **********/
+
+#define FACE_RECOGN_THRES_00		125.0	// confidence = 0%
+#define FACE_RECOGN_THRES_80		72.0	// confidence = 80%
+#define FACE_RECOGN_THRES_100		44.0	// confidence = 100%
 
 #define FACE_RECOGN_THRES 		FACE_RECOGN_THRES_80	// face recognize threshold
 #define FACE_ROW_MIN			60

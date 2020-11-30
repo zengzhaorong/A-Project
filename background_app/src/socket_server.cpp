@@ -44,7 +44,7 @@ int server_0x03_heartbeat(uint8_t *data, int len, uint8_t *ack_data, int size, i
 
 	/* request part */
 	proto_0x03_dataAnaly(data, len, PROTO_REQ, &tmpTime, NULL);
-	printf("%s: time: %ld\n", __FUNCTION__, tmpTime);
+	//printf("%s: time: %ld\n", __FUNCTION__, tmpTime);
 
 	/* ack part */
 	if(ack_data==NULL || size<4+4 || ack_len==NULL)
@@ -99,11 +99,10 @@ int client_0x06_deleteUser(uint8_t *data, int len, uint8_t *ack_data, int size, 
 	tmplen += 4;
 
 	/* user name */
-	printf("deleteUser: [%d]\n", userCnt);
 	for(i=0; i<userCnt; i++)
 	{
 		memcpy(username, data +tmplen, USER_NAME_LEN);
-		printf("[%d]name: %s\n", i, username);
+		//printf("[%d]name: %s\n", i, username);
 		user_delete(1, username);
 		tmplen += USER_NAME_LEN;
 	}

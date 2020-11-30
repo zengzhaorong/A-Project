@@ -19,7 +19,6 @@ struct main_mngr_info main_mngr;
 
 int main(int argc, char* argv[])
 {
-	int sec = 0;
 	
 	(void)argc;
 	(void)argv;
@@ -38,7 +37,6 @@ int main(int argc, char* argv[])
 
 	while(1)
 	{
-		printf("sec: %d\n", (sec++)*3);
 		sleep(3);
 	}
 

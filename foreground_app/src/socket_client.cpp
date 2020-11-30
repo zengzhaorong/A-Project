@@ -47,7 +47,7 @@ int client_0x03_heartbeat(uint8_t *data, int len, uint8_t *ack_data, int size, i
 
 	/* request part */
 	proto_0x03_dataAnaly(data, len, PROTO_ACK, &ret, &tmpTime);
-	printf("%s: [ret: %d], time: %ld\n", __FUNCTION__, ret, tmpTime);
+	//printf("%s: [ret: %d], time: %ld\n", __FUNCTION__, ret, tmpTime);
 
 	if(ack_len != NULL)
 		*ack_len = 0;
@@ -81,11 +81,10 @@ int client_0x05_addUser(uint8_t *data, int len, uint8_t *ack_data, int size, int
 	tmplen += 4;
 
 	/* user name */
-	printf("addUser: [%d]\n", userCnt);
 	for(i=0; i<userCnt; i++)
 	{
 		memcpy(username, data +tmplen, USER_NAME_LEN);
-		printf("[%d]name: %s\n", i, username);
+		//printf("[%d]name: %s\n", i, username);
 		mainwin_set_userList(1, 1, username);
 		tmplen += USER_NAME_LEN;
 	}

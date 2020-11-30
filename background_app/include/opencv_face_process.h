@@ -14,10 +14,6 @@ using namespace cv;
 using namespace cv::face;
 
 
-#define FACE_RECOGN_THRES_00		125.0	// LBPH设定阈值/相似度0
-#define FACE_RECOGN_THRES_80		85.0	// LBPH识别过滤阈值/相似度80
-#define FACE_RECOGN_THRES_100		55.0	// LBPH相似度100阈值
-
 class face_detect
 {
 public:
