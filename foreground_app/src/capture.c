@@ -93,7 +93,7 @@ int capture_init(struct v4l2cap_info *capture)
 
 	if(capture->format.fmt.pix.pixelformat != VIDEO_V4L2_PIX_FMT)
 	{
-		printf("ERROR: Not support settomg foramt !!!\n");
+		printf("ERROR: Not support this foramt !!!\n");
 		ret = -3;
 		goto ERR_3;
 	}

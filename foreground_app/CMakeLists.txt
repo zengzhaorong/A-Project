@@ -1,8 +1,29 @@
+# 目标机器架构配置 select build target
+set(MECHINE_ARCH "x86")		# "arm" or "x86"
+
+# 第三方库配置 select link libraries
+set(LIB_OPENCV_PATH /usr/local/opencv4)	# opencv库路径 set your opencv-lib path here
+set(LIB_QT5_PATH /usr/local/Qt-5.12.8)			# QT库路径 set your qt-lib path here
+set(LIB_FFMPEG_PATH /usr/local/ffmpeg)			# FFmpeg库路径 set your ffmpeg-lib here
+set(CROSS_TOOLSCHAIN /data/arm-linux/toolschain/4.5.1-gec210)		#交叉编译工具链路径 set your cross toolschain path here
+
+message("********** MECHINE_ARCH: ${MECHINE_ARCH} **********")
+message("********** LIB_OPENCV_PATH: ${LIB_OPENCV_PATH} **********")
+message("********** LIB_QT5_PATH: ${LIB_QT5_PATH} **********")
+message("********** LIB_FFMPEG_PATH: ${LIB_FFMPEG_PATH} **********")
+
 # project private setting
 set(PROJECT_NAME foreground_app)
 
 # cmake needs this line
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 2.8)
+
+if(MECHINE_ARCH STREQUAL "arm")
+	set(CMAKE_SYSTEM_NAME Linux)
+	set(CMAKE_SYSTEM_PROCESSOR arm)
+	set(CMAKE_C_COMPILER ${CROSS_TOOLSCHAIN}/bin/arm-linux-gcc)
+	set(CMAKE_CXX_COMPILER ${CROSS_TOOLSCHAIN}/bin/arm-linux-g++)
+endif()
 
 # Enable C++11
 set(CMAKE_CXX_STANDARD 11)
@@ -21,27 +42,31 @@ add_compile_options(-Wall -fPIC)
 # Define project name
 project(${PROJECT_NAME})
 
-# opencv4库路径及文件
+# opencv库路径及文件
 #find_package(OpenCV REQUIRED)
-set(LIB_OPENCV_PATH /usr/local/opencv4)
-set(LIB_OPENCV_INC ${LIB_OPENCV_PATH}/include/opencv4)
+set(LIB_OPENCV_INC ${LIB_OPENCV_PATH}/include ${LIB_OPENCV_PATH}/include/opencv4)
 set(LIB_OPENCV_LIB ${LIB_OPENCV_PATH}/lib)
 file(GLOB OPENCV_LIB_FILE ${LIB_OPENCV_LIB}/libopencv_*.so*)
 
 # QT5库路径及文件
-find_package(Qt5Widgets)
-find_package(Qt5Gui)
-find_package(Qt5Core)
-set(LIB_QT5_PATH /usr/local/Qt-5.12.8)
+#set xxx_DIR to xxx/lib/cmake/xxxConfig.cmake, for find_package(xxx)
+set(Qt5Widgets_DIR ${LIB_QT5_PATH}/lib/cmake/Qt5Widgets/)
+set(Qt5Gui_DIR ${LIB_QT5_PATH}/lib/cmake/Qt5Qt5Gui/)
+set(Qt5Core_DIR ${LIB_QT5_PATH}/lib/cmake/Qt5Core/)
+find_package(Qt5Widgets REQUIRED)
+find_package(Qt5Gui REQUIRED)
+find_package(Qt5Core REQUIRED)
 set(LIB_QT5_INC ${LIB_QT5_PATH}/include ${LIB_QT5_PATH}/include/QtWidgets ${LIB_QT5_PATH}/include/QtGui ${LIB_QT5_PATH}/include/QtCore)
 set(LIB_QT5_LIB ${LIB_QT5_PATH}/lib)
 file(GLOB QT5_LIB_FILE ${LIB_QT5_LIB}/libQt5*.so*)
 
 # FFmpeg库路径及文件
-set(LIB_FFMPEG_PATH /usr/local/ffmpeg)
-set(LIB_FFMPEG_INC ${LIB_FFMPEG_PATH}/include)
-set(LIB_FFMPEG_LIB ${LIB_FFMPEG_PATH}/lib)
-file(GLOB FFMPEG_LIB_FILE ${LIB_FFMPEG_LIB}/libopencv_*.so*)
+if(MECHINE_ARCH STREQUAL "x86")
+	set(LIB_FFMPEG_INC ${LIB_FFMPEG_PATH}/include)
+	set(LIB_FFMPEG_LIB ${LIB_FFMPEG_PATH}/lib)
+	file(GLOB FFMPEG_LIB_FILE ${LIB_FFMPEG_LIB}/libopencv_*.so*)
+	set(OTHER_3RD_LIBS ${OTHER_3RD_LIBS} -lavformat -lavcodec -lswscale -lswresample -lavutil)
+endif()
 
 # 工程H头文件路径
 set(HEAD_FILE_PATH ${HEAD_FILE_PATH} ${PROJECT_SOURCE_DIR}/include)
@@ -66,7 +91,5 @@ link_libraries(${OPENCV_LIB_FILE} ${QT5_LIB_FILE} ${FFMPEG_LIB_FILE})
 add_executable(${PROJECT_NAME} ${SRC_LIST_CPP} ${SRC_LIST_C} ${QT_HEAD_FILE_LIST})
 
 # Link your application with 3rd libraries
-#link_directories()
-target_link_libraries(${PROJECT_NAME} -lpthread -lavformat -lavcodec -lswscale -lswresample -lavutil)
-
-
+set(OTHER_3RD_LIBS ${OTHER_3RD_LIBS} -lpthread)
+target_link_libraries(${PROJECT_NAME} ${OTHER_3RD_LIBS})

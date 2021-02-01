@@ -29,7 +29,7 @@ extern "C" {
 #define TIMER_INTERV_MS			1
 #define TIMER_ADDUSER_OK_MS		(3*1000)
 
-#define WIN_BACKGRD_IMG			"resource/gdut.jpg"		// 界面背景图
+#define WIN_BACKGRD_IMG			"resource/backgrd.jpg"		// 界面背景图
 
 /* tips text, support Chinese */
 #define BEGIN_ADD_FACE_TEXT		"录入人脸：请正对摄像头"

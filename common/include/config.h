@@ -26,6 +26,11 @@
 #define ONE_CAP_FRAME_SIZE		(CAPTURE_PIX_WIDTH*CAPTURE_PIX_HEIGH)
 
 
+/********** SERVER IP **********/
+#define DEFAULT_SERVER_IP			"192.168.1.101"
+#define DEFAULT_SERVER_PORT			9100
+
+
 /********** FACE RECOGNIZE **********/
 
 #define FACE_RECOGN_THRES_00		125.0	// confidence = 0%

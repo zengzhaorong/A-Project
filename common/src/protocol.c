@@ -206,6 +206,7 @@ int proto_0x11_sendFaceDetect(int handle, uint8_t count, struct Rect_params *fac
 	int buf_size = 0;
 	int packLen = 0;
 	int bufLen = 0;
+	int i;
 
 	if(handle < 0 || handle >=MAX_PROTO_OBJ)
 		return -1;
@@ -216,7 +217,7 @@ int proto_0x11_sendFaceDetect(int handle, uint8_t count, struct Rect_params *fac
 	tmp_protoBuf[0] = count;
 	bufLen += 1;
 
-	for(int i=0; i<count; i++)
+	for(i=0; i<count; i++)
 	{
 		memcpy(tmp_protoBuf+bufLen, &face_rect->x, 4);
 		bufLen += 4;

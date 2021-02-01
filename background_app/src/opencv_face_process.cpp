@@ -84,7 +84,11 @@ int face_recogn::face_recogn_init(void)
 		return -1;
 	}
 
+#if defined(OPENCV_VER_3_X_X)
+	this->mod_LBPH = createLBPHFaceRecognizer();
+#else
 	this->mod_LBPH = LBPHFaceRecognizer::create();
+#endif
 	recogn_state = 0;
 
 	ret = face_database_train();
@@ -277,7 +281,7 @@ int opencv_face_detect( Mat& img, CascadeClassifier& cascade,
 
     cvtColor( img, gray, COLOR_BGR2GRAY );
     double fx = 1 / scale;
-    resize( gray, smallImg, Size(), fx, fx, INTER_LINEAR_EXACT );
+    resize( gray, smallImg, Size(), fx, fx, CV_INTER_LINEAR );
     equalizeHist( smallImg, smallImg );
 
     t = (double)getTickCount();

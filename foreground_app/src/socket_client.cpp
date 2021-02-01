@@ -21,9 +21,6 @@ extern "C" {
 #endif
 
 
-#define DEFAULT_SERVER_IP			"127.0.0.1"
-#define DEFAULT_SERVER_PORT			9100
-
 #define RECV_BUFFER_SIZE			(1 *1024 *1024)
 #define SEND_BUFFER_SIZE			(1 *1024 *1024)
 #define HEARTBEAT_INTERVAL_S		10

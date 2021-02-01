@@ -7,6 +7,7 @@
 #include "opencv_face_process.h"
 #include "socket_server.h"
 #include "user_mngr.h"
+#include "config.h"
 
 
 /* C++ include C */
@@ -19,7 +20,6 @@ extern "C" {
 #endif
 
 
-#define DEFAULT_SERVER_PORT 		9100
 #define MAX_LISTEN_NUM 				5
 #define RECV_BUFFER_SIZE			(1 *1024 *1024)
 #define SEND_BUFFER_SIZE			(1 *1024 *1024)
