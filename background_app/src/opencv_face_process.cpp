@@ -129,7 +129,7 @@ int opencv_put_frame_detect(uint8_t *buf, uint32_t len)
 	sem_getvalue(&face_detect_unit.detect_sem, &value);
 
 	if(value <= 0)
-	sem_post(&face_detect_unit.detect_sem);
+		sem_post(&face_detect_unit.detect_sem);
 
 	return 0;
 }

@@ -27,7 +27,7 @@
 
 
 /********** SERVER IP **********/
-#define DEFAULT_SERVER_IP			"192.168.1.101"
+#define DEFAULT_SERVER_IP			"127.0.0.1"
 #define DEFAULT_SERVER_PORT			9100
 
 

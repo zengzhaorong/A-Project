@@ -255,6 +255,7 @@ void client_deinit(struct clientInfo *client)
 int client_sendData(int sodkfd, uint8_t *data, int len)
 {
 	int ret;
+	int total = 0;
 
 	if(data == NULL)
 		return -1;
@@ -263,12 +264,14 @@ int client_sendData(int sodkfd, uint8_t *data, int len)
 	data[PROTO_SEQ_OFFSET] = global_seq++;
 
 	// lock
-	
-	ret = send(sodkfd, data, len, 0);
-
+	do{
+		ret = send(sodkfd, data +total, len -total, 0);
+		if(ret > 0)
+			total += ret;
+	}while(total < len);
 	// unlock
 
-	return ret;
+	return total;
 }
 
 int client_recvData(struct clientInfo *client)

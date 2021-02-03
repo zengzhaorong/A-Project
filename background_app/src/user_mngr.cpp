@@ -254,7 +254,7 @@ int user_create_csv(char *dir_path, char *csv_file)
 	fd = open(csv_file, O_RDWR | O_CREAT | O_TRUNC, 0777);
 	if(fd < 0)
 	{
-		printf("open file faile.\n");
+		printf("open file failed.\n");
 		return -1;
 	}
 

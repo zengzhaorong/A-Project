@@ -228,14 +228,19 @@ void server_deinit(void)
 
 int server_sendData(int sodkfd, uint8_t *data, int len)
 {
+	int total = 0;
 	int ret;
 
 	if(data == NULL)
 		return -1;
 	
-	ret = send(sodkfd, data, len, 0);
+	do{
+		ret = send(sodkfd, data +total, len -total, 0);
+		if(ret > 0)
+			total += ret;
+	}while(total < len);
 
-	return ret;
+	return total;
 }
 
 int server_recvData(struct clientInfo *client)
