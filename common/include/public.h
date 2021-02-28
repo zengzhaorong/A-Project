@@ -17,6 +17,7 @@ struct main_mngr_info
 {
 	workstate_e work_state;
 	int socket_handle;
+	int client_login;
 };
 
 

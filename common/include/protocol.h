@@ -55,6 +55,7 @@ struct Rect_params
 	int h;
 };
 
+int proto_0x01_login(int handle, uint8_t *usr_name, uint8_t *password);
 int proto_0x03_dataAnaly(uint8_t *data, int len, ePacket_t type, void *a, void *b);
 int proto_0x03_sendHeartBeat(int handle);
 int proto_0x04_switchWorkSta(int handle, workstate_e state, uint8_t *arg);

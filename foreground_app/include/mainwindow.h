@@ -21,7 +21,7 @@ extern "C" {
 #endif
 
 
-#define MAIN_WIN_ROW			900
+#define MAIN_WIN_ROW			800
 #define MAIN_WIN_COL			480
 #define VIDEO_AREA_ROW			640
 #define VIDEO_AREA_COL			480
@@ -61,14 +61,13 @@ public:
 	int switch_mainwin_mode(mainwin_mode_e mode);
 
 private:
-	QWidget			*mainWindow;		// 中心窗口
-	QLabel 			*videoArea;			// 图像显示区
-	QImage			initWinImg;			// 初始背景图
-	QTimer 			*timer;				// 刷新显示定时器
+	QWidget			*mainWindow;		// main window
+	QLabel 			*videoArea;			// video area
+	QImage			initWinImg;			// background image
+	QTimer 			*timer;				// display timer
 	QLineEdit		*userNameEdit;		// edit add user name
 	QPushButton 	*addUserBtn;		// add user button
 	QPushButton 	*delUserBtn;		// delete user button
-
 	unsigned char 	*video_buf;
 	unsigned int 	buf_size;
 	

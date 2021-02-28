@@ -20,6 +20,7 @@ typedef enum
 	STATE_DISABLE,
 	STATE_DISCONNECT,
 	STATE_CONNECTED,
+	STATE_LOGIN,
 }sockState_e;
 
 struct clientInfo

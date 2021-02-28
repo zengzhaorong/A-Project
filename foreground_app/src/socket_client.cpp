@@ -34,6 +34,26 @@ static int tmpLen = 0;
 
 extern struct main_mngr_info main_mngr;
 
+
+int client_0x01_login(uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
+{
+	struct clientInfo *client = &client_info;
+	int ret = 0;
+
+	/* return value */
+	memcpy(&ret, data, 4);
+	if(ret == 0)
+	{
+		client->state = STATE_LOGIN;
+		printf("Congratulation! Login success.\n");
+
+		/* get user list from server(backbround app) */
+		proto_0x07_getUserList(client->protoHandle);
+	}
+
+	return 0;
+}
+
 int client_0x03_heartbeat(uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
 {
 	time_t tmpTime;
@@ -55,11 +75,9 @@ int client_0x03_heartbeat(uint8_t *data, int len, uint8_t *ack_data, int size, i
 int client_0x04_switchWorkSta(uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
 {
 	int state = 0;
-	int tmplen = 0;
 
 	/* work state */
 	memcpy(&state, data, 4);
-	tmplen += 4;
 
 	main_mngr.work_state = (workstate_e)state;
 	
@@ -254,8 +272,8 @@ void client_deinit(struct clientInfo *client)
 
 int client_sendData(int sodkfd, uint8_t *data, int len)
 {
-	int ret;
 	int total = 0;
+	int ret;
 
 	if(data == NULL)
 		return -1;
@@ -266,8 +284,12 @@ int client_sendData(int sodkfd, uint8_t *data, int len)
 	// lock
 	do{
 		ret = send(sodkfd, data +total, len -total, 0);
-		if(ret > 0)
-			total += ret;
+		if(ret < 0)
+		{
+			usleep(1000);
+			continue;
+		}
+		total += ret;
 	}while(total < len);
 	// unlock
 
@@ -311,6 +333,7 @@ int client_protoAnaly(struct clientInfo *client, uint8_t *pack, uint32_t pack_le
 	switch(cmd)
 	{
 		case 0x01:
+			ret = client_0x01_login(data, data_len, ack_buf, sizeof(ack_buf), &ack_len);
 			break;
 
 		case 0x02:
@@ -385,6 +408,7 @@ void *socket_client_thread(void *arg)
 {
 	struct clientInfo *client = &client_info;
 	time_t heartbeat_time = 0;
+	time_t login_time = 0;
 	time_t tmpTime;
 	int ret;
 
@@ -410,7 +434,6 @@ void *socket_client_thread(void *arg)
 					client->state = STATE_CONNECTED;
 					main_mngr.socket_handle = client->protoHandle;
 					printf("********** socket connect successfully, handle: %d.\n", client->protoHandle);
-					proto_0x07_getUserList(client->protoHandle);
 				}
 				else
 				{
@@ -421,12 +444,22 @@ void *socket_client_thread(void *arg)
 
 			case STATE_CONNECTED:
 				tmpTime = time(NULL);
+				if(abs(tmpTime - login_time) >= 3)
+				{
+					printf("********** Login ...\n");
+					proto_0x01_login(client->protoHandle, (uint8_t *)"user_name", (uint8_t *)"pass_word");
+					login_time = tmpTime;
+				}
+				
+				break;
+
+			case STATE_LOGIN:
+				tmpTime = time(NULL);
 				if(abs(tmpTime - heartbeat_time) >= HEARTBEAT_INTERVAL_S)
 				{
 					proto_0x03_sendHeartBeat(client->protoHandle);
 					heartbeat_time = tmpTime;
 				}
-				
 				break;
 
 			default:
@@ -434,7 +467,7 @@ void *socket_client_thread(void *arg)
 				break;
 		}
 
-		if(client->state == STATE_CONNECTED)
+		if(client->state==STATE_CONNECTED || client->state==STATE_LOGIN)
 		{
 			client_protoHandle(client);
 		}

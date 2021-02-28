@@ -10,7 +10,7 @@
 
 struct userMngr_Stru		user_mngr_unit;
 
-// 删除非空目录
+// remove dir not empty
 int remove_dir(const char *dir)
 {
     char cur_dir[] = ".";
@@ -20,23 +20,22 @@ int remove_dir(const char *dir)
     struct dirent *dp;
     struct stat dir_stat;
 
-    // 参数传递进来的目录不存在，直接返回
+    // dir not exist
     if ( 0 != access(dir, F_OK) ) {
         return 0;
     }
 
-    // 获取目录属性失败，返回错误
     if ( 0 > stat(dir, &dir_stat) ) {
         perror("get directory stat error");
         return -1;
     }
 
-    if ( S_ISREG(dir_stat.st_mode) ) {  // 普通文件直接删除
+    if ( S_ISREG(dir_stat.st_mode) ) {  // file
         remove(dir);
-    } else if ( S_ISDIR(dir_stat.st_mode) ) {   // 目录文件，递归删除目录中内容
+    } else if ( S_ISDIR(dir_stat.st_mode) ) {   // dir
         dirp = opendir(dir);
         while ( (dp=readdir(dirp)) != NULL ) {
-            // 忽略 . 和 ..
+            //  . & ..
             if ( (0 == strcmp(cur_dir, dp->d_name)) || (0 == strcmp(up_dir, dp->d_name)) ) {
                 continue;
             }
@@ -46,11 +45,11 @@ int remove_dir(const char *dir)
 			strcat(dir_name, "/");
 			strcat(dir_name, dp->d_name);
             //sprintf(dir_name, "%s/%s", dir, dp->d_name);
-            remove_dir(dir_name);   // 递归调用
+            remove_dir(dir_name);   // recursive call
         }
         closedir(dirp);
 
-        rmdir(dir);     // 删除空目录
+        rmdir(dir);     // delete empty dir
     } else {
         perror("unknow file type!");    
     }
@@ -86,7 +85,7 @@ int user_delete(int userCnt, char *username)
 	return 0;
 }
 
-// 获取用户名单列表, ppUserList输出指针, Count数量
+// get user list
 /* if ppUserList is not null, it will be free and malloc new for it */
 int user_get_userList(char *faces_lib, struct userInfo_Stru **ppUserList, int *Count)
 {
@@ -100,31 +99,28 @@ int user_get_userList(char *faces_lib, struct userInfo_Stru **ppUserList, int *C
 	int 	dirno = 0;
 	int 	i;
 
-	// 获取文件属性
 	if(lstat(faces_lib, &statbuf) < 0)
 	{
 		printf("%s: lstat(%s) failed !\n", __FUNCTION__, faces_lib);
 		return -1;
 	}
 
-	// 判断是否为目录
 	if(S_ISDIR(statbuf.st_mode) != 1)
 	{
 		printf("%s: %s is not dir !\n", __FUNCTION__, faces_lib); 
 		return -1;
 	}
 
-	// 打开目录
 	dir = opendir(faces_lib);
 	if( dir ==NULL)
 	{
 		printf("opendir failed.\n");
 		return -1;
 	}
-	// 遍历一级目录，统计数量
+	// get count
 	while((dirp = readdir(dir)) != NULL)
 	{
-		// 忽略 '.' '..'文件（linux）
+		//  '.' & '..'
 		if( strncmp(dirp->d_name, ".", strlen(dirp->d_name))==0 || 
 			 strncmp(dirp->d_name, "..", strlen(dirp->d_name))==0 )
 			continue;
@@ -140,7 +136,6 @@ int user_get_userList(char *faces_lib, struct userInfo_Stru **ppUserList, int *C
 		return -1;
 	}
 
-	// 打开目录
 	dir = opendir(faces_lib);
 	if( dir ==NULL)
 	{
@@ -148,16 +143,15 @@ int user_get_userList(char *faces_lib, struct userInfo_Stru **ppUserList, int *C
 		printf("opendir failed.\n");
 		return -1;
 	}
-	// 遍历一级目录，获取信息
+	// get user info
 	dirno = 0;
 	while((dirp = readdir(dir)) != NULL)
 	{
-		// 忽略 '.' '..'文件（linux）
+		// '.' & '..'
 		if( strncmp(dirp->d_name, ".", strlen(dirp->d_name))==0 || 
 			 strncmp(dirp->d_name, "..", strlen(dirp->d_name))==0 )
 			continue;
 
-		// 将1级目录与2级目录组合
 		memset(tmpDirPath, 0, sizeof(tmpDirPath));
 		strcat(tmpDirPath, faces_lib);
 		strcat(tmpDirPath, "/");
@@ -174,7 +168,7 @@ int user_get_userList(char *faces_lib, struct userInfo_Stru **ppUserList, int *C
 		}
 
 		memset(label, 0, sizeof(label));
-		for(i=0; i<10; i++) 	// 取序号
+		for(i=0; i<10; i++) 	// get seq
 		{
 			if(dirp->d_name[i] != '_')
 				label[i] = dirp->d_name[i];
@@ -207,7 +201,7 @@ int user_get_userList(char *faces_lib, struct userInfo_Stru **ppUserList, int *C
 	return 0;
 }
 
-// 创建/更新CSV文件 参数: dir_path-人脸库路径, csv_file: target csv file
+// create/update .csv file: dir_path-face lib path, csv_file: target .csv file
 int user_create_csv(char *dir_path, char *csv_file)
 {
 	struct stat statbuf;
@@ -225,24 +219,21 @@ int user_create_csv(char *dir_path, char *csv_file)
 	if(dir_path==NULL || csv_file==NULL)
 		return -1;
 
-	if(dir_path[strlen(dir_path)-1] == '/')		// 统一输入不以'/'结束，如 "/mnt/" 改为 "/mnt"
+	if(dir_path[strlen(dir_path)-1] == '/')		// eg: "/mnt/"-> "/mnt"
 		dir_path[strlen(dir_path)-1] = 0;
 
-	// 获取文件属性
 	if(lstat(dir_path, &statbuf) < 0)
 	{
 		printf("lstat(%s) failed !\n", dir_path);
 		return -1;
 	}
 
-	// 判断是否为目录
 	if(S_ISDIR(statbuf.st_mode) != 1)
 	{
 		printf("%s is not dir !\n", dir_path); 
 		return -1;
 	}
 
-	// 打开目录
 	dir = opendir(dir_path);
 	if( dir ==NULL)
 	{
@@ -250,7 +241,6 @@ int user_create_csv(char *dir_path, char *csv_file)
 		return -1;
 	}
 
-	// 创建或打开csv文件
 	fd = open(csv_file, O_RDWR | O_CREAT | O_TRUNC, 0777);
 	if(fd < 0)
 	{
@@ -258,18 +248,14 @@ int user_create_csv(char *dir_path, char *csv_file)
 		return -1;
 	}
 
-	// 定位读写位置
 	lseek(fd, 0, SEEK_SET);
 
-	// 遍历一级目录
 	while((dirp = readdir(dir)) != NULL)
 	{
-		// 忽略 '.' '..'文件（linux）
 		if( strncmp(dirp->d_name, ".", strlen(dirp->d_name))==0 || 
 			 strncmp(dirp->d_name, "..", strlen(dirp->d_name))==0 )
 			continue;
 
-		// 将1级目录与2级目录组合
 		memset(dir_path2, 0, sizeof(dir_path2));
 		strcat(dir_path2, dir_path);
 		strcat(dir_path2, "/");
@@ -292,14 +278,13 @@ int user_create_csv(char *dir_path, char *csv_file)
 			return -1;
 		}
 
-		// 遍历二级目录
 		while((direntFile = readdir(dirFile)) != NULL)
 		{
 			if( strncmp(direntFile->d_name, ".", strlen(direntFile->d_name))==0 || 
 				 strncmp(direntFile->d_name, "..", strlen(direntFile->d_name))==0 )
 				continue;
 
-			// 获取完整文件路径名
+			// whole dir path
 			memset(fileName, 0, sizeof(fileName));
 			strcat(fileName, dir_path2);
 			strcat(fileName, "/");
@@ -310,7 +295,7 @@ int user_create_csv(char *dir_path, char *csv_file)
 				printf("lstat(%s) failed !\n", fileName);
 				continue;
 			}
-			if(S_ISREG(statbuf.st_mode) != 1)	// 不是普通文件
+			if(S_ISREG(statbuf.st_mode) != 1)
 			{
 				printf("%s is not reg file !\n", fileName); 
 				continue;
@@ -321,7 +306,7 @@ int user_create_csv(char *dir_path, char *csv_file)
 			memcpy(witeBuf, fileName, strlen(fileName));
 			strcat(witeBuf, ";");
 
-			for(i=0; i<10; i++)		// 取序号
+			for(i=0; i<10; i++)		// get seq
 			{
 				if(dirp->d_name[i] != '_')
 					label[i] = dirp->d_name[i];
@@ -331,10 +316,10 @@ int user_create_csv(char *dir_path, char *csv_file)
 			if(i == 10)
 				continue; 
 			
-			strcat(witeBuf, label);	// 标签: '_'前的字符
+			strcat(witeBuf, label);
 			strcat(witeBuf, "\n");
 
-			// 写入信息
+			// write
 			if(write(fd, witeBuf, strlen(witeBuf)) != (ssize_t)strlen(witeBuf))
 			{
 				printf("%s: write failed!\n", __FUNCTION__);

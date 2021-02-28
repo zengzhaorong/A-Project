@@ -340,7 +340,7 @@ void *opencv_face_detect_thread(void *arg)
 
 	while(1)
 	{
-		if(main_mngr.socket_handle < 0)
+		if(main_mngr.socket_handle < 0 || main_mngr.client_login==0)
 		{
 			usleep(300*1000);
 			continue;
@@ -348,7 +348,7 @@ void *opencv_face_detect_thread(void *arg)
 		
 		proto_0x10_getOneFrame(main_mngr.socket_handle);
 
-		/* 获取协议传输的原图像-进行检测 */
+		/* get one frame which from client */
 		ret = opencv_get_frame_detect(detect_unit->frame_buf, detect_unit->frame_size);
 		if(ret <= 0)
 		{
@@ -502,7 +502,7 @@ void *opencv_face_recogn_thread(void *arg)
 		}
 
 	
-		/* 获取经人脸检测图像-进行识别 */
+		/* get one face frame to recognize */
 		ret = opencv_get_frame_recogn(face_mat);
 		if(ret != 0)
 		{

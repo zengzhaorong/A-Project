@@ -27,6 +27,35 @@ struct proto_object protoObject[MAX_PROTO_OBJ];
 static uint8_t tmp_protoBuf[PROTO_PACK_MAX_LEN];
 
 
+int proto_0x01_login(int handle, uint8_t *usr_name, uint8_t *password)
+{
+	uint8_t *protoBuf = NULL;
+	int data_len = 0;
+	int buf_size = 0;
+	int packLen = 0;
+
+	if(handle < 0 || handle >=MAX_PROTO_OBJ)
+		return -1;
+	if(protoObject[handle].send_func == NULL)
+		return -1;
+
+	/* user name */
+	memcpy(tmp_protoBuf +data_len, usr_name, 32);
+	data_len += 32;
+
+	/* pass word */
+	memcpy(tmp_protoBuf +data_len, password, 32);
+	data_len += 32;
+
+	protoBuf = protoObject[handle].send_buf;
+	buf_size = protoObject[handle].buf_size;
+	proto_makeupPacket(0, 0x01, data_len, tmp_protoBuf, protoBuf, buf_size, &packLen);
+
+	protoObject[handle].send_func(protoObject[handle].fd, protoBuf, packLen);
+	
+	return 0;
+}
+
 /* flag: 0-request, 1-ack */
 int proto_0x03_dataAnaly(uint8_t *data, int len, ePacket_t type, void *a, void *b)
 {

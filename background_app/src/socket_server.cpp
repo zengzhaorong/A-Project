@@ -33,14 +33,39 @@ static int tmpLen = 0;
 extern struct main_mngr_info main_mngr;
 extern struct userMngr_Stru	user_mngr_unit;
 
+int server_0x01_login(uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
+{
+	uint8_t usr_name[32] = {0};
+	uint8_t passwd[32] = {0};
+	int tmplen = 0;
+	int ret = 0;
+
+	/* user name */
+	memcpy(usr_name, data +tmplen, 32);
+	tmplen += 32;
+
+	/* password */
+	memcpy(passwd, data +tmplen, 32);
+	tmplen += 32;
+
+	printf("Login user: %s, passwd: %s\n", usr_name, passwd);
+	main_mngr.client_login = 1;
+
+	/* ack part */
+	tmplen = 0;
+	memcpy(ack_data, &ret, 4);
+	tmplen += 4;
+	
+	*ack_len = tmplen;
+
+	return 0;
+}
+
 int server_0x03_heartbeat(uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
 {
 	time_t tmpTime;
 	int tmplen = 0;
 	int ret;
-
-	if(data==NULL || len<=0)
-		return -1;
 
 	/* request part */
 	proto_0x03_dataAnaly(data, len, PROTO_REQ, &tmpTime, NULL);
@@ -236,8 +261,12 @@ int server_sendData(int sodkfd, uint8_t *data, int len)
 	
 	do{
 		ret = send(sodkfd, data +total, len -total, 0);
-		if(ret > 0)
-			total += ret;
+		if(ret < 0)
+		{
+			usleep(1000);
+			continue;
+		}
+		total += ret;
 	}while(total < len);
 
 	return total;
@@ -280,6 +309,7 @@ int server_protoAnaly(struct clientInfo *client, uint8_t *pack, uint32_t pack_le
 	switch(cmd)
 	{
 		case 0x01:
+			ret = server_0x01_login(data, data_len, ack_buf, sizeof(ack_buf), &ack_len);
 			break;
 
 		case 0x02:
@@ -384,7 +414,7 @@ void *socket_listen_thread(void *arg)
 	while(1)
 	{
 	
-		// 暂只测试连接1个client
+		// ps: only support 1 client now
 		if(server->client_cnt >= MAX_CLIENT_NUM)
 		{
 			sleep(3);

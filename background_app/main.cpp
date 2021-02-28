@@ -8,7 +8,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-/* CÍ·ÎÄ¼þ */
+/* C head file */
 #ifdef __cplusplus
 }
 #endif
@@ -28,6 +28,7 @@ int main(int argc, char* argv[])
 	memset(&main_mngr, 0, sizeof(struct main_mngr_info));
 	main_mngr.work_state = WORK_STA_NORMAL;
 	main_mngr.socket_handle = -1;
+	main_mngr.client_login = 0;
 	
 	user_mngr_init();
 

@@ -20,7 +20,7 @@ extern "C" {
 #endif
 
 
-static MainWindow *mainwindow;		// 主界面
+static MainWindow *mainwindow;
 extern struct main_mngr_info main_mngr;
 
 
@@ -52,25 +52,27 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 	textOnVideo->setFont(font);
 	textOnVideo->setPalette(pa);
 
+#if defined(MANAGER_CLIENT_ENABLE)
 	userNameEdit = new QLineEdit(mainWindow);
-	userNameEdit->setPlaceholderText(tr("Add User Name"));
-	userNameEdit->setGeometry(650, 230, 150, 40);
+	userNameEdit->setPlaceholderText(tr("User Name"));
+	userNameEdit->setGeometry(645, 230, 150, 40);
 
 	addUserBtn = new QPushButton(mainWindow);
 	addUserBtn->setText(tr("Add user"));
     connect(addUserBtn, SIGNAL(clicked()), this, SLOT(addUser()));
-	addUserBtn->setGeometry(810, 230, 80, 40);
+	addUserBtn->setGeometry(670, 275, 100, 40);
 
 	/* user list box */
 	userListBox = new QComboBox(mainWindow);
-	userListBox->setGeometry(650, 290, 150, 40);
+	userListBox->setGeometry(645, 330, 150, 40);
 	userListBox->setEditable(true);
 
 	/* delete user button */
 	delUserBtn = new QPushButton(mainWindow);
 	delUserBtn->setText(tr("Delete user"));
     connect(delUserBtn, SIGNAL(clicked()), this, SLOT(deleteUser()));
-	delUserBtn->setGeometry(810, 290, 80, 40);
+	delUserBtn->setGeometry(670, 375, 100, 40);
+#endif
 
 	buf_size = VIDEO_AREA_ROW*VIDEO_AREA_COL*3;
 	video_buf = (unsigned char *)malloc(buf_size);
@@ -80,7 +82,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 		printf("ERROR: malloc for video_buf failed!");
 	}
 
-	/* 定时任务，显示图像 */
+	/* set timer to show image */
 	timer = new QTimer(this);
 	connect(timer, SIGNAL(timeout()), this, SLOT(showMainwindow()));
 	timer->start(TIMER_INTERV_MS);
@@ -327,9 +329,9 @@ void mainwindow_deinit(void)
 
 }
 
-/* 注：
- * 用定时器触发刷新显示主界面 
- * 用线程循环有问题！未解 
+/* notice:
+ * use timer to display,
+ * if use thread, it will occur some error.
  */
 int start_mainwindow_task(void)
 {
