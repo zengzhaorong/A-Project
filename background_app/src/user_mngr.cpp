@@ -466,9 +466,19 @@ int user_create_dir(char *base_dir, char *usr_name, char *usr_dir)
 int user_mngr_init(void)
 {
 	struct userMngr_Stru *user_mngr = &user_mngr_unit;
+	int ret;
 
 	user_mngr->userInfo = NULL;
 	user_mngr->userCnt = 0;
+
+	ret = user_get_userList((char *)FACES_DATABASE_PATH, &user_mngr->userInfo, &user_mngr->userCnt);
+	if(ret < 0)
+		return -1;
+
+	for(int i=0; i<user_mngr->userCnt; i++)
+	{
+		printf("[%d].id=%d, name: %s\n", i, user_mngr->userInfo[i].id, user_mngr->userInfo[i].name);
+	}
 
 	return 0;
 }

@@ -3,6 +3,8 @@
 #include "opencv_face_process.h"
 #include "socket_server.h"
 #include "user_mngr.h"
+#include "attendance.h"
+
 
 /* C++ include C */
 #ifdef __cplusplus
@@ -31,6 +33,8 @@ int main(int argc, char* argv[])
 	main_mngr.client_login = 0;
 	
 	user_mngr_init();
+
+	attendance_init();
 
 	start_face_process_task();
 

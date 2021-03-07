@@ -11,6 +11,7 @@
 #include "config.h"
 #include "socket_server.h"
 #include "user_mngr.h"
+#include "attendance.h"
 
 /* C++ include C */
 #ifdef __cplusplus
@@ -415,6 +416,7 @@ void *opencv_face_detect_thread(void *arg)
 					{
 						face_recogn_unit.recogn_state = 1;
 					}
+					attendance_sync_userlist();
 				}
 			}
 			else
@@ -428,7 +430,7 @@ void *opencv_face_detect_thread(void *arg)
 	return NULL;
 }
 
-int opencv_face_recogn(Mat &face_mat, int *face_id, uint8_t *confid)
+int opencv_face_recogn(Mat &face_mat, int *face_id, uint8_t *confid, int *status)
 {
 	Mat recogn_mat;
 	int predict;
@@ -475,8 +477,11 @@ int opencv_face_recogn(Mat &face_mat, int *face_id, uint8_t *confid)
 		*confid = 0;
 	}
 	
-	printf("[recogn]*** predict: %d, confidence: %f = %d%%\n", predict, confidence, *confid);
+	/* set user attend info */
+	*status = (int)attendance_set_one(predict, time(NULL));
 	
+	printf("[recogn]*** predict: %d, confidence: %f = %d%%, status: %d\n", predict, confidence, *confid, *status);
+
 	return 0;
 }
 
@@ -486,6 +491,7 @@ void *opencv_face_recogn_thread(void *arg)
 	Mat face_mat;
 	int face_id;
 	uint8_t confidence;
+	int status;
 	int ret;
 	int i;
 
@@ -509,7 +515,7 @@ void *opencv_face_recogn_thread(void *arg)
 			continue;
 		}
 
-		ret = opencv_face_recogn(face_mat, &face_id, &confidence);
+		ret = opencv_face_recogn(face_mat, &face_id, &confidence, &status);
 		if(ret == 0)
 		{
 			for(i=0; i<user_mngr_unit.userCnt; i++)
@@ -517,7 +523,7 @@ void *opencv_face_recogn_thread(void *arg)
 				if(user_mngr_unit.userInfo[i].id == face_id)
 					break;
 			}
-			proto_0x12_sendFaceRecogn(main_mngr.socket_handle, face_id, confidence, user_mngr_unit.userInfo[i].name);
+			proto_0x12_sendFaceRecogn(main_mngr.socket_handle, face_id, confidence, user_mngr_unit.userInfo[i].name, status);
 			sleep(RECOGN_OK_DELAY_MS/1000 +1);	// more 1 second
 		}
 	}

@@ -267,7 +267,7 @@ int proto_0x11_sendFaceDetect(int handle, uint8_t count, struct Rect_params *fac
 	return 0;
 }
 
-int proto_0x12_sendFaceRecogn(int handle, int face_id, uint8_t confid, char *face_name)
+int proto_0x12_sendFaceRecogn(int handle, int face_id, uint8_t confid, char *face_name, int status)
 {
 	uint8_t *protoBuf = NULL;
 	int buf_size = 0;
@@ -290,6 +290,10 @@ int proto_0x12_sendFaceRecogn(int handle, int face_id, uint8_t confid, char *fac
 	/* face name */
 	memcpy(tmp_protoBuf +bufLen, face_name, 32);
 	bufLen += 32;
+
+	/* status */
+	memcpy(tmp_protoBuf +bufLen, &status, 4);
+	bufLen += 4;
 	
 	protoBuf = protoObject[handle].send_buf;
 	buf_size = protoObject[handle].buf_size;
@@ -300,6 +304,50 @@ int proto_0x12_sendFaceRecogn(int handle, int face_id, uint8_t confid, char *fac
 
 	return 0;
 }
+
+/* time: time(NULL) return value */
+int proto_0x13_setAttendTime(int handle, long time)
+{
+	uint8_t *protoBuf = NULL;
+	int data_len = 0;
+	int buf_size = 0;
+	int packLen = 0;
+
+	if(handle < 0 || handle >=MAX_PROTO_OBJ)
+		return -1;
+	if(protoObject[handle].send_func == NULL)
+		return -1;
+
+	memcpy(tmp_protoBuf +data_len, &time, 8);
+	data_len += 8;
+	
+	protoBuf = protoObject[handle].send_buf;
+	buf_size = protoObject[handle].buf_size;
+	proto_makeupPacket(0, 0x13, data_len, tmp_protoBuf, protoBuf, buf_size, &packLen);
+
+	protoObject[handle].send_func(protoObject[handle].fd, protoBuf, packLen);
+	
+	return 0;
+}
+
+int proto_0x14_getAttendList(int handle)
+{
+	uint8_t *protoBuf = NULL;
+	int buf_size = 0;
+	int packLen = 0;
+
+	if(handle < 0 || handle >=MAX_PROTO_OBJ)
+		return -1;
+
+	protoBuf = protoObject[handle].send_buf;
+	buf_size = protoObject[handle].buf_size;
+	proto_makeupPacket(0, 0x14, 0, NULL, protoBuf, buf_size, &packLen);
+
+	protoObject[handle].send_func(protoObject[handle].fd, protoBuf, packLen);
+
+	return 0;
+}
+
 
 int proto_makeupPacket(uint8_t seq, uint8_t cmd, int len, uint8_t *data, \
 								uint8_t *outbuf, int size, int *outlen)

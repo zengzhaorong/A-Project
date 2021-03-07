@@ -7,6 +7,7 @@
 #include "opencv_face_process.h"
 #include "socket_server.h"
 #include "user_mngr.h"
+#include "attendance.h"
 #include "config.h"
 
 
@@ -32,6 +33,7 @@ static int tmpLen = 0;
 
 extern struct main_mngr_info main_mngr;
 extern struct userMngr_Stru	user_mngr_unit;
+extern struct attend_mngr_Stru attend_mngr_unit;
 
 int server_0x01_login(uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
 {
@@ -134,6 +136,7 @@ int client_0x06_deleteUser(uint8_t *data, int len, uint8_t *ack_data, int size, 
 
 	/* retrain face data base */
 	face_database_train();
+	attendance_sync_userlist();
 
 	return 0;
 }
@@ -200,6 +203,59 @@ int server_0x10_getOneFrame(uint8_t *data, int len, uint8_t *ack_data, int size,
 
 	return 0;
 }
+
+int server_0x13_setAttendTime(uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
+{
+	long time;
+
+	memcpy(&time, data, 8);
+
+	main_mngr.attend_time = time;
+
+	return 0;
+}
+
+int server_0x14_getAttendList(uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
+{
+    struct attend_mngr_Stru *atd_mngr = &attend_mngr_unit;
+	int userCnt = 0;
+	int tmplen = 0;
+	int ret = 0;
+	int i;
+
+	/* request part */
+	// NULL
+
+	/* ack part */
+	/* return value */
+	ret = 0;
+	memcpy(ack_data, &ret, 4);
+	tmplen += 4;
+	
+	/* user count */
+	userCnt = atd_mngr->userCnt;
+	memcpy(ack_data +tmplen, &userCnt, 4);
+	tmplen += 4;
+
+	/* user name */
+	for(i=0; i<userCnt; i++)
+	{
+		memcpy(ack_data +tmplen, &atd_mngr->attend_list[i].id, 4);
+		tmplen += 4;
+		memcpy(ack_data +tmplen, atd_mngr->attend_list[i].name, USER_NAME_LEN);
+		tmplen += USER_NAME_LEN;
+		memcpy(ack_data +tmplen, &atd_mngr->attend_list[i].time, 8);
+		tmplen += 8;
+		memcpy(ack_data +tmplen, &atd_mngr->attend_list[i].status, 4);
+		tmplen += 4;
+	}
+
+	if(ack_len != NULL)
+		*ack_len = tmplen;
+
+	return 0;
+}
+
 
 int server_init(struct serverInfo *server, int port)
 {
@@ -333,6 +389,14 @@ int server_protoAnaly(struct clientInfo *client, uint8_t *pack, uint32_t pack_le
 
 		case 0x10:
 			ret = server_0x10_getOneFrame(data, data_len, ack_buf, sizeof(ack_buf), &ack_len);
+			break;
+
+		case 0x13:
+			ret = server_0x13_setAttendTime(data, data_len, ack_buf, sizeof(ack_buf), &ack_len);
+			break;
+
+		case 0x14:
+			ret = server_0x14_getAttendList(data, data_len, ack_buf, sizeof(ack_buf), &ack_len);
 			break;
 
 		default:

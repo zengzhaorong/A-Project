@@ -200,6 +200,7 @@ int client_0x12_faceRecogn(uint8_t *data, int len, uint8_t *ack_data, int size, 
 	int face_id = 0;
 	uint8_t confidence = 0;
 	char face_name[32] = {0};
+	int status;
 	int offset = 0;
 
 	/* face id */
@@ -214,9 +215,52 @@ int client_0x12_faceRecogn(uint8_t *data, int len, uint8_t *ack_data, int size, 
 	memcpy(face_name, data +offset, 32);
 	offset += 32;
 
+	/* status */
+	memcpy(&status, data +offset, 4);
+	offset += 4;
+
 	printf("[recogn]: ****** face id: %d, confid: %d, face name: %s\n", face_id, confidence, face_name);
-	mainwin_set_recognInfo(face_id, confidence, face_name);
+	mainwin_set_recognInfo(face_id, confidence, face_name, status);
 	main_mngr.work_state = WORK_STA_RECOGN;
+
+	//mainwin_set_attendList(face_id, face_name, 0, 0);
+
+	return 0;
+}
+
+int client_0x14_getAttendList(uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
+{
+	char user_name[USER_NAME_LEN] = {0};
+	int user_id;
+	time_t time;
+	int status;
+	int userCnt = 0;
+	int tmplen = 0;
+	int ret;
+	int i;
+
+	/* return value */
+	memcpy(&ret, data, 4);
+	tmplen += 4;
+
+	/* user count */
+	memcpy(&userCnt, data +tmplen, 4);
+	tmplen += 4;
+
+	//printf("getAttendList: [%d]\n", userCnt);
+	for(i=0; i<userCnt; i++)
+	{
+		memcpy(&user_id, data +tmplen, 4);
+		tmplen += 4;
+		memcpy(user_name, data +tmplen, USER_NAME_LEN);
+		tmplen += USER_NAME_LEN;
+		memcpy(&time, data +tmplen, 8);
+		tmplen += 8;
+		memcpy(&status, data +tmplen, 4);
+		tmplen += 4;
+		//printf("id: %d, name: %s, time: %ld, status: %d\n", user_id, user_name, time, status);
+		mainwin_set_attendList(user_id, user_name, time, status);
+	}
 
 	return 0;
 }
@@ -367,6 +411,10 @@ int client_protoAnaly(struct clientInfo *client, uint8_t *pack, uint32_t pack_le
 			ret = client_0x12_faceRecogn(data, data_len, ack_buf, sizeof(ack_buf), &ack_len);
 			break;
 
+		case 0x14:
+			ret = client_0x14_getAttendList(data, data_len, ack_buf, sizeof(ack_buf), &ack_len);
+			break;
+
 		default:
 			printf("ERROR: protocol cmd[0x%02x] not exist!\n", cmd);
 			break;
@@ -377,6 +425,13 @@ int client_protoAnaly(struct clientInfo *client, uint8_t *pack, uint32_t pack_le
 	{
 		proto_makeupPacket(seq, cmd, ack_len, ack_buf, tmpBuf, sizeof(tmpBuf), &tmpLen);
 		client_sendData(client->fd, tmpBuf, tmpLen);
+	}
+
+	if(cmd == 0x12)
+	{
+		/* update attend list */
+		proto_0x14_getAttendList(client->protoHandle);
+		mainwin_reset_attendList();
 	}
 
 	return 0;

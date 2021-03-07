@@ -52,26 +52,55 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 	textOnVideo->setFont(font);
 	textOnVideo->setPalette(pa);
 
+	/* clock */
+	clockLabel = new QLabel(mainWindow);
+	clockLabel->setWordWrap(true);	// adapt to text, can show multi row
+	clockLabel->setGeometry(650, 90, 140, 40);
+	clockLabel->show();
+
 #if defined(MANAGER_CLIENT_ENABLE)
+	/* attend time edit */
+	attendTimeEdit = new QDateTimeEdit(QDateTime::currentDateTime(), this);
+	attendTimeEdit->setDisplayFormat("yy/MM/dd HH:mm:ss");
+	attendTimeEdit->setGeometry(645, 140, 150, 30);
+	attendTimeEdit->show();
+	/* attend time set button */
+	setAtdtimeBtn = new QPushButton(mainWindow);
+	setAtdtimeBtn->setText(tr("set attend time"));
+    connect(setAtdtimeBtn, SIGNAL(clicked()), this, SLOT(setAttendTime()));
+	setAtdtimeBtn->setGeometry(660, 172, 120, 30);
+
+	/* user name edit */
 	userNameEdit = new QLineEdit(mainWindow);
 	userNameEdit->setPlaceholderText(tr("User Name"));
-	userNameEdit->setGeometry(645, 230, 150, 40);
-
+	userNameEdit->setGeometry(645, 215, 150, 30);
+	/* add user button */
 	addUserBtn = new QPushButton(mainWindow);
 	addUserBtn->setText(tr("Add user"));
     connect(addUserBtn, SIGNAL(clicked()), this, SLOT(addUser()));
-	addUserBtn->setGeometry(670, 275, 100, 40);
+	addUserBtn->setGeometry(670, 247, 100, 30);
 
 	/* user list box */
 	userListBox = new QComboBox(mainWindow);
-	userListBox->setGeometry(645, 330, 150, 40);
+	userListBox->setGeometry(645, 290, 150, 30);
 	userListBox->setEditable(true);
-
 	/* delete user button */
 	delUserBtn = new QPushButton(mainWindow);
 	delUserBtn->setText(tr("Delete user"));
     connect(delUserBtn, SIGNAL(clicked()), this, SLOT(deleteUser()));
-	delUserBtn->setGeometry(670, 375, 100, 40);
+	delUserBtn->setGeometry(670, 322, 100, 30);
+
+	/* time sheet button */
+	timeSheetBtn = new QPushButton(mainWindow);
+	timeSheetBtn->setText(tr("timesheet"));
+    connect(timeSheetBtn, SIGNAL(clicked()), this, SLOT(showTimeSheet()));
+	timeSheetBtn->setGeometry(670, 365, 100, 30);
+
+	tableView = new QTableView(mainWindow);
+	userModel = new QStandardItemModel();
+	userModel->setHorizontalHeaderLabels({"ID", "Name", "Time", "Status"});
+	tableView->setGeometry(0, 0, VIDEO_AREA_ROW, VIDEO_AREA_COL);
+	tableView->hide();
 #endif
 
 	buf_size = VIDEO_AREA_ROW*VIDEO_AREA_COL*3;
@@ -93,12 +122,12 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 
 }
 
-MainWindow::~MainWindow()
+MainWindow::~MainWindow(void)
 {
 	
 }
 
-void MainWindow::showMainwindow()
+void MainWindow::showMainwindow(void)
 {
 	static Rect old_rect;
 	static int old_rect_cnt = 0;
@@ -108,6 +137,10 @@ void MainWindow::showMainwindow()
 	int ret;
 
 	timer->stop();
+
+	QDateTime time = QDateTime::currentDateTime();
+	QString str = time.toString("yyyy-MM-dd hh:mm:ss dddd");
+	clockLabel->setText(str);
 
 	/* show capture image */
 	ret = capture_getframe(video_buf, buf_size, &len);
@@ -171,7 +204,13 @@ void MainWindow::showMainwindow()
 	
 }
 
-void MainWindow::addUser()
+void MainWindow::setAttendTime(void)
+{
+	QDateTime dateTime = attendTimeEdit->dateTime();
+	proto_0x13_setAttendTime(main_mngr.socket_handle, dateTime.toTime_t());
+}
+
+void MainWindow::addUser(void)
 {
 	QString editStr;
 	QByteArray ba;
@@ -188,7 +227,7 @@ void MainWindow::addUser()
 	proto_0x04_switchWorkSta(main_mngr.socket_handle, main_mngr.work_state, username);
 }
 
-void MainWindow::deleteUser()
+void MainWindow::deleteUser(void)
 {
 	QString qstrUsrName;
 	char user_name[USER_NAME_LEN] = {0};
@@ -211,7 +250,27 @@ void MainWindow::deleteUser()
 		
 }
 
-void MainWindow::textOnVideo_show_over()
+void MainWindow::showTimeSheet(void)
+{
+	static bool showflag = 0;
+
+	showflag = !showflag;
+
+	if(showflag == 1)
+	{
+		tableView->setModel(userModel);
+		tableView->show();
+		printf("show timesheet !\n");	
+	}
+	else
+	{
+		tableView->hide();
+		printf("hide timesheet !\n");	
+	}
+
+}
+
+void MainWindow::textOnVideo_show_over(void)
 {
 	tmpShowTimer->stop();
 	textOnVideo->hide();
@@ -248,10 +307,17 @@ int MainWindow::switch_mainwin_mode(mainwin_mode_e mode)
 	}
 	else if(mode == MAINWIN_MODE_RECOGN)
 	{
-		addface_x = 180;
+		addface_x = 150;
 		textOnVideo->setGeometry(addface_x, 0, VIDEO_AREA_ROW -addface_x, 50);
 		QTextCodec *codec = QTextCodec::codecForName("GBK");
-		sprintf(showText, "%s: %s - %d%c", SUCCESS_RECOGN_TEXT, userRecogn, confidence, '%');
+		if(face_status == ATTEND_STA_LATE)
+		{
+			sprintf(showText, "%s: %s - %d%c", ATTEND_LATE_TEXT, userRecogn, confidence, '%');
+		}
+		else
+		{
+			sprintf(showText, "%s: %s - %d%c", RECOGN_SUCCESS_TEXT, userRecogn, confidence, '%');
+		}
 		textOnVideo->setText(codec->toUnicode(showText));
 		textOnVideo->show();
 		QObject::connect(tmpShowTimer, SIGNAL(timeout()), this, SLOT(textOnVideo_show_over()));
@@ -292,7 +358,7 @@ int mainwin_set_userList(int flag, int userCnt, char *usr_name)
 }
 
 /* id: -1, only show usr_name */
-int mainwin_set_recognInfo(int id, uint8_t confid, char *usr_name)
+int mainwin_set_recognInfo(int id, uint8_t confid, char *usr_name, int status)
 {
 
 	if(usr_name == NULL)
@@ -311,9 +377,52 @@ int mainwin_set_recognInfo(int id, uint8_t confid, char *usr_name)
 	}
 
 	mainwindow->confidence = confid;
+	mainwindow->face_status = status;
 
 	return 0;
 }
+
+/* set attend info */
+int mainwin_set_attendList(int id, char *usr_name, time_t time, int status)
+{
+	char usr_id[4] = {0};
+	char attend_time[32] = {0};
+	char attend_sta[8] = {0};
+	int modelRowCnt = 0;
+	struct tm *ptm;
+
+	if(usr_name == NULL)
+		return -1;
+
+	sprintf(usr_id, "%d", id);
+	ptm = gmtime(&time);
+	sprintf(attend_time, "%02d:%02d:%02d", ptm->tm_hour, ptm->tm_min, ptm->tm_sec);
+
+	if(status == ATTEND_STA_OK)
+	{
+		strcpy(attend_sta, "Normal");
+	}
+	else if(status == ATTEND_STA_LATE)
+		strcpy(attend_sta, "Late");
+	else
+		strcpy(attend_sta, "None");
+	//printf("usr_id: %s, time: %s, status: %s\n", usr_id, attend_time, attend_sta);
+
+	modelRowCnt = mainwindow->userModel->rowCount();
+	mainwindow->userModel->setItem(modelRowCnt, 0, new QStandardItem(QString("%1").arg(usr_id)));
+	mainwindow->userModel->setItem(modelRowCnt, 1, new QStandardItem(QString("%1").arg(usr_name)));
+	mainwindow->userModel->setItem(modelRowCnt, 2, new QStandardItem(QString("%1").arg(attend_time)));
+	mainwindow->userModel->setItem(modelRowCnt, 3, new QStandardItem(QString("%1").arg(attend_sta)));
+
+	return 0;
+}
+
+void mainwin_reset_attendList(void)
+{
+	mainwindow->userModel->clear();
+	mainwindow->userModel->setHorizontalHeaderLabels({"ID", "Name", "Time", "Status"});
+}
+
 
 int mainwindow_init(void)
 {

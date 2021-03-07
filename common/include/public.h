@@ -13,11 +13,18 @@ typedef enum {
 	WORK_STA_RECOGN,		// has recognize success
 }workstate_e;
 
+typedef enum {
+	ATTEND_STA_NONE,		// not attend
+	ATTEND_STA_OK,		    // already attended
+	ATTEND_STA_LATE,		// be late
+}attend_sta_e;
+
 struct main_mngr_info
 {
 	workstate_e work_state;
 	int socket_handle;
 	int client_login;
+	long attend_time;
 };
 
 
