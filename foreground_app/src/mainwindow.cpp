@@ -55,10 +55,10 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 	/* clock */
 	clockLabel = new QLabel(mainWindow);
 	clockLabel->setWordWrap(true);	// adapt to text, can show multi row
-	clockLabel->setGeometry(650, 90, 140, 40);
+	clockLabel->setGeometry(650, 90, 140, 42);
 	clockLabel->show();
 
-#if defined(MANAGER_CLIENT_ENABLE)
+#ifdef MANAGER_CLIENT_ENABLE
 	/* attend time edit */
 	attendTimeEdit = new QDateTimeEdit(QDateTime::currentDateTime(), this);
 	attendTimeEdit->setDisplayFormat("yy/MM/dd HH:mm:ss");

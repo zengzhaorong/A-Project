@@ -47,8 +47,10 @@ int client_0x01_login(uint8_t *data, int len, uint8_t *ack_data, int size, int *
 		client->state = STATE_LOGIN;
 		printf("Congratulation! Login success.\n");
 
+#ifdef MANAGER_CLIENT_ENABLE
 		/* get user list from server(backbround app) */
 		proto_0x07_getUserList(client->protoHandle);
+#endif
 	}
 
 	return 0;
@@ -222,8 +224,6 @@ int client_0x12_faceRecogn(uint8_t *data, int len, uint8_t *ack_data, int size, 
 	printf("[recogn]: ****** face id: %d, confid: %d, face name: %s\n", face_id, confidence, face_name);
 	mainwin_set_recognInfo(face_id, confidence, face_name, status);
 	main_mngr.work_state = WORK_STA_RECOGN;
-
-	//mainwin_set_attendList(face_id, face_name, 0, 0);
 
 	return 0;
 }
@@ -427,12 +427,14 @@ int client_protoAnaly(struct clientInfo *client, uint8_t *pack, uint32_t pack_le
 		client_sendData(client->fd, tmpBuf, tmpLen);
 	}
 
+#ifdef MANAGER_CLIENT_ENABLE
 	if(cmd == 0x12)
 	{
 		/* update attend list */
 		proto_0x14_getAttendList(client->protoHandle);
 		mainwin_reset_attendList();
 	}
+#endif
 
 	return 0;
 }
@@ -501,7 +503,6 @@ void *socket_client_thread(void *arg)
 				tmpTime = time(NULL);
 				if(abs(tmpTime - login_time) >= 3)
 				{
-					printf("********** Login ...\n");
 					proto_0x01_login(client->protoHandle, (uint8_t *)"user_name", (uint8_t *)"pass_word");
 					login_time = tmpTime;
 				}
