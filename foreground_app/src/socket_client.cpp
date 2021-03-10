@@ -10,6 +10,7 @@
 #include "opencv_image_process.h"
 #include "mainwindow.h"
 
+
 /* C++ include C */
 #ifdef __cplusplus
 extern "C" {
@@ -28,16 +29,11 @@ extern "C" {
 struct clientInfo client_info;
 int global_seq;
 
-static uint8_t tmpBuf[1 *1024 *1024];
-static uint8_t ack_buf[1 *1024 *1024] = {0};
-static int tmpLen = 0;
-
 extern struct main_mngr_info main_mngr;
 
 
-int client_0x01_login(uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
+int client_0x01_login(struct clientInfo *client, uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
 {
-	struct clientInfo *client = &client_info;
 	int ret = 0;
 
 	/* return value */
@@ -46,6 +42,9 @@ int client_0x01_login(uint8_t *data, int len, uint8_t *ack_data, int size, int *
 	{
 		client->state = STATE_LOGIN;
 		printf("Congratulation! Login success.\n");
+
+		client->identity = IDENTITY_USER;
+		main_mngr.user_handle = client->protoHandle;
 
 #ifdef MANAGER_CLIENT_ENABLE
 		/* get user list from server(backbround app) */
@@ -56,7 +55,7 @@ int client_0x01_login(uint8_t *data, int len, uint8_t *ack_data, int size, int *
 	return 0;
 }
 
-int client_0x03_heartbeat(uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
+int client_0x03_heartbeat(struct clientInfo *client, uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
 {
 	time_t tmpTime;
 	int ret;
@@ -74,7 +73,7 @@ int client_0x03_heartbeat(uint8_t *data, int len, uint8_t *ack_data, int size, i
 	return 0;
 }
 
-int client_0x04_switchWorkSta(uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
+int client_0x04_switchWorkSta(struct clientInfo *client, uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
 {
 	int state = 0;
 
@@ -86,7 +85,7 @@ int client_0x04_switchWorkSta(uint8_t *data, int len, uint8_t *ack_data, int siz
 	return 0;
 }
 
-int client_0x05_addUser(uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
+int client_0x05_addUser(struct clientInfo *client, uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
 {
 	char username[USER_NAME_LEN] = {0};
 	int userCnt = 0;
@@ -109,7 +108,7 @@ int client_0x05_addUser(uint8_t *data, int len, uint8_t *ack_data, int size, int
 	return 0;
 }
 
-int client_0x07_getUserList(uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
+int client_0x07_getUserList(struct clientInfo *client, uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
 {
 	char name[USER_NAME_LEN] = {0};
 	int userCnt = 0;
@@ -137,7 +136,7 @@ int client_0x07_getUserList(uint8_t *data, int len, uint8_t *ack_data, int size,
 	return 0;
 }
 
-int client_0x10_getOneFrame(uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
+int client_0x10_getOneFrame(struct clientInfo *client, uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
 {
 	int frame_len = 0;
 	int tmplen = 0;
@@ -172,7 +171,7 @@ int client_0x10_getOneFrame(uint8_t *data, int len, uint8_t *ack_data, int size,
 	return 0;
 }
 
-int client_0x11_faceDetect(uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
+int client_0x11_faceDetect(struct clientInfo *client, uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
 {
 	Rect rects;
 	uint8_t count;
@@ -197,7 +196,7 @@ int client_0x11_faceDetect(uint8_t *data, int len, uint8_t *ack_data, int size, 
 	return 0;
 }
 
-int client_0x12_faceRecogn(uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
+int client_0x12_faceRecogn(struct clientInfo *client, uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
 {
 	int face_id = 0;
 	uint8_t confidence = 0;
@@ -228,7 +227,7 @@ int client_0x12_faceRecogn(uint8_t *data, int len, uint8_t *ack_data, int size, 
 	return 0;
 }
 
-int client_0x14_getAttendList(uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
+int client_0x14_getAttendList(struct clientInfo *client, uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
 {
 	char user_name[USER_NAME_LEN] = {0};
 	int user_id;
@@ -347,12 +346,12 @@ int client_recvData(struct clientInfo *client)
 	if(client == NULL)
 		return -1;
 
-	memset(tmpBuf, 0, sizeof(tmpBuf));
-	len = recv(client->fd, tmpBuf, sizeof(tmpBuf), 0);
+	memset(client->tmpBuf, 0, PROTO_PACK_MAX_LEN);
+	len = recv(client->fd, client->tmpBuf, PROTO_PACK_MAX_LEN, 0);
 
 	if(len > 0)
 	{
-		len = ringbuf_write(&client->recvRingBuf, tmpBuf, len);
+		len = ringbuf_write(&client->recvRingBuf, client->tmpBuf, len);
 	}
 
 	return len;
@@ -360,10 +359,13 @@ int client_recvData(struct clientInfo *client)
 
 int client_protoAnaly(struct clientInfo *client, uint8_t *pack, uint32_t pack_len)
 {
+	uint8_t *ack_buf = client->ack_buf;
+	uint8_t *tmpBuf = client->tmpBuf;
 	uint8_t seq = 0, cmd = 0;
 	int data_len = 0;
 	uint8_t *data = 0;
 	int ack_len = 0;
+	int tmpLen = 0;
 	int ret;
 
 	if(pack==NULL || pack_len<=0)
@@ -377,42 +379,42 @@ int client_protoAnaly(struct clientInfo *client, uint8_t *pack, uint32_t pack_le
 	switch(cmd)
 	{
 		case 0x01:
-			ret = client_0x01_login(data, data_len, ack_buf, sizeof(ack_buf), &ack_len);
+			ret = client_0x01_login(client, data, data_len, ack_buf, PROTO_PACK_MAX_LEN, &ack_len);
 			break;
 
 		case 0x02:
 			break;
 
 		case 0x03:
-			ret = client_0x03_heartbeat(data, data_len, ack_buf, sizeof(ack_buf), &ack_len);
+			ret = client_0x03_heartbeat(client, data, data_len, ack_buf, PROTO_PACK_MAX_LEN, &ack_len);
 			break;
 
 		case 0x04:
-			ret = client_0x04_switchWorkSta(data, data_len, ack_buf, sizeof(ack_buf), &ack_len);
+			ret = client_0x04_switchWorkSta(client, data, data_len, ack_buf, PROTO_PACK_MAX_LEN, &ack_len);
 			break;
 
 		case 0x05:
-			ret = client_0x05_addUser(data, data_len, ack_buf, sizeof(ack_buf), &ack_len);
+			ret = client_0x05_addUser(client, data, data_len, ack_buf, PROTO_PACK_MAX_LEN, &ack_len);
 			break;
 
 		case 0x07:
-			ret = client_0x07_getUserList(data, data_len, ack_buf, sizeof(ack_buf), &ack_len);
+			ret = client_0x07_getUserList(client, data, data_len, ack_buf, PROTO_PACK_MAX_LEN, &ack_len);
 			break;
 
 		case 0x10:
-			ret = client_0x10_getOneFrame(data, data_len, ack_buf, sizeof(ack_buf), &ack_len);
+			ret = client_0x10_getOneFrame(client, data, data_len, ack_buf, PROTO_PACK_MAX_LEN, &ack_len);
 			break;
 
 		case 0x11:
-			ret = client_0x11_faceDetect(data, data_len, ack_buf, sizeof(ack_buf), &ack_len);
+			ret = client_0x11_faceDetect(client, data, data_len, ack_buf, PROTO_PACK_MAX_LEN, &ack_len);
 			break;
 
 		case 0x12:
-			ret = client_0x12_faceRecogn(data, data_len, ack_buf, sizeof(ack_buf), &ack_len);
+			ret = client_0x12_faceRecogn(client, data, data_len, ack_buf, PROTO_PACK_MAX_LEN, &ack_len);
 			break;
 
 		case 0x14:
-			ret = client_0x14_getAttendList(data, data_len, ack_buf, sizeof(ack_buf), &ack_len);
+			ret = client_0x14_getAttendList(client, data, data_len, ack_buf, PROTO_PACK_MAX_LEN, &ack_len);
 			break;
 
 		default:
@@ -423,7 +425,7 @@ int client_protoAnaly(struct clientInfo *client, uint8_t *pack, uint32_t pack_le
 	/* send ack data */
 	if(ret==0 && ack_len>0)
 	{
-		proto_makeupPacket(seq, cmd, ack_len, ack_buf, tmpBuf, sizeof(tmpBuf), &tmpLen);
+		proto_makeupPacket(seq, cmd, ack_len, ack_buf, tmpBuf, PROTO_PACK_MAX_LEN, &tmpLen);
 		client_sendData(client->fd, tmpBuf, tmpLen);
 	}
 
@@ -489,7 +491,6 @@ void *socket_client_thread(void *arg)
 				{
 					client->protoHandle = proto_register(client->fd, client_sendData, SEND_BUFFER_SIZE);
 					client->state = STATE_CONNECTED;
-					main_mngr.socket_handle = client->protoHandle;
 					printf("********** socket connect successfully, handle: %d.\n", client->protoHandle);
 				}
 				else
@@ -503,7 +504,11 @@ void *socket_client_thread(void *arg)
 				tmpTime = time(NULL);
 				if(abs(tmpTime - login_time) >= 3)
 				{
-					proto_0x01_login(client->protoHandle, (uint8_t *)"user_name", (uint8_t *)"pass_word");
+				#ifdef MANAGER_CLIENT_ENABLE
+					proto_0x01_login(client->protoHandle, (uint8_t *)MNGR_CLIENT_NAME, (uint8_t *)"pass_word");
+				#else
+					proto_0x01_login(client->protoHandle, (uint8_t *)USER_CLIENT_NAME, (uint8_t *)"pass_word");
+				#endif
 					login_time = tmpTime;
 				}
 				

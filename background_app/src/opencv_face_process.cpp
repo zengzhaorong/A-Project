@@ -330,24 +330,38 @@ int opencv_face_detect( Mat& img, CascadeClassifier& cascade,
 void *opencv_face_detect_thread(void *arg)
 {
 	class face_detect *detect_unit = &face_detect_unit;
+	int socket_handle = -1;
 	vector<Rect> faces;
 	QImage qImage;
 	Mat detectMat, face_mat;
-	int ret;
+	int i, ret;
 
 	printf("%s enter ++\n", __FUNCTION__);
 	
 	detect_unit->face_detect_init();
 
+	/* only support one client at one time */
+	/* if manager is adding user, user client can not work in face detect nad recognize */
 	while(1)
 	{
-		if(main_mngr.socket_handle < 0 || main_mngr.client_login==0)
+		/* get manager client */
+		if(main_mngr.work_state == WORK_STA_ADDUSER)
+		{
+			socket_handle = main_mngr.mngr_handle;
+		}
+		/* get user client */
+		else
+		{
+			socket_handle = main_mngr.user_handle;
+		}
+
+		if(socket_handle < 0)
 		{
 			usleep(300*1000);
 			continue;
 		}
 		
-		proto_0x10_getOneFrame(main_mngr.socket_handle);
+		proto_0x10_getOneFrame(socket_handle);
 
 		/* get one frame which from client */
 		ret = opencv_get_frame_detect(detect_unit->frame_buf, detect_unit->frame_size);
@@ -390,7 +404,7 @@ void *opencv_face_detect_thread(void *arg)
 				rect.h = faces[i].height;
 				//printf("face: x=%d, y=%d, w=%d, h=%d\n", faces[i].x, faces[i].y, faces[i].width, faces[i].height);
 			}
-			proto_0x11_sendFaceDetect(main_mngr.socket_handle, 1, &rect);
+			proto_0x11_sendFaceDetect(socket_handle, 1, &rect);
 			
 			if(main_mngr.work_state == WORK_STA_NORMAL)
 			{
@@ -407,8 +421,8 @@ void *opencv_face_detect_thread(void *arg)
 				/* finish add user, change work state */
 				if(user_mngr_unit.add_index >= FACE_CNT_PER_USER)
 				{
-					proto_0x04_switchWorkSta(main_mngr.socket_handle, WORK_STA_NORMAL, NULL);
-					proto_0x05_addUser(main_mngr.socket_handle, 1, user_mngr_unit.newuser);
+					proto_0x04_switchWorkSta(socket_handle, WORK_STA_NORMAL, NULL);
+					proto_0x05_addUser(socket_handle, 1, user_mngr_unit.newuser);
 					main_mngr.work_state = WORK_STA_NORMAL;
 					face_recogn_unit.recogn_state = 0;
 					ret = face_database_train();
@@ -501,7 +515,7 @@ void *opencv_face_recogn_thread(void *arg)
 
 	while(1)
 	{
-		if(main_mngr.work_state!=WORK_STA_NORMAL || face_recogn_unit.recogn_state!=1)
+		if(main_mngr.work_state!=WORK_STA_NORMAL || face_recogn_unit.recogn_state!=1 || main_mngr.user_handle<0)
 		{
 			usleep(300 *1000);
 			continue;
@@ -523,7 +537,7 @@ void *opencv_face_recogn_thread(void *arg)
 				if(user_mngr_unit.userInfo[i].id == face_id)
 					break;
 			}
-			proto_0x12_sendFaceRecogn(main_mngr.socket_handle, face_id, confidence, user_mngr_unit.userInfo[i].name, status);
+			proto_0x12_sendFaceRecogn(main_mngr.user_handle, face_id, confidence, user_mngr_unit.userInfo[i].name, status);
 			sleep(RECOGN_OK_DELAY_MS/1000 +1);	// more 1 second
 		}
 	}

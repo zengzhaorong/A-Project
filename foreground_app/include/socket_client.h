@@ -28,14 +28,14 @@ struct clientInfo
 	int fd;
 	int protoHandle;
 	sockState_e state;
-	struct sockaddr_in 	srv_addr;		// server 地址
-	//struct sockaddr_in 	cli_addr;		// client 地址
-
-	struct ringbuffer recvRingBuf;			// 接收环形缓冲区
-	//struct ringbuffer sendRingBuf;			// 发送环形缓冲区
+	struct sockaddr_in 	srv_addr;		// server ip addr
+	struct ringbuffer recvRingBuf;			// socket receive data ring buffer
 	struct detect_info detectInfo;
-	uint8_t packBuf[PROTO_PACK_MAX_LEN];		// 协议包数据缓冲区
+	uint8_t packBuf[PROTO_PACK_MAX_LEN];		// protocol packet data buffer
 	int packLen;
+	uint8_t ack_buf[PROTO_PACK_MAX_LEN];
+	uint8_t tmpBuf[PROTO_PACK_MAX_LEN];
+	int identity;		// client_identity_e
 };
 
 int start_socket_client_task(void);

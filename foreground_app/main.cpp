@@ -26,7 +26,8 @@ int main(int argc, char* argv[])
 
 	memset(&main_mngr, 0, sizeof(struct main_mngr_info));
 	main_mngr.work_state = WORK_STA_NORMAL;
-	main_mngr.socket_handle = -1;
+	main_mngr.user_handle = -1;
+	main_mngr.mngr_handle = -1;
 	
 	start_mainwindow_task();
 

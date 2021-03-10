@@ -6,6 +6,16 @@
 
 #define USER_NAME_LEN		32
 
+/* user client login name */
+#define USER_CLIENT_NAME	"user_name"
+/* manager client login name */
+#define MNGR_CLIENT_NAME	"manager_name"
+
+typedef enum {
+	IDENTITY_USER,		// user client
+	IDENTITY_MANAGER,	// manager client
+}client_identity_e;
+
 
 typedef enum {
 	WORK_STA_NORMAL,		// normal work
@@ -22,8 +32,8 @@ typedef enum {
 struct main_mngr_info
 {
 	workstate_e work_state;
-	int socket_handle;
-	int client_login;
+	int user_handle;	// user client socket handle index
+	int mngr_handle;	// manager client socket handle index
 	long attend_time;
 };
 

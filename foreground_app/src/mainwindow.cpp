@@ -207,7 +207,7 @@ void MainWindow::showMainwindow(void)
 void MainWindow::setAttendTime(void)
 {
 	QDateTime dateTime = attendTimeEdit->dateTime();
-	proto_0x13_setAttendTime(main_mngr.socket_handle, dateTime.toTime_t());
+	proto_0x13_setAttendTime(main_mngr.user_handle, dateTime.toTime_t());
 }
 
 void MainWindow::addUser(void)
@@ -224,7 +224,7 @@ void MainWindow::addUser(void)
 
 	main_mngr.work_state = WORK_STA_ADDUSER;
 
-	proto_0x04_switchWorkSta(main_mngr.socket_handle, main_mngr.work_state, username);
+	proto_0x04_switchWorkSta(main_mngr.user_handle, main_mngr.work_state, username);
 }
 
 void MainWindow::deleteUser(void)
@@ -244,7 +244,7 @@ void MainWindow::deleteUser(void)
 		return ;
 	}
 
-	proto_0x06_deleteUser(main_mngr.socket_handle, 1, user_name);
+	proto_0x06_deleteUser(main_mngr.user_handle, 1, user_name);
 	
 	mainwin_set_userList(0, 1, user_name);
 		

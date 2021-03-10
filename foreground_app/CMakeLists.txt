@@ -24,15 +24,11 @@ if(MECHINE_ARCH STREQUAL "arm")
 	set(CMAKE_C_COMPILER ${CROSS_TOOLSCHAIN}/bin/arm-linux-gcc)
 	set(CMAKE_CXX_COMPILER ${CROSS_TOOLSCHAIN}/bin/arm-linux-g++)
 	# use as user, only face recognize
-	#add_definitions(-D USER_CLIENT_ENABLE)
+	add_definitions(-D USER_CLIENT_ENABLE)
 else()
 	# use as manager, can add & del user
-	#add_definitions(-D MANAGER_CLIENT_ENABLE)
+	add_definitions(-D MANAGER_CLIENT_ENABLE)
 endif()
-
-# ########## test
-add_definitions(-D USER_CLIENT_ENABLE)
-add_definitions(-D MANAGER_CLIENT_ENABLE)
 
 # Enable C++11
 set(CMAKE_CXX_STANDARD 11)

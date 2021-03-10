@@ -21,21 +21,13 @@ extern "C" {
 #endif
 
 
-#define MAX_LISTEN_NUM 				5
-#define RECV_BUFFER_SIZE			(1 *1024 *1024)
-#define SEND_BUFFER_SIZE			(1 *1024 *1024)
-
 static struct serverInfo server_info;
-
-static uint8_t tmpBuf[1 *1024 *1024] = {0};
-static uint8_t ack_buf[1 *1024 *1024] = {0};
-static int tmpLen = 0;
 
 extern struct main_mngr_info main_mngr;
 extern struct userMngr_Stru	user_mngr_unit;
 extern struct attend_mngr_Stru attend_mngr_unit;
 
-int server_0x01_login(uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
+int server_0x01_login(struct clientInfo *client, uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
 {
 	uint8_t usr_name[32] = {0};
 	uint8_t passwd[32] = {0};
@@ -50,8 +42,18 @@ int server_0x01_login(uint8_t *data, int len, uint8_t *ack_data, int size, int *
 	memcpy(passwd, data +tmplen, 32);
 	tmplen += 32;
 
-	printf("Login user: %s, passwd: %s\n", usr_name, passwd);
-	main_mngr.client_login = 1;
+	if(strncmp(MNGR_CLIENT_NAME, (char *)usr_name, strlen((char *)usr_name)) == 0)
+	{
+		client->identity = IDENTITY_MANAGER;
+		main_mngr.mngr_handle = client->protoHandle;
+		printf("##### MANAGER Login [handle: %d]: %s, passwd: %s\n", client->protoHandle, usr_name, passwd);
+	}
+	else
+	{
+		client->identity = IDENTITY_USER;
+		main_mngr.user_handle = client->protoHandle;
+		printf("##### USER Login [handle: %d]:: %s, passwd: %s\n", client->protoHandle, usr_name, passwd);
+	}
 
 	/* ack part */
 	tmplen = 0;
@@ -63,7 +65,7 @@ int server_0x01_login(uint8_t *data, int len, uint8_t *ack_data, int size, int *
 	return 0;
 }
 
-int server_0x03_heartbeat(uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
+int server_0x03_heartbeat(struct clientInfo *client, uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
 {
 	time_t tmpTime;
 	int tmplen = 0;
@@ -90,7 +92,7 @@ int server_0x03_heartbeat(uint8_t *data, int len, uint8_t *ack_data, int size, i
 	return 0;
 }
 
-int server_0x04_switchWorkSta(uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
+int server_0x04_switchWorkSta(struct clientInfo *client, uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
 {
 	int state = 0;
 	int tmplen = 0;
@@ -114,7 +116,7 @@ int server_0x04_switchWorkSta(uint8_t *data, int len, uint8_t *ack_data, int siz
 	return 0;
 }
 
-int client_0x06_deleteUser(uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
+int client_0x06_deleteUser(struct clientInfo *client, uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
 {
 	char username[USER_NAME_LEN] = {0};
 	int userCnt = 0;
@@ -141,7 +143,7 @@ int client_0x06_deleteUser(uint8_t *data, int len, uint8_t *ack_data, int size, 
 	return 0;
 }
 
-int server_0x07_getUserList(uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
+int server_0x07_getUserList(struct clientInfo *client, uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
 {
 	int userCnt = 0;
 	int tmplen = 0;
@@ -175,7 +177,7 @@ int server_0x07_getUserList(uint8_t *data, int len, uint8_t *ack_data, int size,
 	return 0;
 }
 
-int server_0x10_getOneFrame(uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
+int server_0x10_getOneFrame(struct clientInfo *client, uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
 {
 	uint8_t type = 0;
 	uint32_t frame_len = 0;
@@ -204,7 +206,7 @@ int server_0x10_getOneFrame(uint8_t *data, int len, uint8_t *ack_data, int size,
 	return 0;
 }
 
-int server_0x13_setAttendTime(uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
+int server_0x13_setAttendTime(struct clientInfo *client, uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
 {
 	long time;
 
@@ -215,7 +217,7 @@ int server_0x13_setAttendTime(uint8_t *data, int len, uint8_t *ack_data, int siz
 	return 0;
 }
 
-int server_0x14_getAttendList(uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
+int server_0x14_getAttendList(struct clientInfo *client, uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
 {
     struct attend_mngr_Stru *atd_mngr = &attend_mngr_unit;
 	int userCnt = 0;
@@ -330,13 +332,14 @@ int server_sendData(int sodkfd, uint8_t *data, int len)
 
 int server_recvData(struct clientInfo *client)
 {
+	uint8_t *tmpBuf = client->tmpBuf;
 	int len;
 
 	if(client == NULL)
 		return -1;
 
-	memset(tmpBuf, 0, sizeof(tmpBuf));
-	len = recv(client->fd, tmpBuf, sizeof(tmpBuf), 0);
+	memset(tmpBuf, 0, PROTO_PACK_MAX_LEN);
+	len = recv(client->fd, tmpBuf, PROTO_PACK_MAX_LEN, 0);
 
 	if(len > 0)
 	{
@@ -348,10 +351,13 @@ int server_recvData(struct clientInfo *client)
 
 int server_protoAnaly(struct clientInfo *client, uint8_t *pack, uint32_t pack_len)
 {
+	uint8_t *ack_buf = client->ack_buf;
+	uint8_t *tmpBuf = client->tmpBuf;
 	uint8_t seq = 0, cmd = 0;
 	int data_len = 0;
 	uint8_t *data = NULL;
 	int ack_len = 0;
+	int tmpLen = 0;
 	int ret;
 
 	if(pack==NULL || pack_len<=0)
@@ -365,38 +371,38 @@ int server_protoAnaly(struct clientInfo *client, uint8_t *pack, uint32_t pack_le
 	switch(cmd)
 	{
 		case 0x01:
-			ret = server_0x01_login(data, data_len, ack_buf, sizeof(ack_buf), &ack_len);
+			ret = server_0x01_login(client, data, data_len, ack_buf, PROTO_PACK_MAX_LEN, &ack_len);
 			break;
 
 		case 0x02:
 			break;
 
 		case 0x03:
-			ret = server_0x03_heartbeat(data, data_len, ack_buf, sizeof(ack_buf), &ack_len);
+			ret = server_0x03_heartbeat(client, data, data_len, ack_buf, PROTO_PACK_MAX_LEN, &ack_len);
 			break;
 
 		case 0x04:
-			ret = server_0x04_switchWorkSta(data, data_len, ack_buf, sizeof(ack_buf), &ack_len);
+			ret = server_0x04_switchWorkSta(client, data, data_len, ack_buf, PROTO_PACK_MAX_LEN, &ack_len);
 			break;
 
 		case 0x06:
-			ret = client_0x06_deleteUser(data, data_len, ack_buf, sizeof(ack_buf), &ack_len);
+			ret = client_0x06_deleteUser(client, data, data_len, ack_buf, PROTO_PACK_MAX_LEN, &ack_len);
 			break;
 
 		case 0x07:
-			ret = server_0x07_getUserList(data, data_len, ack_buf, sizeof(ack_buf), &ack_len);
+			ret = server_0x07_getUserList(client, data, data_len, ack_buf, PROTO_PACK_MAX_LEN, &ack_len);
 			break;
 
 		case 0x10:
-			ret = server_0x10_getOneFrame(data, data_len, ack_buf, sizeof(ack_buf), &ack_len);
+			ret = server_0x10_getOneFrame(client, data, data_len, ack_buf, PROTO_PACK_MAX_LEN, &ack_len);
 			break;
 
 		case 0x13:
-			ret = server_0x13_setAttendTime(data, data_len, ack_buf, sizeof(ack_buf), &ack_len);
+			ret = server_0x13_setAttendTime(client, data, data_len, ack_buf, PROTO_PACK_MAX_LEN, &ack_len);
 			break;
 
 		case 0x14:
-			ret = server_0x14_getAttendList(data, data_len, ack_buf, sizeof(ack_buf), &ack_len);
+			ret = server_0x14_getAttendList(client, data, data_len, ack_buf, PROTO_PACK_MAX_LEN, &ack_len);
 			break;
 
 		default:
@@ -407,7 +413,7 @@ int server_protoAnaly(struct clientInfo *client, uint8_t *pack, uint32_t pack_le
 	/* send ack data */
 	if(ret==0 && ack_len>0)
 	{
-		proto_makeupPacket(seq, cmd, ack_len, ack_buf, tmpBuf, sizeof(tmpBuf), &tmpLen);
+		proto_makeupPacket(seq, cmd, ack_len, ack_buf, tmpBuf, PROTO_PACK_MAX_LEN, &tmpLen);
 		server_sendData(client->fd, tmpBuf, tmpLen);
 	}
 
@@ -441,7 +447,6 @@ void *socket_handle_thread(void *arg)
 
 	printf("%s %d: enter ++\n", __FUNCTION__, __LINE__);
 
-
 	flags = fcntl(client->fd, F_GETFL, 0);
 	fcntl(client->fd, F_SETFL, flags | O_NONBLOCK);
 
@@ -450,7 +455,7 @@ void *socket_handle_thread(void *arg)
 		return NULL;
 
 	client->protoHandle = proto_register(client->fd, server_sendData, SEND_BUFFER_SIZE);
-	main_mngr.socket_handle = client->protoHandle;
+	client->identity = -1;
 
 	while(1)
 	{
@@ -465,9 +470,10 @@ void *socket_listen_thread(void *arg)
 	struct serverInfo *server = &server_info;
 	struct sockaddr_in cli_addr;
 	pthread_t tid;
-	int tmpSock;
+	int tmpSock, client_index;
 	int tmpLen;
 	int ret;
+	int i;
 
 	ret = server_init(server, DEFAULT_SERVER_PORT);
 	if(ret != 0)
@@ -491,11 +497,20 @@ void *socket_listen_thread(void *arg)
 			continue;
 		printf("%s %d: *************** accept socket success, sock fd: %d ...\n", __FUNCTION__, __LINE__, tmpSock);
 
+		for(i=0; i<MAX_CLIENT_NUM; i++)
+		{
+			if(server->client_used[i] == 0)		// can use this
+			{
+				client_index = i;
+				break;
+			}
+		}
+
+		server->client[client_index].fd = tmpSock;
+		memcpy(&server->client[client_index].addr, &cli_addr, sizeof(struct sockaddr_in));
 		server->client_cnt ++;
-		server->client[server->client_cnt-1].fd = tmpSock;
-		memcpy(&server->client[server->client_cnt-1].addr, &cli_addr, sizeof(struct sockaddr_in));
 		
-		ret = pthread_create(&tid, NULL, socket_handle_thread, &server->client[server->client_cnt-1]);
+		ret = pthread_create(&tid, NULL, socket_handle_thread, &server->client[client_index]);
 		if(ret != 0)
 		{
 			printf("ERROR: %s %d: pthread_create failed !!!\n", __FUNCTION__, __LINE__);
