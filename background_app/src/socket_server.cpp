@@ -508,6 +508,7 @@ void *socket_listen_thread(void *arg)
 
 		server->client[client_index].fd = tmpSock;
 		memcpy(&server->client[client_index].addr, &cli_addr, sizeof(struct sockaddr_in));
+		server->client_used[client_index] = 1;
 		server->client_cnt ++;
 		
 		ret = pthread_create(&tid, NULL, socket_handle_thread, &server->client[client_index]);

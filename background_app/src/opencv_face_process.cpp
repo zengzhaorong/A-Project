@@ -334,7 +334,7 @@ void *opencv_face_detect_thread(void *arg)
 	vector<Rect> faces;
 	QImage qImage;
 	Mat detectMat, face_mat;
-	int i, ret;
+	int ret;
 
 	printf("%s enter ++\n", __FUNCTION__);
 	
