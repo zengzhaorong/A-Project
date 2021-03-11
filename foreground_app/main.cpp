@@ -36,5 +36,5 @@ int main(int argc, char* argv[])
 	start_socket_client_task();
 
 
-	return qtApp.exec();		// 启动QT应用的执行，消息循环和事件处理
+	return qtApp.exec();		// start qt application, message loop ...
 }

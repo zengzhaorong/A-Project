@@ -99,6 +99,9 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 	tableView = new QTableView(mainWindow);
 	userModel = new QStandardItemModel();
 	userModel->setHorizontalHeaderLabels({"ID", "Name", "Time", "Status"});
+	tableView->setSelectionBehavior(QAbstractItemView::SelectRows);		// set select the whole row 
+	//tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);	// adapt to table veiw
+	tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents );	// adapt to text
 	tableView->setGeometry(0, 0, VIDEO_AREA_ROW, VIDEO_AREA_COL);
 	tableView->hide();
 #endif
@@ -207,7 +210,7 @@ void MainWindow::showMainwindow(void)
 void MainWindow::setAttendTime(void)
 {
 	QDateTime dateTime = attendTimeEdit->dateTime();
-	proto_0x13_setAttendTime(main_mngr.user_handle, dateTime.toTime_t());
+	proto_0x13_setAttendTime(main_mngr.mngr_handle, dateTime.toTime_t());
 }
 
 void MainWindow::addUser(void)
@@ -224,7 +227,7 @@ void MainWindow::addUser(void)
 
 	main_mngr.work_state = WORK_STA_ADDUSER;
 
-	proto_0x04_switchWorkSta(main_mngr.user_handle, main_mngr.work_state, username);
+	proto_0x04_switchWorkSta(main_mngr.mngr_handle, main_mngr.work_state, username);
 }
 
 void MainWindow::deleteUser(void)
@@ -244,7 +247,7 @@ void MainWindow::deleteUser(void)
 		return ;
 	}
 
-	proto_0x06_deleteUser(main_mngr.user_handle, 1, user_name);
+	proto_0x06_deleteUser(main_mngr.mngr_handle, 1, user_name);
 	
 	mainwin_set_userList(0, 1, user_name);
 		
@@ -253,6 +256,10 @@ void MainWindow::deleteUser(void)
 void MainWindow::showTimeSheet(void)
 {
 	static bool showflag = 0;
+
+	/* get attend list */
+	proto_0x14_getAttendList(main_mngr.mngr_handle);
+	mainwin_reset_attendList();
 
 	showflag = !showflag;
 
@@ -385,6 +392,7 @@ int mainwin_set_recognInfo(int id, uint8_t confid, char *usr_name, int status)
 /* set attend info */
 int mainwin_set_attendList(int id, char *usr_name, time_t time, int status)
 {
+	QColor color;
 	char usr_id[4] = {0};
 	char attend_time[32] = {0};
 	char attend_sta[8] = {0};
@@ -400,12 +408,19 @@ int mainwin_set_attendList(int id, char *usr_name, time_t time, int status)
 
 	if(status == ATTEND_STA_OK)
 	{
-		strcpy(attend_sta, "Normal");
+		strcpy(attend_sta, "OK");
+		color = QColor(155,187,89);	// light green
 	}
 	else if(status == ATTEND_STA_LATE)
+	{
 		strcpy(attend_sta, "Late");
+		color = QColor(222, 221, 140);	// light yellow
+	}
 	else
-		strcpy(attend_sta, "None");
+	{
+		strcpy(attend_sta, "-");
+		color = QColor(192,80,77);	// light red
+	}
 	//printf("usr_id: %s, time: %s, status: %s\n", usr_id, attend_time, attend_sta);
 
 	modelRowCnt = mainwindow->userModel->rowCount();
@@ -413,6 +428,18 @@ int mainwin_set_attendList(int id, char *usr_name, time_t time, int status)
 	mainwindow->userModel->setItem(modelRowCnt, 1, new QStandardItem(QString("%1").arg(usr_name)));
 	mainwindow->userModel->setItem(modelRowCnt, 2, new QStandardItem(QString("%1").arg(attend_time)));
 	mainwindow->userModel->setItem(modelRowCnt, 3, new QStandardItem(QString("%1").arg(attend_sta)));
+
+	/* set item align center */
+	mainwindow->userModel->item(modelRowCnt, 0)->setTextAlignment(Qt::AlignCenter);
+	mainwindow->userModel->item(modelRowCnt, 1)->setTextAlignment(Qt::AlignCenter);
+	mainwindow->userModel->item(modelRowCnt, 2)->setTextAlignment(Qt::AlignCenter);
+	mainwindow->userModel->item(modelRowCnt, 3)->setTextAlignment(Qt::AlignCenter);
+
+	/* set item background color */
+	mainwindow->userModel->item(modelRowCnt, 3)->setBackground(QBrush(color));
+	
+	/* set item fonts(forground) color */
+	//item(x, y)->setForeground(QBrush(QColor(255, 0, 0)));
 
 	return 0;
 }

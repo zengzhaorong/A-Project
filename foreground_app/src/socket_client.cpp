@@ -43,12 +43,14 @@ int client_0x01_login(struct clientInfo *client, uint8_t *data, int len, uint8_t
 		client->state = STATE_LOGIN;
 		printf("Congratulation! Login success.\n");
 
-		client->identity = IDENTITY_USER;
-		main_mngr.user_handle = client->protoHandle;
-
 #ifdef MANAGER_CLIENT_ENABLE
+		client->identity = IDENTITY_MANAGER;
+		main_mngr.mngr_handle = client->protoHandle;
 		/* get user list from server(backbround app) */
 		proto_0x07_getUserList(client->protoHandle);
+#else
+		client->identity = IDENTITY_USER;
+		main_mngr.user_handle = client->protoHandle;
 #endif
 	}
 
@@ -428,15 +430,6 @@ int client_protoAnaly(struct clientInfo *client, uint8_t *pack, uint32_t pack_le
 		proto_makeupPacket(seq, cmd, ack_len, ack_buf, tmpBuf, PROTO_PACK_MAX_LEN, &tmpLen);
 		client_sendData(client->fd, tmpBuf, tmpLen);
 	}
-
-#ifdef MANAGER_CLIENT_ENABLE
-	if(cmd == 0x12)
-	{
-		/* update attend list */
-		proto_0x14_getAttendList(client->protoHandle);
-		mainwin_reset_attendList();
-	}
-#endif
 
 	return 0;
 }
