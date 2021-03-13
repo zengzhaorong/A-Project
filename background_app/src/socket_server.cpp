@@ -42,7 +42,14 @@ int server_0x01_login(struct clientInfo *client, uint8_t *data, int len, uint8_t
 	memcpy(passwd, data +tmplen, 32);
 	tmplen += 32;
 
-	if(strncmp(MNGR_CLIENT_NAME, (char *)usr_name, strlen((char *)usr_name)) == 0)
+	if(strncmp(ROOT_CLIENT_NAME, (char *)usr_name, strlen((char *)usr_name)) == 0)
+	{
+		client->identity = IDENTITY_MANAGER;
+		main_mngr.mngr_handle = client->protoHandle;
+		main_mngr.user_handle = client->protoHandle;
+		printf("##### MANAGER Login [handle: %d]: %s, passwd: %s\n", client->protoHandle, usr_name, passwd);
+	}
+	else if(strncmp(MNGR_CLIENT_NAME, (char *)usr_name, strlen((char *)usr_name)) == 0)
 	{
 		client->identity = IDENTITY_MANAGER;
 		main_mngr.mngr_handle = client->protoHandle;

@@ -43,7 +43,13 @@ int client_0x01_login(struct clientInfo *client, uint8_t *data, int len, uint8_t
 		client->state = STATE_LOGIN;
 		printf("Congratulation! Login success.\n");
 
-#ifdef MANAGER_CLIENT_ENABLE
+#if defined(MANAGER_CLIENT_ENABLE) && defined(USER_CLIENT_ENABLE)
+		client->identity = IDENTITY_ROOT;
+		main_mngr.mngr_handle = client->protoHandle;
+		main_mngr.user_handle = client->protoHandle;
+		/* get user list from server(backbround app) */
+		proto_0x07_getUserList(client->protoHandle);
+#elif MANAGER_CLIENT_ENABLE
 		client->identity = IDENTITY_MANAGER;
 		main_mngr.mngr_handle = client->protoHandle;
 		/* get user list from server(backbround app) */
@@ -497,7 +503,9 @@ void *socket_client_thread(void *arg)
 				tmpTime = time(NULL);
 				if(abs(tmpTime - login_time) >= 3)
 				{
-				#ifdef MANAGER_CLIENT_ENABLE
+				#if defined(MANAGER_CLIENT_ENABLE) && defined(USER_CLIENT_ENABLE)
+					proto_0x01_login(client->protoHandle, (uint8_t *)ROOT_CLIENT_NAME, (uint8_t *)"pass_word");
+				#elif MANAGER_CLIENT_ENABLE
 					proto_0x01_login(client->protoHandle, (uint8_t *)MNGR_CLIENT_NAME, (uint8_t *)"pass_word");
 				#else
 					proto_0x01_login(client->protoHandle, (uint8_t *)USER_CLIENT_NAME, (uint8_t *)"pass_word");

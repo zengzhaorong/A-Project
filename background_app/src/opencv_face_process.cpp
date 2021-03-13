@@ -341,7 +341,7 @@ void *opencv_face_detect_thread(void *arg)
 	detect_unit->face_detect_init();
 
 	/* only support one client at one time */
-	/* if manager is adding user, user client can not work in face detect nad recognize */
+	/* if manager is adding user, user client can not work in face detect and recognize */
 	while(1)
 	{
 		/* get manager client */
