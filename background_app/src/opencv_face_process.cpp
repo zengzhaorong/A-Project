@@ -492,7 +492,7 @@ int opencv_face_recogn(Mat &face_mat, int *face_id, uint8_t *confid, int *status
 	}
 	
 	/* set user attend info */
-	*status = (int)attendance_set_one(predict, time(NULL));
+	*status = (int)attendance_set_one(predict, (uint32_t)time(NULL));
 	
 	printf("[recogn]*** predict: %d, confidence: %f = %d%%, status: %d\n", predict, confidence, *confid, *status);
 

@@ -65,15 +65,48 @@ int client_0x01_login(struct clientInfo *client, uint8_t *data, int len, uint8_t
 
 int client_0x03_heartbeat(struct clientInfo *client, uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
 {
-	time_t tmpTime;
+	struct tm *ptm;
+	struct tm local_info;
+	struct tm utc_info;
+	struct timeval tv;
+	time_t getTime;
+	uint32_t svrTime;
+	int hour_diff;
+	int tmplen = 0;
 	int ret;
 
 	if(data==NULL || len<=0)
 		return -1;
 
-	/* request part */
-	proto_0x03_dataAnaly(data, len, PROTO_ACK, &ret, &tmpTime);
-	//printf("%s: [ret: %d], time: %ld\n", __FUNCTION__, ret, tmpTime);
+	memcpy(&ret, data +tmplen, 4);
+	tmplen += 4;
+
+	/* bejing time */
+	memcpy(&svrTime, data +tmplen, 4);
+	tmplen += 4;
+
+	/* check timezone */
+	/* Attendtion: localtime() and gmtime() return pointer is the same memory(shared).  */
+	getTime = time(NULL);
+	ptm = localtime(&getTime);
+	memcpy(&local_info, ptm, sizeof(struct tm));
+	ptm = gmtime(&getTime);
+	memcpy(&utc_info, ptm, sizeof(struct tm));
+
+	/* differ from utc time */
+	hour_diff = (local_info.tm_yday*24 +local_info.tm_hour) - (utc_info.tm_yday*24 +utc_info.tm_hour);
+	/* differ from bejing time */
+	hour_diff = 8 -hour_diff;
+
+	/* synchronize system time */
+	if(abs(time(NULL) -hour_diff*3600 - svrTime) >= +3)
+	{
+		svrTime += hour_diff*3600;
+		tv.tv_sec = svrTime;
+		tv.tv_usec = 0;
+		ret = settimeofday(&tv , NULL);
+		printf("synchronize system time[%d], ret=%d\n", svrTime, ret);
+	}
 
 	if(ack_len != NULL)
 		*ack_len = 0;
@@ -239,7 +272,7 @@ int client_0x14_getAttendList(struct clientInfo *client, uint8_t *data, int len,
 {
 	char user_name[USER_NAME_LEN] = {0};
 	int user_id;
-	time_t time;
+	uint32_t time;
 	int status;
 	int userCnt = 0;
 	int tmplen = 0;
@@ -261,8 +294,8 @@ int client_0x14_getAttendList(struct clientInfo *client, uint8_t *data, int len,
 		tmplen += 4;
 		memcpy(user_name, data +tmplen, USER_NAME_LEN);
 		tmplen += USER_NAME_LEN;
-		memcpy(&time, data +tmplen, 8);
-		tmplen += 8;
+		memcpy(&time, data +tmplen, 4);
+		tmplen += 4;
 		memcpy(&status, data +tmplen, 4);
 		tmplen += 4;
 		//printf("id: %d, name: %s, time: %ld, status: %d\n", user_id, user_name, time, status);

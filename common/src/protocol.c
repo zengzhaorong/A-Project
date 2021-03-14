@@ -56,53 +56,25 @@ int proto_0x01_login(int handle, uint8_t *usr_name, uint8_t *password)
 	return 0;
 }
 
-/* flag: 0-request, 1-ack */
-int proto_0x03_dataAnaly(uint8_t *data, int len, ePacket_t type, void *a, void *b)
-{
-	int tmplen;
-
-	if(data==NULL || len<=0)
-		return -1;
-
-	tmplen = 0;
-
-	if(type == PROTO_REQ)	// request
-	{
-		if(a == NULL)
-			return -1;
-			
-		memcpy(a, data +tmplen, 4);
-	}
-	else	// ack
-	{
-		if(a==NULL || b==NULL)
-			return -1;
-
-		memcpy(a, data +tmplen, 4);
-		tmplen += 4;
-		memcpy(b, data +tmplen, 4);
-	}
-
-	return 0;
-}
-
 int proto_0x03_sendHeartBeat(int handle)
 {
 	uint8_t *protoBuf = NULL;
 	int buf_size = 0;
 	int packLen = 0;
-	time_t time_now;
+	uint32_t time_now;
+	int data_len = 0;
 
 	if(handle < 0 || handle >=MAX_PROTO_OBJ)
 		return -1;
 	if(protoObject[handle].send_func == NULL)
 		return -1;
 
-	time_now = time(NULL);
+	time_now = (uint32_t)time(NULL);
+	data_len += 4;
 
 	protoBuf = protoObject[handle].send_buf;
 	buf_size = protoObject[handle].buf_size;
-	proto_makeupPacket(0, 0x03, sizeof(time_now), (uint8_t *)&time_now, protoBuf, buf_size, &packLen);
+	proto_makeupPacket(0, 0x03, data_len, (uint8_t *)&time_now, protoBuf, buf_size, &packLen);
 
 	protoObject[handle].send_func(protoObject[handle].fd, protoBuf, packLen);
 	
@@ -306,7 +278,7 @@ int proto_0x12_sendFaceRecogn(int handle, int face_id, uint8_t confid, char *fac
 }
 
 /* time: time(NULL) return value */
-int proto_0x13_setAttendTime(int handle, long time)
+int proto_0x13_setAttendTime(int handle, uint32_t time)
 {
 	uint8_t *protoBuf = NULL;
 	int data_len = 0;
@@ -318,8 +290,8 @@ int proto_0x13_setAttendTime(int handle, long time)
 	if(protoObject[handle].send_func == NULL)
 		return -1;
 
-	memcpy(tmp_protoBuf +data_len, &time, 8);
-	data_len += 8;
+	memcpy(tmp_protoBuf +data_len, &time, 4);
+	data_len += 4;
 	
 	protoBuf = protoObject[handle].send_buf;
 	buf_size = protoObject[handle].buf_size;

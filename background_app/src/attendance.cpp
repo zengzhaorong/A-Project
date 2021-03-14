@@ -10,7 +10,7 @@ extern struct main_mngr_info main_mngr;
 extern struct userMngr_Stru	user_mngr_unit;
 
 /* return: attend status */
-attend_sta_e attendance_set_one(int id, time_t time)
+attend_sta_e attendance_set_one(int id, uint32_t time)
 {
     struct attend_mngr_Stru *atd_mngr = &attend_mngr_unit;
     int i;

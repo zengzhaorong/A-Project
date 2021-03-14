@@ -55,46 +55,46 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 	/* clock */
 	clockLabel = new QLabel(mainWindow);
 	clockLabel->setWordWrap(true);	// adapt to text, can show multi row
-	clockLabel->setGeometry(650, 90, 140, 42);
+	clockLabel->setGeometry(650, 120, 140, 90);	// height: set more bigger to adapt to arm
 	clockLabel->show();
 
 #ifdef MANAGER_CLIENT_ENABLE
 	/* attend time edit */
 	attendTimeEdit = new QDateTimeEdit(QDateTime::currentDateTime(), this);
 	attendTimeEdit->setDisplayFormat("yy/MM/dd HH:mm:ss");
-	attendTimeEdit->setGeometry(645, 140, 150, 30);
+	attendTimeEdit->setGeometry(645, 190, 150, 30);
 	attendTimeEdit->show();
 	/* attend time set button */
 	setAtdtimeBtn = new QPushButton(mainWindow);
 	setAtdtimeBtn->setText(tr("set attend time"));
     connect(setAtdtimeBtn, SIGNAL(clicked()), this, SLOT(setAttendTime()));
-	setAtdtimeBtn->setGeometry(660, 172, 120, 30);
+	setAtdtimeBtn->setGeometry(660, 222, 120, 30);
 
 	/* user name edit */
 	userNameEdit = new QLineEdit(mainWindow);
 	userNameEdit->setPlaceholderText(tr("User Name"));
-	userNameEdit->setGeometry(645, 215, 150, 30);
+	userNameEdit->setGeometry(645, 265, 150, 30);
 	/* add user button */
 	addUserBtn = new QPushButton(mainWindow);
 	addUserBtn->setText(tr("Add user"));
     connect(addUserBtn, SIGNAL(clicked()), this, SLOT(addUser()));
-	addUserBtn->setGeometry(670, 247, 100, 30);
+	addUserBtn->setGeometry(670, 297, 100, 30);
 
 	/* user list box */
 	userListBox = new QComboBox(mainWindow);
-	userListBox->setGeometry(645, 290, 150, 30);
+	userListBox->setGeometry(645, 340, 150, 30);
 	userListBox->setEditable(true);
 	/* delete user button */
 	delUserBtn = new QPushButton(mainWindow);
 	delUserBtn->setText(tr("Delete user"));
     connect(delUserBtn, SIGNAL(clicked()), this, SLOT(deleteUser()));
-	delUserBtn->setGeometry(670, 322, 100, 30);
+	delUserBtn->setGeometry(670, 372, 100, 30);
 
 	/* time sheet button */
 	timeSheetBtn = new QPushButton(mainWindow);
 	timeSheetBtn->setText(tr("timesheet"));
     connect(timeSheetBtn, SIGNAL(clicked()), this, SLOT(showTimeSheet()));
-	timeSheetBtn->setGeometry(670, 365, 100, 30);
+	timeSheetBtn->setGeometry(670, 415, 100, 30);
 
 	tableView = new QTableView(mainWindow);
 	userModel = new QStandardItemModel();
@@ -210,7 +210,7 @@ void MainWindow::showMainwindow(void)
 void MainWindow::setAttendTime(void)
 {
 	QDateTime dateTime = attendTimeEdit->dateTime();
-	proto_0x13_setAttendTime(main_mngr.mngr_handle, dateTime.toTime_t());
+	proto_0x13_setAttendTime(main_mngr.mngr_handle, (uint32_t)dateTime.toTime_t());
 }
 
 void MainWindow::addUser(void)
@@ -390,7 +390,7 @@ int mainwin_set_recognInfo(int id, uint8_t confid, char *usr_name, int status)
 }
 
 /* set attend info */
-int mainwin_set_attendList(int id, char *usr_name, time_t time, int status)
+int mainwin_set_attendList(int id, char *usr_name, uint32_t time, int status)
 {
 	QColor color;
 	char usr_id[4] = {0};
@@ -398,12 +398,14 @@ int mainwin_set_attendList(int id, char *usr_name, time_t time, int status)
 	char attend_sta[8] = {0};
 	int modelRowCnt = 0;
 	struct tm *ptm;
+	time_t tmpTime;
 
 	if(usr_name == NULL)
 		return -1;
 
 	sprintf(usr_id, "%d", id);
-	ptm = gmtime(&time);
+	tmpTime = time;
+	ptm = localtime(&tmpTime);
 	sprintf(attend_time, "%02d:%02d:%02d", ptm->tm_hour, ptm->tm_min, ptm->tm_sec);
 
 	if(status == ATTEND_STA_OK)

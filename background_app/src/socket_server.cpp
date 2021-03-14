@@ -74,23 +74,20 @@ int server_0x01_login(struct clientInfo *client, uint8_t *data, int len, uint8_t
 
 int server_0x03_heartbeat(struct clientInfo *client, uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
 {
-	time_t tmpTime;
+	uint32_t tmpTime;
 	int tmplen = 0;
 	int ret;
 
 	/* request part */
-	proto_0x03_dataAnaly(data, len, PROTO_REQ, &tmpTime, NULL);
+	memcpy(&tmpTime, data, 4);
 	//printf("%s: time: %ld\n", __FUNCTION__, tmpTime);
 
 	/* ack part */
-	if(ack_data==NULL || size<4+4 || ack_len==NULL)
-		return -2;
-
 	ret = 0;
 	memcpy(ack_data +tmplen, &ret, 4);
 	tmplen += 4;
 	
-	tmpTime = time(NULL);
+	tmpTime = (uint32_t)time(NULL);
 	memcpy(ack_data +tmplen, &tmpTime, 4);
 	tmplen += 4;
 
@@ -215,9 +212,9 @@ int server_0x10_getOneFrame(struct clientInfo *client, uint8_t *data, int len, u
 
 int server_0x13_setAttendTime(struct clientInfo *client, uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
 {
-	long time;
+	uint32_t time;
 
-	memcpy(&time, data, 8);
+	memcpy(&time, data, 4);
 
 	main_mngr.attend_time = time;
 
@@ -253,8 +250,8 @@ int server_0x14_getAttendList(struct clientInfo *client, uint8_t *data, int len,
 		tmplen += 4;
 		memcpy(ack_data +tmplen, atd_mngr->attend_list[i].name, USER_NAME_LEN);
 		tmplen += USER_NAME_LEN;
-		memcpy(ack_data +tmplen, &atd_mngr->attend_list[i].time, 8);
-		tmplen += 8;
+		memcpy(ack_data +tmplen, &atd_mngr->attend_list[i].time, 4);
+		tmplen += 4;
 		memcpy(ack_data +tmplen, &atd_mngr->attend_list[i].status, 4);
 		tmplen += 4;
 	}

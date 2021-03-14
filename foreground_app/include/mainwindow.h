@@ -100,7 +100,7 @@ public:
 };
 
 int mainwin_set_userList(int flag, int userCnt, char *usr_name);
-int mainwin_set_attendList(int id, char *usr_name, time_t time, int status);
+int mainwin_set_attendList(int id, char *usr_name, uint32_t time, int status);
 void mainwin_reset_attendList(void);
 
 int mainwin_set_recognInfo(int id, uint8_t confid, char *usr_name, int status);
