@@ -248,6 +248,11 @@ int capture_getframe(unsigned char *data, int size, int *len)
 	{
 		printf("Warning: %s: bufout size[%d] < frame size[%d] !!!\n", __FUNCTION__, size, capture->frameLen);
 	}
+	if(tmpLen <= 0)
+	{
+		printf("Warning: %s: no data !!!\n", __FUNCTION__);
+		return -1;
+	}
 
 	pthread_mutex_lock(&capture->frameMut);
 	memcpy(data, capture->frameBuf, tmpLen);

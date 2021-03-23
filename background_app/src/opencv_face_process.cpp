@@ -121,7 +121,7 @@ int opencv_put_frame_detect(uint8_t *buf, uint32_t len)
 	int value = 0;
 	int tmpLen;
 
-	if(buf == NULL)
+	if(buf==NULL || len<=0)
 		return -1;
 
 	tmpLen = (len>sizeof(detect_buf) ? sizeof(detect_buf):len);
