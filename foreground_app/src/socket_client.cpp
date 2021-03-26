@@ -475,21 +475,25 @@ int client_protoAnaly(struct clientInfo *client, uint8_t *pack, uint32_t pack_le
 
 int client_protoHandle(struct clientInfo *client)
 {
-	int ret;
+	int recv_ret;
+	int det_ret;
 
 	if(client == NULL)
 		return -1;
 
-	ret = client_recvData(client);
-	
-	ret = proto_detectPack(&client->recvRingBuf, &client->detectInfo, client->packBuf, \
+	recv_ret = client_recvData(client);
+	det_ret = proto_detectPack(&client->recvRingBuf, &client->detectInfo, client->packBuf, \
 							sizeof(client->packBuf), &client->packLen);
-	if(ret == 0)
+	if(det_ret == 0)
 	{
 		//printf("detect protocol pack len: %d\n", client->packLen);
 		client_protoAnaly(client, client->packBuf, client->packLen);
 	}
 
+	if(recv_ret<=0 && det_ret!=0)
+	{
+		usleep(200*1000);
+	}
 
 	return 0;
 }
@@ -524,11 +528,6 @@ void *socket_client_thread(void *arg)
 					client->protoHandle = proto_register(client->fd, client_sendData, SEND_BUFFER_SIZE);
 					client->state = STATE_CONNECTED;
 					printf("********** socket connect successfully, handle: %d.\n", client->protoHandle);
-				}
-				else
-				{
-					//printf("%s %d: state STATE_DISCONNECT ...\n", __FUNCTION__, __LINE__);
-					usleep(1000 *100);
 				}
 				break;
 
@@ -565,6 +564,10 @@ void *socket_client_thread(void *arg)
 		if(client->state==STATE_CONNECTED || client->state==STATE_LOGIN)
 		{
 			client_protoHandle(client);
+		}
+		else
+		{
+			usleep(200*1000);
 		}
 		
 	}

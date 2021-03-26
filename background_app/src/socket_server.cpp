@@ -426,18 +426,23 @@ int server_protoAnaly(struct clientInfo *client, uint8_t *pack, uint32_t pack_le
 
 int server_protoHandle(struct clientInfo *client)
 {
-	int ret;
+	int recv_ret;
+	int det_ret;
 
 	if(client == NULL)
 		return -1;
 
-	ret = server_recvData(client);
-
-	ret = proto_detectPack(&client->recvRingBuf, &client->detectInfo, client->packBuf, \
+	recv_ret = server_recvData(client);
+	det_ret = proto_detectPack(&client->recvRingBuf, &client->detectInfo, client->packBuf, \
 							sizeof(client->packBuf), &client->packLen);
-	if(ret == 0)
+	if(det_ret == 0)
 	{
 		server_protoAnaly(client, client->packBuf, client->packLen);
+	}
+
+	if(recv_ret<=0 && det_ret!=0)
+	{
+		usleep(200*1000);
 	}
 
 	return 0;
