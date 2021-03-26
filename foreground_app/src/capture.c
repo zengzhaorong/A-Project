@@ -61,8 +61,8 @@ int capture_init(struct v4l2cap_info *capture)
 	ret = ioctl(capture->fd, VIDIOC_S_FMT, &format);
 	if(ret < 0)
 	{
-		ret = -3;
-		goto ERR_3;
+		ret = -2;
+		goto ERR_2;
 	}
 	printf("set video width * height = %d * %d\n", format.fmt.pix.width, format.fmt.pix.height);
 
@@ -72,8 +72,8 @@ int capture_init(struct v4l2cap_info *capture)
 	if(ret < 0)
 	{
 		printf("ERROR: get video format failed[ret:%d] !\n", ret);
-		ret = -2;
-		goto ERR_2;
+		ret = -3;
+		goto ERR_3;
 	}
 	
 	printf("get video width * height = %d * %d\n", capture->format.fmt.pix.width, capture->format.fmt.pix.height);
@@ -94,15 +94,15 @@ int capture_init(struct v4l2cap_info *capture)
 	if(capture->format.fmt.pix.pixelformat != VIDEO_V4L2_PIX_FMT)
 	{
 		printf("ERROR: Not support this foramt !!!\n");
-		ret = -3;
-		goto ERR_3;
+		ret = -4;
+		goto ERR_4;
 	}
 
 	capture->frameBuf = (unsigned char *)calloc(1, FRAME_BUF_SIZE);
 	if(capture->frameBuf == NULL)
 	{
-		ret = -4;
-		goto ERR_4;
+		ret = -5;
+		goto ERR_5;
 	}
 
 	memset(&reqbuf_param, 0, sizeof(struct v4l2_requestbuffers));
@@ -112,8 +112,8 @@ int capture_init(struct v4l2cap_info *capture)
 	ret = ioctl(capture->fd, VIDIOC_REQBUFS, &reqbuf_param);
 	if(ret < 0)
 	{
-		ret = -5;
-		goto ERR_5;
+		ret = -6;
+		goto ERR_6;
 	}
 
 	/* set video queue buffer */
@@ -126,8 +126,8 @@ int capture_init(struct v4l2cap_info *capture)
 		ret = ioctl(capture->fd, VIDIOC_QUERYBUF, &buffer[i]);
 		if(ret < 0)
 		{
-			ret = -6;
-			goto ERR_6;
+			ret = -7;
+			goto ERR_7;
 		}
 
 		capture->buffer[i].len = buffer[i].length;
@@ -138,22 +138,23 @@ int capture_init(struct v4l2cap_info *capture)
 		ret = ioctl(capture->fd, VIDIOC_QBUF, &buffer[i]);
 		if(ret < 0)
 		{
-			ret = -7;
-			goto ERR_7;
+			ret = -8;
+			goto ERR_8;
 		}
 	}
 
 	return 0;
 	
+	ERR_8:
 	ERR_7:
-	ERR_6:
 		for(; i>=0; i--)
 		{
 			if(capture->buffer[i].addr != NULL)
 				munmap(capture->buffer[i].addr, capture->buffer[i].len);
 		}
-	ERR_5:
+	ERR_6:
 		free(capture->frameBuf);
+	ERR_5:
 	ERR_4:
 	ERR_3:
 	ERR_2:
@@ -250,7 +251,7 @@ int capture_getframe(unsigned char *data, int size, int *len)
 	}
 	if(tmpLen <= 0)
 	{
-		printf("Warning: %s: no data !!!\n", __FUNCTION__);
+		//printf("Warning: %s: no data !!!\n", __FUNCTION__);
 		return -1;
 	}
 

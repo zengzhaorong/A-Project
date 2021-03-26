@@ -69,7 +69,7 @@ file(GLOB QT5_LIB_FILE ${LIB_QT5_LIB}/libQt5*.so*)
 if(MECHINE_ARCH STREQUAL "x86")
 	set(LIB_FFMPEG_INC ${LIB_FFMPEG_PATH}/include)
 	set(LIB_FFMPEG_LIB ${LIB_FFMPEG_PATH}/lib)
-	file(GLOB FFMPEG_LIB_FILE ${LIB_FFMPEG_LIB}/libopencv_*.so*)
+	file(GLOB FFMPEG_LIB_FILE ${LIB_FFMPEG_LIB}/lib*.so*)
 	set(OTHER_3RD_LIBS ${OTHER_3RD_LIBS} -lavformat -lavcodec -lswscale -lswresample -lavutil)
 endif()
 
