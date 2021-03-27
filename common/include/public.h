@@ -21,6 +21,7 @@ typedef enum {
 
 
 typedef enum {
+	WORK_STA_DISCONNECT,	// not connect server
 	WORK_STA_NORMAL,		// normal work
 	WORK_STA_ADDUSER,		// add user
 	WORK_STA_RECOGN,		// has recognize success

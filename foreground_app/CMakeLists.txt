@@ -70,7 +70,7 @@ if(MECHINE_ARCH STREQUAL "x86")
 	set(LIB_FFMPEG_INC ${LIB_FFMPEG_PATH}/include)
 	set(LIB_FFMPEG_LIB ${LIB_FFMPEG_PATH}/lib)
 	file(GLOB FFMPEG_LIB_FILE ${LIB_FFMPEG_LIB}/lib*.so*)
-	set(OTHER_3RD_LIBS ${OTHER_3RD_LIBS} -lavformat -lavcodec -lswscale -lswresample -lavutil)
+	#set(OTHER_3RD_LIBS ${OTHER_3RD_LIBS} -lavformat -lavcodec -lswscale -lswresample -lavutil)
 endif()
 
 # 工程H头文件路径

@@ -41,6 +41,7 @@ int client_0x01_login(struct clientInfo *client, uint8_t *data, int len, uint8_t
 	if(ret == 0)
 	{
 		client->state = STATE_LOGIN;
+		main_mngr.work_state = WORK_STA_NORMAL;
 		printf("Congratulation! Login success.\n");
 
 #if defined(MANAGER_CLIENT_ENABLE) && defined(USER_CLIENT_ENABLE)

@@ -182,7 +182,11 @@ void MainWindow::showMainwindow(void)
 
 	if(*sys_state != old_state)
 	{
-		if(*sys_state == WORK_STA_ADDUSER)
+		if(*sys_state == WORK_STA_DISCONNECT)
+		{
+			mode = MAINWIN_MODE_DISCONECT;
+		}
+		else if(*sys_state == WORK_STA_ADDUSER)
 		{
 			mode = MAINWIN_MODE_ADDUSER;
 		}
@@ -293,7 +297,20 @@ int MainWindow::switch_mainwin_mode(mainwin_mode_e mode)
 
 	mainwin_mode = mode;
 
-	if(mode == MAINWIN_MODE_ADDUSER)
+	if(mode == MAINWIN_MODE_DISCONECT)
+	{
+		tmpShowTimer->stop();
+		addface_x = 240;
+		textOnVideo->setGeometry(addface_x, 0, VIDEO_AREA_ROW -addface_x, 50);
+		QTextCodec *codec = QTextCodec::codecForName("GBK");
+		textOnVideo->setText(codec->toUnicode(NOT_CONNECT_SERVER));
+		textOnVideo->show();
+	}
+	else if(mode == MAINWIN_MODE_NORAML)
+	{
+		textOnVideo->hide();
+	}
+	else if(mode == MAINWIN_MODE_ADDUSER)
 	{
 		tmpShowTimer->stop();
 		addface_x = 200;

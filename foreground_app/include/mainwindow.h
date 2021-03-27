@@ -38,12 +38,14 @@ extern "C" {
 #define WIN_BACKGRD_IMG			"resource/backgrd.jpg"		// 界面背景图
 
 /* tips text, support Chinese */
+#define NOT_CONNECT_SERVER		"未连接服务器"
 #define BEGIN_ADD_FACE_TEXT		"录入人脸：请正对摄像头"
 #define SUCCESS_ADD_FACE_TEXT	"录入人脸成功"
 #define RECOGN_SUCCESS_TEXT		"签到成功"			// "识别成功"、"签到成功"、"欢迎回家"
 #define ATTEND_LATE_TEXT		"签到[迟到]"
 
 typedef enum {
+	MAINWIN_MODE_DISCONECT,
 	MAINWIN_MODE_NORAML,
 	MAINWIN_MODE_ADDUSER,
 	MAINWIN_MODE_ADDUSER_OK,
