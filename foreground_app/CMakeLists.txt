@@ -30,6 +30,9 @@ else()
 	add_definitions(-D MANAGER_CLIENT_ENABLE)
 endif()
 
+	add_definitions(-D USER_CLIENT_ENABLE)
+	add_definitions(-D MANAGER_CLIENT_ENABLE)
+
 # Enable C++11
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
