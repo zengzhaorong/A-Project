@@ -19,6 +19,9 @@ set(PROJECT_NAME background_app)
 # cmake needs this line
 cmake_minimum_required(VERSION 2.8)
 
+# this is background_app
+add_definitions(-D BACKGROUND_APP)
+
 if(MECHINE_ARCH STREQUAL "arm")
 	set(CMAKE_SYSTEM_NAME Linux)
 	set(CMAKE_SYSTEM_PROCESSOR arm)

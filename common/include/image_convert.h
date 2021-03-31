@@ -2,10 +2,13 @@
 #define _IMAGE_CONVERT_H_
 
 #include "config.h"
+#include <QImage>
+
+#ifdef BACKGROUND_APP
 #include <opencv2/opencv.hpp>  
 #include <opencv2/core.hpp>
-#include <opencv2/imgproc/types_c.h>  
-#include <QImage>
+#include <opencv2/imgproc/types_c.h> 
+#endif
 
 #if defined(CAP_V4L2_FMT_YUV)
 QImage yuv_to_QImage(int type, unsigned char *data, int width, int height);
@@ -13,8 +16,9 @@ QImage yuv_to_QImage(int type, unsigned char *data, int width, int height);
 
 QImage jpeg_to_QImage(uint8_t *data, int len);
 
+#ifdef BACKGROUND_APP
 cv::Mat QImage_to_cvMat(QImage image);
-
 QImage cvMat_to_QImage(const cv::Mat& mat);
+#endif
 
 #endif	// _IMAGE_CONVERT_H_

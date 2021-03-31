@@ -5,7 +5,6 @@
 #include "config.h"
 #include "mainwindow.h"
 #include "image_convert.h"
-#include "opencv_image_process.h"
 
 
 /* C++ include C */
@@ -132,8 +131,6 @@ MainWindow::~MainWindow(void)
 
 void MainWindow::showMainwindow(void)
 {
-	static Rect old_rect;
-	static int old_rect_cnt = 0;
 	static int old_state = WORK_STA_NORMAL;
 	mainwin_mode_e mode;
 	int len;
@@ -158,23 +155,8 @@ void MainWindow::showMainwindow(void)
 		videoQImage = jpeg_to_QImage(video_buf, len);
 #endif
 
-		Rect rects;
-		ret = get_rect_param(rects);
-		if(ret == 0)
-		{
-			opencv_image_add_rect(videoQImage, rects);
-			old_rect = rects;
-		}
-		else if(old_rect.width > 0)
-		{
-			opencv_image_add_rect(videoQImage, old_rect);
-			old_rect_cnt ++;
-			if(old_rect_cnt *TIMER_INTERV_MS > 10)
-			{
-				old_rect.width = 0;
-				old_rect_cnt = 0;
-			}
-		}
+		/* draw face rectangles */
+		drawFaceRectangle(videoQImage);
 
 		videoArea->setPixmap(QPixmap::fromImage(videoQImage));
 		videoArea->show();
@@ -209,6 +191,32 @@ void MainWindow::showMainwindow(void)
 
 	timer->start(TIMER_INTERV_MS);
 	
+}
+
+void MainWindow::drawFaceRectangle(QImage &img)
+{
+	static QRect old_rect;
+	static int old_rect_cnt = 0;
+	QRect rects;
+	QPainter painter(&img);
+
+	if(face_rects.width() > 0)
+	{
+		old_rect = face_rects;
+		face_rects.setWidth(0);
+	}
+	if(old_rect.width() > 0)
+	{
+		painter.setPen(QPen(Qt::green, 3, Qt::SolidLine, Qt::RoundCap));
+		painter.drawRect(old_rect.x(), old_rect.y(), old_rect.width(), old_rect.height());
+		old_rect_cnt ++;
+		if(old_rect_cnt *TIMER_INTERV_MS > 10)
+		{
+			old_rect.setWidth(0);
+			old_rect_cnt = 0;
+		}
+	}
+
 }
 
 void MainWindow::setAttendTime(void)
@@ -350,6 +358,17 @@ int MainWindow::switch_mainwin_mode(mainwin_mode_e mode)
 	else
 	{
 	}
+
+	return 0;
+}
+
+int mainwin_set_rects(int x, int y, int w, int h)
+{
+
+	mainwindow->face_rects.setX(x);
+	mainwindow->face_rects.setY(y);
+	mainwindow->face_rects.setWidth(w);
+	mainwindow->face_rects.setHeight(h);
 
 	return 0;
 }

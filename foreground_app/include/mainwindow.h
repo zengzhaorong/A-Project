@@ -15,7 +15,8 @@
 #include <QStandardItemModel>
 #include <QDateTime>
 #include <QDateTimeEdit>
-
+#include <QPainter>
+#include <QRect>
 
 /* C++ include C */
 #ifdef __cplusplus
@@ -69,6 +70,7 @@ private slots:
 	void textOnVideo_show_over(void);
 	
 public:
+	void drawFaceRectangle(QImage &img);
 	int switch_mainwin_mode(mainwin_mode_e mode);
 
 private:
@@ -92,6 +94,7 @@ public:
 	QTimer 			*tmpShowTimer;		// control temple show, few second
 	QTableView		*tableView;
 	QStandardItemModel *userModel;
+	QRect 			face_rects;			// face rectangles
 	int 			face_id;
 	char 			userRecogn[USER_NAME_LEN];
 	uint8_t			confidence;
@@ -105,6 +108,7 @@ int mainwin_set_userList(int flag, int userCnt, char *usr_name);
 int mainwin_set_attendList(int id, char *usr_name, uint32_t time, int status);
 void mainwin_reset_attendList(void);
 
+int mainwin_set_rects(int x, int y, int w, int h);
 int mainwin_set_recognInfo(int id, uint8_t confid, char *usr_name, int status);
 
 int start_mainwindow_task(void);

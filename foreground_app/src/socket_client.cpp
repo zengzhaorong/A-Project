@@ -7,7 +7,6 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include "socket_client.h"
-#include "opencv_image_process.h"
 #include "mainwindow.h"
 
 
@@ -215,7 +214,7 @@ int client_0x10_getOneFrame(struct clientInfo *client, uint8_t *data, int len, u
 
 int client_0x11_faceDetect(struct clientInfo *client, uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
 {
-	Rect rects;
+	int x, y, w, h;
 	uint8_t count;
 	int offset = 0;
 
@@ -224,16 +223,16 @@ int client_0x11_faceDetect(struct clientInfo *client, uint8_t *data, int len, ui
 
 	for(int i=0; i<count; i++)
 	{
-		rects.x = *((int*)(data+offset));
+		x = *((int*)(data+offset));
 		offset += 4;
-		rects.y = *((int*)(data+offset));
+		y = *((int*)(data+offset));
 		offset += 4;
-		rects.width = *((int*)(data+offset));
+		w = *((int*)(data+offset));
 		offset += 4;
-		rects.height = *((int*)(data+offset));
+		h = *((int*)(data+offset));
 		offset += 4;
 	}
-	set_rect_param(rects);
+	mainwin_set_rects(x, y, w, h);
 
 	return 0;
 }

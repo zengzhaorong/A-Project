@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 /* C头文件 */
-#if defined(CAP_V4L2_FMT_YUV)
+#ifdef CAP_V4L2_FMT_YUV
 	#include "libavcodec/avcodec.h"
 	#include "libavformat/avformat.h"
 	#include "libswscale/swscale.h"
@@ -19,7 +19,7 @@ extern "C" {
 //using namespace cv;
 
 
-#if defined(CAP_V4L2_FMT_YUV)
+#ifdef CAP_V4L2_FMT_YUV
 void yuv422_to_rgb24(uint8_t *yuv, void **rgb, int width, int height)
 {
 	static uint8_t * rgbBuffer;
@@ -82,6 +82,7 @@ QImage jpeg_to_QImage(unsigned char *data, int len)
 	return qtImage;
 }
 
+#ifdef BACKGROUND_APP
 /* 调用时要加.clone(), testMat = QImage_to_cvMat(qiamge).clone() */
 cv::Mat QImage_to_cvMat(QImage qimage)
 {
@@ -175,5 +176,4 @@ QImage cvMat_to_QImage(const cv::Mat& mat)
 
 }
 
-
-
+#endif
