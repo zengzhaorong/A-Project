@@ -17,8 +17,10 @@ struct user_attend_info
 {
 	int 	id;					// user id
 	char	name[USER_NAME_LEN];// user name
-    uint32_t  time;             // attend time
-    attend_sta_e status;        // status
+    uint32_t  atdin_time;       // attend in time
+    uint32_t  atdout_time;      // attend out time
+    attend_sta_e atdin_sta;     // attend in status
+    attend_sta_e atdout_sta;    // attend in status
 };
 
 struct attend_mngr_Stru

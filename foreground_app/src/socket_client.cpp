@@ -272,8 +272,10 @@ int client_0x14_getAttendList(struct clientInfo *client, uint8_t *data, int len,
 {
 	char user_name[USER_NAME_LEN] = {0};
 	int user_id;
-	uint32_t time;
-	int status;
+	uint32_t time_atdin;
+	uint32_t time_atdout;
+	int sta_atdin;
+	int sta_atdout;
 	int userCnt = 0;
 	int tmplen = 0;
 	int ret;
@@ -294,12 +296,16 @@ int client_0x14_getAttendList(struct clientInfo *client, uint8_t *data, int len,
 		tmplen += 4;
 		memcpy(user_name, data +tmplen, USER_NAME_LEN);
 		tmplen += USER_NAME_LEN;
-		memcpy(&time, data +tmplen, 4);
+		memcpy(&time_atdin, data +tmplen, 4);
 		tmplen += 4;
-		memcpy(&status, data +tmplen, 4);
+		memcpy(&sta_atdin, data +tmplen, 4);
+		tmplen += 4;
+		memcpy(&time_atdout, data +tmplen, 4);
+		tmplen += 4;
+		memcpy(&sta_atdout, data +tmplen, 4);
 		tmplen += 4;
 		//printf("id: %d, name: %s, time: %ld, status: %d\n", user_id, user_name, time, status);
-		mainwin_set_attendList(user_id, user_name, time, status);
+		mainwin_set_attendList(user_id, user_name, time_atdin, sta_atdin, time_atdout, sta_atdout);
 	}
 
 	return 0;

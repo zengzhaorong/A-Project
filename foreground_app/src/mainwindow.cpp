@@ -27,9 +27,11 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 {
 	QFont font;
 	QPalette pa;
+	QTextCodec *codec;
+
+	codec = QTextCodec::codecForName("GBK");
 
 	/* can show Chinese word */
-	QTextCodec *codec = QTextCodec::codecForName("GBK");
 	setWindowTitle(codec->toUnicode(MAINWINDOW_TITLE));
 	
 	resize(MAIN_WIN_ROW, MAIN_WIN_COL);
@@ -54,28 +56,43 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 	/* clock */
 	clockLabel = new QLabel(mainWindow);
 	clockLabel->setWordWrap(true);	// adapt to text, can show multi row
-	clockLabel->setGeometry(650, 120, 140, 90);	// height: set more bigger to adapt to arm
+	clockLabel->setGeometry(650, 0, 140, 90);	// height: set more bigger to adapt to arm
 	clockLabel->show();
 
 #ifdef MANAGER_CLIENT_ENABLE
-	/* attend time edit */
-	attendTimeEdit = new QDateTimeEdit(QDateTime::currentDateTime(), this);
-	attendTimeEdit->setDisplayFormat("yy/MM/dd HH:mm:ss");
-	attendTimeEdit->setGeometry(645, 190, 150, 30);
-	attendTimeEdit->show();
+	/* attend in time edit */
+	LabelAtdIn = new QLabel(mainWindow);
+	LabelAtdIn->setGeometry(660, 158, 50, 30);
+	LabelAtdIn->setText(codec->toUnicode(TEXT_SIGN_IN));
+	LabelAtdIn->show();
+	TimeEditAtdIn = new QDateTimeEdit(QDateTime::currentDateTime(), this);
+	TimeEditAtdIn->setDisplayFormat("HH:mm:ss");
+	TimeEditAtdIn->setGeometry(700, 158, 90, 30);
+	TimeEditAtdIn->show();
+
+	/* attend out time edit */
+	LabelAtdOut = new QLabel(mainWindow);
+	LabelAtdOut->setGeometry(660, 190, 50, 30);
+	LabelAtdOut->setText(codec->toUnicode(TEXT_SIGN_OUT));
+	LabelAtdOut->show();
+	TimeEditAtdOut = new QDateTimeEdit(QDateTime::currentDateTime(), this);
+	TimeEditAtdOut->setDisplayFormat("HH:mm:ss");
+	TimeEditAtdOut->setGeometry(700, 190, 90, 30);
+	TimeEditAtdOut->show();
+
 	/* attend time set button */
 	setAtdtimeBtn = new QPushButton(mainWindow);
-	setAtdtimeBtn->setText(tr("set attend time"));
+	setAtdtimeBtn->setText(codec->toUnicode(TEXT_SET_ATD_TIME));
     connect(setAtdtimeBtn, SIGNAL(clicked()), this, SLOT(setAttendTime()));
 	setAtdtimeBtn->setGeometry(660, 222, 120, 30);
 
 	/* user name edit */
 	userNameEdit = new QLineEdit(mainWindow);
-	userNameEdit->setPlaceholderText(tr("User Name"));
+	userNameEdit->setPlaceholderText(codec->toUnicode(TEXT_USER_NAME));
 	userNameEdit->setGeometry(645, 265, 150, 30);
 	/* add user button */
 	addUserBtn = new QPushButton(mainWindow);
-	addUserBtn->setText(tr("Add user"));
+	addUserBtn->setText(codec->toUnicode(TEXT_ADD_USER));
     connect(addUserBtn, SIGNAL(clicked()), this, SLOT(addUser()));
 	addUserBtn->setGeometry(670, 297, 100, 30);
 
@@ -85,13 +102,13 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 	userListBox->setEditable(true);
 	/* delete user button */
 	delUserBtn = new QPushButton(mainWindow);
-	delUserBtn->setText(tr("Delete user"));
+	delUserBtn->setText(codec->toUnicode(TEXT_DEL_USER));
     connect(delUserBtn, SIGNAL(clicked()), this, SLOT(deleteUser()));
 	delUserBtn->setGeometry(670, 372, 100, 30);
 
 	/* time sheet button */
 	timeSheetBtn = new QPushButton(mainWindow);
-	timeSheetBtn->setText(tr("timesheet"));
+	timeSheetBtn->setText(codec->toUnicode(TEXT_TIMESHEET));
     connect(timeSheetBtn, SIGNAL(clicked()), this, SLOT(showTimeSheet()));
 	timeSheetBtn->setGeometry(670, 415, 100, 30);
 
@@ -221,8 +238,16 @@ void MainWindow::drawFaceRectangle(QImage &img)
 
 void MainWindow::setAttendTime(void)
 {
-	QDateTime dateTime = attendTimeEdit->dateTime();
-	proto_0x13_setAttendTime(main_mngr.mngr_handle, (uint32_t)dateTime.toTime_t());
+	uint32_t adtin_time;
+	uint32_t adtout_time;
+
+	QDateTime timeAtdIn = TimeEditAtdIn->dateTime();
+	QDateTime timeAtdOut = TimeEditAtdOut->dateTime();
+
+	adtin_time = time_t_to_sec_day(timeAtdIn.toTime_t());
+	adtout_time = time_t_to_sec_day(timeAtdOut.toTime_t());
+	
+	proto_0x13_setAttendTime(main_mngr.mngr_handle, adtin_time, adtout_time);
 }
 
 void MainWindow::addUser(void)
@@ -342,9 +367,13 @@ int MainWindow::switch_mainwin_mode(mainwin_mode_e mode)
 		addface_x = 150;
 		textOnVideo->setGeometry(addface_x, 0, VIDEO_AREA_ROW -addface_x, 50);
 		QTextCodec *codec = QTextCodec::codecForName("GBK");
-		if(face_status == ATTEND_STA_LATE)
+		if(face_status == ATTEND_STA_IN_LATE)
 		{
-			sprintf(showText, "%s: %s - %d%c", ATTEND_LATE_TEXT, userRecogn, confidence, '%');
+			sprintf(showText, "%s: %s - %d%c", ATTEND_IN_LATE_TEXT, userRecogn, confidence, '%');
+		}
+		else if(face_status == ATTEND_STA_OUT_EARLY)
+		{
+			sprintf(showText, "%s: %s - %d%c", ATTEND_OUT_EARLY_TEXT, userRecogn, confidence, '%');
 		}
 		else
 		{
@@ -426,12 +455,15 @@ int mainwin_set_recognInfo(int id, uint8_t confid, char *usr_name, int status)
 }
 
 /* set attend info */
-int mainwin_set_attendList(int id, char *usr_name, uint32_t time, int status)
+int mainwin_set_attendList(int id, char *usr_name, uint32_t time_atdin, int sta_atdin, uint32_t time_atdout, int sta_atdout)
 {
-	QColor color;
+	QColor incolor;
+	QColor outcolor;
 	char usr_id[4] = {0};
-	char attend_time[32] = {0};
-	char attend_sta[8] = {0};
+	char intime_str[32] = {0};
+	char outtime_str[32] = {0};
+	char insta_str[8] = {0};
+	char outsta_str[8] = {0};
 	int modelRowCnt = 0;
 	struct tm *ptm;
 	time_t tmpTime;
@@ -440,32 +472,53 @@ int mainwin_set_attendList(int id, char *usr_name, uint32_t time, int status)
 		return -1;
 
 	sprintf(usr_id, "%d", id);
-	tmpTime = time;
+	tmpTime = time_atdin;
 	ptm = localtime(&tmpTime);
-	sprintf(attend_time, "%02d:%02d:%02d", ptm->tm_hour, ptm->tm_min, ptm->tm_sec);
+	sprintf(intime_str, "%02d:%02d:%02d", ptm->tm_hour, ptm->tm_min, ptm->tm_sec);
+	tmpTime = time_atdout;
+	ptm = localtime(&tmpTime);
+	sprintf(outtime_str, "%02d:%02d:%02d", ptm->tm_hour, ptm->tm_min, ptm->tm_sec);
 
-	if(status == ATTEND_STA_OK)
+	if(sta_atdin == ATTEND_STA_OK)
 	{
-		strcpy(attend_sta, "OK");
-		color = QColor(155,187,89);	// light green
+		strcpy(insta_str, "OK");
+		incolor = QColor(155,187,89);	// light green
 	}
-	else if(status == ATTEND_STA_LATE)
+	else if(sta_atdin == ATTEND_STA_IN_LATE)
 	{
-		strcpy(attend_sta, "Late");
-		color = QColor(222, 221, 140);	// light yellow
+		strcpy(insta_str, "Late");
+		incolor = QColor(222, 221, 140);	// light yellow
 	}
 	else
 	{
-		strcpy(attend_sta, "-");
-		color = QColor(192,80,77);	// light red
+		strcpy(insta_str, "-");
+		incolor = QColor(192,80,77);	// light red
+	}
+	
+	if(sta_atdout == ATTEND_STA_OK)
+	{
+		strcpy(outsta_str, "OK");
+		outcolor = QColor(155,187,89);	// light green
+	}
+	else if(sta_atdout == ATTEND_STA_IN_LATE)
+	{
+		strcpy(outsta_str, "Late");
+		outcolor = QColor(222, 221, 140);	// light yellow
+	}
+	else
+	{
+		strcpy(outsta_str, "-");
+		outcolor = QColor(192,80,77);	// light red
 	}
 	//printf("usr_id: %s, time: %s, status: %s\n", usr_id, attend_time, attend_sta);
 
 	modelRowCnt = mainwindow->userModel->rowCount();
 	mainwindow->userModel->setItem(modelRowCnt, 0, new QStandardItem(QString("%1").arg(usr_id)));
 	mainwindow->userModel->setItem(modelRowCnt, 1, new QStandardItem(QString("%1").arg(usr_name)));
-	mainwindow->userModel->setItem(modelRowCnt, 2, new QStandardItem(QString("%1").arg(attend_time)));
-	mainwindow->userModel->setItem(modelRowCnt, 3, new QStandardItem(QString("%1").arg(attend_sta)));
+	mainwindow->userModel->setItem(modelRowCnt, 2, new QStandardItem(QString("%1").arg(intime_str)));
+	mainwindow->userModel->setItem(modelRowCnt, 3, new QStandardItem(QString("%1").arg(insta_str)));
+	mainwindow->userModel->setItem(modelRowCnt, 4, new QStandardItem(QString("%1").arg(outtime_str)));
+	mainwindow->userModel->setItem(modelRowCnt, 5, new QStandardItem(QString("%1").arg(outsta_str)));
 
 	/* set item align center */
 	mainwindow->userModel->item(modelRowCnt, 0)->setTextAlignment(Qt::AlignCenter);
@@ -474,7 +527,8 @@ int mainwin_set_attendList(int id, char *usr_name, uint32_t time, int status)
 	mainwindow->userModel->item(modelRowCnt, 3)->setTextAlignment(Qt::AlignCenter);
 
 	/* set item background color */
-	mainwindow->userModel->item(modelRowCnt, 3)->setBackground(QBrush(color));
+	mainwindow->userModel->item(modelRowCnt, 3)->setBackground(QBrush(incolor));
+	mainwindow->userModel->item(modelRowCnt, 5)->setBackground(QBrush(outcolor));
 	
 	/* set item fonts(forground) color */
 	//item(x, y)->setForeground(QBrush(QColor(255, 0, 0)));
@@ -485,7 +539,7 @@ int mainwin_set_attendList(int id, char *usr_name, uint32_t time, int status)
 void mainwin_reset_attendList(void)
 {
 	mainwindow->userModel->clear();
-	mainwindow->userModel->setHorizontalHeaderLabels({"ID", "Name", "Time", "Status"});
+	mainwindow->userModel->setHorizontalHeaderLabels({"ID", "Name", "Time In", "Status In", "Time Out", "Status Out"});
 }
 
 

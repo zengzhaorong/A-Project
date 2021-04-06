@@ -1,3 +1,5 @@
+#include <stdio.h>
+#include <string.h>
 #include "image_convert.h"
 
 /* C++ include C */

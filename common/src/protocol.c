@@ -278,7 +278,7 @@ int proto_0x12_sendFaceRecogn(int handle, int face_id, uint8_t confid, char *fac
 }
 
 /* time: time(NULL) return value */
-int proto_0x13_setAttendTime(int handle, uint32_t time)
+int proto_0x13_setAttendTime(int handle, uint32_t atd_in_time, uint32_t atd_out_time)
 {
 	uint8_t *protoBuf = NULL;
 	int data_len = 0;
@@ -290,7 +290,12 @@ int proto_0x13_setAttendTime(int handle, uint32_t time)
 	if(protoObject[handle].send_func == NULL)
 		return -1;
 
-	memcpy(tmp_protoBuf +data_len, &time, 4);
+	/* attend in time */
+	memcpy(tmp_protoBuf +data_len, &atd_in_time, 4);
+	data_len += 4;
+	
+	/* attend out time */
+	memcpy(tmp_protoBuf +data_len, &atd_out_time, 4);
 	data_len += 4;
 	
 	protoBuf = protoObject[handle].send_buf;

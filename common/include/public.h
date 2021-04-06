@@ -1,6 +1,7 @@
 #ifndef _PUBLIC_H_
 #define _PUBLIC_H_
 
+#include <time.h>
 #include "type.h"
 
 
@@ -30,7 +31,8 @@ typedef enum {
 typedef enum {
 	ATTEND_STA_NONE,		// not attend
 	ATTEND_STA_OK,		    // already attended
-	ATTEND_STA_LATE,		// be late
+	ATTEND_STA_IN_LATE,		// attend in late
+	ATTEND_STA_OUT_EARLY,	// attend out early
 }attend_sta_e;
 
 struct main_mngr_info
@@ -38,11 +40,14 @@ struct main_mngr_info
 	workstate_e work_state;
 	int user_handle;	// user client socket handle index
 	int mngr_handle;	// manager client socket handle index
-	uint32_t attend_time;
+	uint32_t atdin_time;	// attend in time
+	uint32_t atdout_time;	// attend out time
 };
 
 
 void print_hex(char *text, uint8_t *buf, int len);
+
+uint32_t time_t_to_sec_day(time_t time);
 
 
 #endif	// _PUBLIC_H_

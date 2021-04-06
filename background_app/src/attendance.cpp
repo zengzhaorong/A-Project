@@ -13,30 +13,45 @@ extern struct userMngr_Stru	user_mngr_unit;
 attend_sta_e attendance_set_one(int id, uint32_t time)
 {
     struct attend_mngr_Stru *atd_mngr = &attend_mngr_unit;
+    uint32_t adt_sec_day;
+    attend_sta_e status;
     int i;
+
+    adt_sec_day = time_t_to_sec_day(time);
 
     for(i=0; i<atd_mngr->userCnt; i++)
     {
         if(atd_mngr->attend_list[i].id == id)
         {
-            atd_mngr->attend_list[i].time = time;
-            //printf("*************** user[id=%d] attend at time[%ld]\t", id, time);
-            if(time <= main_mngr.attend_time)
+            /* is attend in */
+            if(atd_mngr->attend_list[i].atdin_sta == ATTEND_STA_NONE && adt_sec_day < main_mngr.atdout_time)
             {
-                atd_mngr->attend_list[i].status = ATTEND_STA_OK;
-                //printf("OK !\n");
-                return ATTEND_STA_OK;
+                if(adt_sec_day <= main_mngr.atdin_time)
+                {
+                    atd_mngr->attend_list[i].atdin_time = time;
+                    atd_mngr->attend_list[i].atdin_sta = ATTEND_STA_OK;
+                    status = ATTEND_STA_OK;
+                    printf("user id [%d]: attend in ok.\n", id);
+                }
+                else
+                {
+                    atd_mngr->attend_list[i].atdin_time = time;
+                    atd_mngr->attend_list[i].atdin_sta = ATTEND_STA_IN_LATE;
+                    status = ATTEND_STA_IN_LATE;
+                    printf("user id [%d]: attend in late.\n", id);
+                }
             }
-            else
+            else if(adt_sec_day > main_mngr.atdout_time)
             {
-                atd_mngr->attend_list[i].status = ATTEND_STA_LATE;
-                //printf("LATE !!!\n");
-                return ATTEND_STA_LATE;
+                atd_mngr->attend_list[i].atdout_time = time;
+                atd_mngr->attend_list[i].atdout_sta = ATTEND_STA_OK;
+                status = ATTEND_STA_OK;
+                printf("user id [%d]: attend out ok.\n", id);
             }
         }
     }
 
-    return ATTEND_STA_NONE;
+    return status;
 }
 
 void attendance_reset_all(void)
@@ -47,8 +62,10 @@ void attendance_reset_all(void)
     // reset all user attend info
     for(i=0; i<atd_mngr->userCnt; i++)
     {
-        atd_mngr->attend_list[i].time = 0;
-        atd_mngr->attend_list[i].status = ATTEND_STA_NONE;
+        atd_mngr->attend_list[i].atdin_time = 0;
+        atd_mngr->attend_list[i].atdout_time = 0;
+        atd_mngr->attend_list[i].atdin_sta = ATTEND_STA_NONE;
+        atd_mngr->attend_list[i].atdout_sta = ATTEND_STA_NONE;
     }
     
 }
@@ -91,8 +108,10 @@ int attendance_sync_userlist(void)
             {
                 atd_mngr->attend_list[atd_mngr->userCnt].id = usr_mngr->userInfo[i].id;
                 memcpy(atd_mngr->attend_list[atd_mngr->userCnt].name, usr_mngr->userInfo[i].name, USER_NAME_LEN);
-                atd_mngr->attend_list[atd_mngr->userCnt].time = 0;
-                atd_mngr->attend_list[atd_mngr->userCnt].status = ATTEND_STA_NONE;
+                atd_mngr->attend_list[atd_mngr->userCnt].atdin_time = 0;
+                atd_mngr->attend_list[atd_mngr->userCnt].atdout_time = 0;
+                atd_mngr->attend_list[atd_mngr->userCnt].atdin_sta = ATTEND_STA_NONE;
+                atd_mngr->attend_list[atd_mngr->userCnt].atdout_sta = ATTEND_STA_NONE;
                 atd_mngr->userCnt ++;
             }
         }
@@ -150,8 +169,10 @@ int attendance_init(void)
     {
         atd_mngr->attend_list[i].id = usr_mngr->userInfo[i].id;
         memcpy(atd_mngr->attend_list[i].name, usr_mngr->userInfo[i].name, USER_NAME_LEN);
-        atd_mngr->attend_list[i].time = 0;
-        atd_mngr->attend_list[i].status = ATTEND_STA_NONE;
+        atd_mngr->attend_list[i].atdin_time = 0;
+        atd_mngr->attend_list[i].atdout_time = 0;
+        atd_mngr->attend_list[i].atdin_sta = ATTEND_STA_NONE;
+        atd_mngr->attend_list[i].atdout_sta = ATTEND_STA_NONE;
     }
 
     return 0;

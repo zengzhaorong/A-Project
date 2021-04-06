@@ -28,10 +28,10 @@ extern "C" {
 #endif
 
 
-#define MAIN_WIN_ROW			800
-#define MAIN_WIN_COL			480
-#define VIDEO_AREA_ROW			640
-#define VIDEO_AREA_COL			480
+#define MAIN_WIN_ROW			LCD_PIX_WIDTH
+#define MAIN_WIN_COL			LCD_PIX_HEIGH
+#define VIDEO_AREA_ROW			CAPTURE_PIX_WIDTH
+#define VIDEO_AREA_COL			CAPTURE_PIX_HEIGH
 
 #define TIMER_INTERV_MS			1
 #define TIMER_ADDUSER_OK_MS		(3*1000)
@@ -43,7 +43,16 @@ extern "C" {
 #define BEGIN_ADD_FACE_TEXT		"录入人脸：请正对摄像头"
 #define SUCCESS_ADD_FACE_TEXT	"录入人脸成功"
 #define RECOGN_SUCCESS_TEXT		"签到成功"			// "识别成功"、"签到成功"、"欢迎回家"
-#define ATTEND_LATE_TEXT		"签到[迟到]"
+#define ATTEND_IN_LATE_TEXT		"迟到"
+#define ATTEND_OUT_EARLY_TEXT	"早退"
+#define TEXT_SIGN_IN			"签到:"
+#define TEXT_SIGN_OUT			"签退:"
+
+#define TEXT_SET_ATD_TIME		"设置考勤时间"
+#define TEXT_USER_NAME			"用户名"
+#define TEXT_ADD_USER			"添加用户"
+#define TEXT_DEL_USER			"删除用户"
+#define TEXT_TIMESHEET			"考勤表"
 
 typedef enum {
 	MAINWIN_MODE_DISCONECT,
@@ -79,7 +88,10 @@ private:
 	QImage			initWinImg;			// background image
 	QTimer 			*timer;				// display timer
 	QLabel			*clockLabel;		// display clock
-	QDateTimeEdit	*attendTimeEdit;	// attend time base
+	QLabel			*LabelAtdIn;		// attend in label
+	QLabel			*LabelAtdOut;		// attend out label
+	QDateTimeEdit	*TimeEditAtdIn;		// attend in time
+	QDateTimeEdit	*TimeEditAtdOut;	// attend out time
 	QPushButton 	*setAtdtimeBtn;		// set attend time
 	QLineEdit		*userNameEdit;		// edit add user name
 	QPushButton 	*addUserBtn;		// add user button
@@ -105,7 +117,7 @@ public:
 };
 
 int mainwin_set_userList(int flag, int userCnt, char *usr_name);
-int mainwin_set_attendList(int id, char *usr_name, uint32_t time, int status);
+int mainwin_set_attendList(int id, char *usr_name, uint32_t time_atdin, int sta_atdin, uint32_t time_atdout, int sta_atdout);
 void mainwin_reset_attendList(void);
 
 int mainwin_set_rects(int x, int y, int w, int h);

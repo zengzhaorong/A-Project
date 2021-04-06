@@ -212,11 +212,18 @@ int server_0x10_getOneFrame(struct clientInfo *client, uint8_t *data, int len, u
 
 int server_0x13_setAttendTime(struct clientInfo *client, uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
 {
-	uint32_t time;
+	uint32_t atdin_time;
+	uint32_t atdout_time;
+	int tmplen = 0;
 
-	memcpy(&time, data, 4);
+	memcpy(&atdin_time, data +tmplen, 4);
+	tmplen +=4;
 
-	main_mngr.attend_time = time;
+	memcpy(&atdout_time, data +tmplen, 4);
+	tmplen +=4;
+
+	main_mngr.atdin_time = atdin_time;
+	main_mngr.atdout_time = atdout_time;
 
 	return 0;
 }
@@ -250,9 +257,13 @@ int server_0x14_getAttendList(struct clientInfo *client, uint8_t *data, int len,
 		tmplen += 4;
 		memcpy(ack_data +tmplen, atd_mngr->attend_list[i].name, USER_NAME_LEN);
 		tmplen += USER_NAME_LEN;
-		memcpy(ack_data +tmplen, &atd_mngr->attend_list[i].time, 4);
+		memcpy(ack_data +tmplen, &atd_mngr->attend_list[i].atdin_time, 4);
 		tmplen += 4;
-		memcpy(ack_data +tmplen, &atd_mngr->attend_list[i].status, 4);
+		memcpy(ack_data +tmplen, &atd_mngr->attend_list[i].atdin_sta, 4);
+		tmplen += 4;
+		memcpy(ack_data +tmplen, &atd_mngr->attend_list[i].atdout_time, 4);
+		tmplen += 4;
+		memcpy(ack_data +tmplen, &atd_mngr->attend_list[i].atdout_sta, 4);
 		tmplen += 4;
 	}
 
