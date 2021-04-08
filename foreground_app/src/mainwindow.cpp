@@ -27,9 +27,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 {
 	QFont font;
 	QPalette pa;
-	QTextCodec *codec;
-
-	codec = QTextCodec::codecForName("GBK");
+	QTextCodec *codec = QTextCodec::codecForName("GBK");
 
 	/* can show Chinese word */
 	setWindowTitle(codec->toUnicode(MAINWINDOW_TITLE));
@@ -63,7 +61,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 	/* attend in time edit */
 	LabelAtdIn = new QLabel(mainWindow);
 	LabelAtdIn->setGeometry(660, 158, 50, 30);
-	LabelAtdIn->setText(codec->toUnicode(TEXT_SIGN_IN));
+	LabelAtdIn->setText(codec->toUnicode(TEXT_ATTEND_IN":"));
 	LabelAtdIn->show();
 	TimeEditAtdIn = new QDateTimeEdit(QDateTime::currentDateTime(), this);
 	TimeEditAtdIn->setDisplayFormat("HH:mm:ss");
@@ -73,7 +71,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 	/* attend out time edit */
 	LabelAtdOut = new QLabel(mainWindow);
 	LabelAtdOut->setGeometry(660, 190, 50, 30);
-	LabelAtdOut->setText(codec->toUnicode(TEXT_SIGN_OUT));
+	LabelAtdOut->setText(codec->toUnicode(TEXT_ATTEND_OUT":"));
 	LabelAtdOut->show();
 	TimeEditAtdOut = new QDateTimeEdit(QDateTime::currentDateTime(), this);
 	TimeEditAtdOut->setDisplayFormat("HH:mm:ss");
@@ -325,6 +323,7 @@ void MainWindow::textOnVideo_show_over(void)
 /* switch mainwindow display mode: normal, add user, add user ok, recognzie ... */
 int MainWindow::switch_mainwin_mode(mainwin_mode_e mode)
 {
+	QTextCodec *codec = QTextCodec::codecForName("GBK");
 	char showText[128] = {0};
 	int addface_x;
 
@@ -335,7 +334,6 @@ int MainWindow::switch_mainwin_mode(mainwin_mode_e mode)
 		tmpShowTimer->stop();
 		addface_x = 240;
 		textOnVideo->setGeometry(addface_x, 0, VIDEO_AREA_ROW -addface_x, 50);
-		QTextCodec *codec = QTextCodec::codecForName("GBK");
 		textOnVideo->setText(codec->toUnicode(NOT_CONNECT_SERVER));
 		textOnVideo->show();
 	}
@@ -348,7 +346,6 @@ int MainWindow::switch_mainwin_mode(mainwin_mode_e mode)
 		tmpShowTimer->stop();
 		addface_x = 200;
 		textOnVideo->setGeometry(addface_x, 0, VIDEO_AREA_ROW -addface_x, 50);
-		QTextCodec *codec = QTextCodec::codecForName("GBK");
 		textOnVideo->setText(codec->toUnicode(BEGIN_ADD_FACE_TEXT));
 		textOnVideo->show();
 	}
@@ -356,7 +353,6 @@ int MainWindow::switch_mainwin_mode(mainwin_mode_e mode)
 	{
 		addface_x = 230;
 		textOnVideo->setGeometry(addface_x, 0, VIDEO_AREA_ROW -addface_x, 50);
-		QTextCodec *codec = QTextCodec::codecForName("GBK");
 		textOnVideo->setText(codec->toUnicode(SUCCESS_ADD_FACE_TEXT));
 		textOnVideo->show();
 		QObject::connect(tmpShowTimer, SIGNAL(timeout()), this, SLOT(textOnVideo_show_over()));
@@ -364,20 +360,23 @@ int MainWindow::switch_mainwin_mode(mainwin_mode_e mode)
 	}
 	else if(mode == MAINWIN_MODE_RECOGN)
 	{
-		addface_x = 150;
+		addface_x = 200;
 		textOnVideo->setGeometry(addface_x, 0, VIDEO_AREA_ROW -addface_x, 50);
-		QTextCodec *codec = QTextCodec::codecForName("GBK");
-		if(face_status == ATTEND_STA_IN_LATE)
+		if(face_status == ATTEND_STA_IN_OK)
 		{
-			sprintf(showText, "%s: %s - %d%c", ATTEND_IN_LATE_TEXT, userRecogn, confidence, '%');
+			sprintf(showText, "%s: %s - %d%c", TEXT_ATTEND_IN, userRecogn, confidence, '%');
+		}
+		else if(face_status == ATTEND_STA_OUT_OK)
+		{
+			sprintf(showText, "%s: %s - %d%c", TEXT_ATTEND_OUT, userRecogn, confidence, '%');
+		}
+		else if(face_status == ATTEND_STA_IN_LATE)
+		{
+			sprintf(showText, "%s: %s - %d%c", TEXT_ATTEND_IN_LATE, userRecogn, confidence, '%');
 		}
 		else if(face_status == ATTEND_STA_OUT_EARLY)
 		{
-			sprintf(showText, "%s: %s - %d%c", ATTEND_OUT_EARLY_TEXT, userRecogn, confidence, '%');
-		}
-		else
-		{
-			sprintf(showText, "%s: %s - %d%c", RECOGN_SUCCESS_TEXT, userRecogn, confidence, '%');
+			sprintf(showText, "%s: %s - %d%c", TEXT_ATTEND_OUT_EARLY, userRecogn, confidence, '%');
 		}
 		textOnVideo->setText(codec->toUnicode(showText));
 		textOnVideo->show();
@@ -457,78 +456,85 @@ int mainwin_set_recognInfo(int id, uint8_t confid, char *usr_name, int status)
 /* set attend info */
 int mainwin_set_attendList(int id, char *usr_name, uint32_t time_atdin, int sta_atdin, uint32_t time_atdout, int sta_atdout)
 {
-	QColor incolor;
-	QColor outcolor;
+	QColor color;
 	char usr_id[4] = {0};
 	char intime_str[32] = {0};
 	char outtime_str[32] = {0};
+	char sta_str[32] = {0};
 	char insta_str[8] = {0};
 	char outsta_str[8] = {0};
 	int modelRowCnt = 0;
 	struct tm *ptm;
 	time_t tmpTime;
+	QTextCodec *codec = QTextCodec::codecForName("GBK");
 
 	if(usr_name == NULL)
 		return -1;
 
 	sprintf(usr_id, "%d", id);
 	tmpTime = time_atdin;
-	ptm = localtime(&tmpTime);
-	sprintf(intime_str, "%02d:%02d:%02d", ptm->tm_hour, ptm->tm_min, ptm->tm_sec);
-	tmpTime = time_atdout;
-	ptm = localtime(&tmpTime);
-	sprintf(outtime_str, "%02d:%02d:%02d", ptm->tm_hour, ptm->tm_min, ptm->tm_sec);
-
-	if(sta_atdin == ATTEND_STA_OK)
+	if(sta_atdin != ATTEND_STA_NONE)
 	{
-		strcpy(insta_str, "OK");
-		incolor = QColor(155,187,89);	// light green
+		ptm = localtime(&tmpTime);
+		sprintf(intime_str, "%02d:%02d:%02d", ptm->tm_hour, ptm->tm_min, ptm->tm_sec);
+	}
+	tmpTime = time_atdout;
+	if(sta_atdout != ATTEND_STA_NONE)
+	{
+		ptm = localtime(&tmpTime);
+		sprintf(outtime_str, "%02d:%02d:%02d", ptm->tm_hour, ptm->tm_min, ptm->tm_sec);
+	}
+
+	if(sta_atdin == ATTEND_STA_IN_OK)
+	{
+		strcpy(insta_str, TEXT_ATTEND_OK);
+		color = QColor(155,187,89);	// light green
 	}
 	else if(sta_atdin == ATTEND_STA_IN_LATE)
 	{
-		strcpy(insta_str, "Late");
-		incolor = QColor(222, 221, 140);	// light yellow
+		strcpy(insta_str, TEXT_ATTEND_IN_LATE);
+		color = QColor(222, 221, 140);	// light yellow
 	}
 	else
 	{
-		strcpy(insta_str, "-");
-		incolor = QColor(192,80,77);	// light red
+		strcpy(insta_str, TEXT_ATTEND_NULL);
+		color = QColor(192,80,77);	// light red
 	}
 	
-	if(sta_atdout == ATTEND_STA_OK)
+	if(sta_atdout == ATTEND_STA_OUT_OK)
 	{
-		strcpy(outsta_str, "OK");
-		outcolor = QColor(155,187,89);	// light green
+		strcpy(outsta_str, TEXT_ATTEND_OK);
+		color = QColor(155,187,89);	// light green
 	}
-	else if(sta_atdout == ATTEND_STA_IN_LATE)
+	else if(sta_atdout == ATTEND_STA_OUT_EARLY)
 	{
-		strcpy(outsta_str, "Late");
-		outcolor = QColor(222, 221, 140);	// light yellow
+		strcpy(outsta_str, TEXT_ATTEND_OUT_EARLY);
+		color = QColor(222, 221, 140);	// light yellow
 	}
 	else
 	{
-		strcpy(outsta_str, "-");
-		outcolor = QColor(192,80,77);	// light red
+		strcpy(outsta_str, TEXT_ATTEND_NULL);
+		color = QColor(192,80,77);	// light red
 	}
+	sprintf(sta_str, "%s : %s", insta_str, outsta_str);
 	//printf("usr_id: %s, time: %s, status: %s\n", usr_id, attend_time, attend_sta);
 
 	modelRowCnt = mainwindow->userModel->rowCount();
 	mainwindow->userModel->setItem(modelRowCnt, 0, new QStandardItem(QString("%1").arg(usr_id)));
 	mainwindow->userModel->setItem(modelRowCnt, 1, new QStandardItem(QString("%1").arg(usr_name)));
 	mainwindow->userModel->setItem(modelRowCnt, 2, new QStandardItem(QString("%1").arg(intime_str)));
-	mainwindow->userModel->setItem(modelRowCnt, 3, new QStandardItem(QString("%1").arg(insta_str)));
-	mainwindow->userModel->setItem(modelRowCnt, 4, new QStandardItem(QString("%1").arg(outtime_str)));
-	mainwindow->userModel->setItem(modelRowCnt, 5, new QStandardItem(QString("%1").arg(outsta_str)));
+	mainwindow->userModel->setItem(modelRowCnt, 3, new QStandardItem(QString("%1").arg(outtime_str)));
+	mainwindow->userModel->setItem(modelRowCnt, 4, new QStandardItem(QString("%1").arg(codec->toUnicode(sta_str))));
 
 	/* set item align center */
 	mainwindow->userModel->item(modelRowCnt, 0)->setTextAlignment(Qt::AlignCenter);
 	mainwindow->userModel->item(modelRowCnt, 1)->setTextAlignment(Qt::AlignCenter);
 	mainwindow->userModel->item(modelRowCnt, 2)->setTextAlignment(Qt::AlignCenter);
 	mainwindow->userModel->item(modelRowCnt, 3)->setTextAlignment(Qt::AlignCenter);
+	mainwindow->userModel->item(modelRowCnt, 4)->setTextAlignment(Qt::AlignCenter);
 
 	/* set item background color */
-	mainwindow->userModel->item(modelRowCnt, 3)->setBackground(QBrush(incolor));
-	mainwindow->userModel->item(modelRowCnt, 5)->setBackground(QBrush(outcolor));
+	mainwindow->userModel->item(modelRowCnt, 4)->setBackground(QBrush(color));
 	
 	/* set item fonts(forground) color */
 	//item(x, y)->setForeground(QBrush(QColor(255, 0, 0)));
@@ -538,8 +544,11 @@ int mainwin_set_attendList(int id, char *usr_name, uint32_t time_atdin, int sta_
 
 void mainwin_reset_attendList(void)
 {
+	QTextCodec *codec = QTextCodec::codecForName("GBK");
+
 	mainwindow->userModel->clear();
-	mainwindow->userModel->setHorizontalHeaderLabels({"ID", "Name", "Time In", "Status In", "Time Out", "Status Out"});
+	mainwindow->userModel->setHorizontalHeaderLabels({codec->toUnicode(TEXT_USER_ID), codec->toUnicode(TEXT_USER_NAME), codec->toUnicode(TEXT_ATTEND_IN), \
+														codec->toUnicode(TEXT_ATTEND_OUT), codec->toUnicode(TEXT_STATUS)});
 }
 
 

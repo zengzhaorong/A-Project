@@ -42,17 +42,20 @@ extern "C" {
 #define NOT_CONNECT_SERVER		"未连接服务器"
 #define BEGIN_ADD_FACE_TEXT		"录入人脸：请正对摄像头"
 #define SUCCESS_ADD_FACE_TEXT	"录入人脸成功"
-#define RECOGN_SUCCESS_TEXT		"签到成功"			// "识别成功"、"签到成功"、"欢迎回家"
-#define ATTEND_IN_LATE_TEXT		"迟到"
-#define ATTEND_OUT_EARLY_TEXT	"早退"
-#define TEXT_SIGN_IN			"签到:"
-#define TEXT_SIGN_OUT			"签退:"
-
+#define TEXT_RECOGN_SUCCESS		"识别成功"			// "识别成功"、"签到成功"、"欢迎回家"
+#define TEXT_ATTEND_IN			"签到"
+#define TEXT_ATTEND_OUT			"签退"
+#define TEXT_ATTEND_OK			"正常"
+#define TEXT_ATTEND_IN_LATE		"迟到"
+#define TEXT_ATTEND_OUT_EARLY	"早退"
+#define TEXT_ATTEND_NULL		"缺勤"
 #define TEXT_SET_ATD_TIME		"设置考勤时间"
-#define TEXT_USER_NAME			"用户名"
 #define TEXT_ADD_USER			"添加用户"
 #define TEXT_DEL_USER			"删除用户"
 #define TEXT_TIMESHEET			"考勤表"
+#define TEXT_USER_ID			"编号"
+#define TEXT_USER_NAME			"姓名"
+#define TEXT_STATUS				"状态"
 
 typedef enum {
 	MAINWIN_MODE_DISCONECT,

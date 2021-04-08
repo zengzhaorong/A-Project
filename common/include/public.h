@@ -30,7 +30,8 @@ typedef enum {
 
 typedef enum {
 	ATTEND_STA_NONE,		// not attend
-	ATTEND_STA_OK,		    // already attended
+	ATTEND_STA_IN_OK,		// attend in ok
+	ATTEND_STA_OUT_OK,		// attend out ok
 	ATTEND_STA_IN_LATE,		// attend in late
 	ATTEND_STA_OUT_EARLY,	// attend out early
 }attend_sta_e;

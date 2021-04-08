@@ -14,39 +14,51 @@ attend_sta_e attendance_set_one(int id, uint32_t time)
 {
     struct attend_mngr_Stru *atd_mngr = &attend_mngr_unit;
     uint32_t adt_sec_day;
-    attend_sta_e status;
+    uint32_t mid_time;
+    attend_sta_e status = ATTEND_STA_IN_OK;
     int i;
 
     adt_sec_day = time_t_to_sec_day(time);
+    mid_time = (main_mngr.atdin_time +main_mngr.atdout_time)/2;
 
     for(i=0; i<atd_mngr->userCnt; i++)
     {
         if(atd_mngr->attend_list[i].id == id)
         {
-            /* is attend in */
-            if(atd_mngr->attend_list[i].atdin_sta == ATTEND_STA_NONE && adt_sec_day < main_mngr.atdout_time)
+            /* attend in: use the first time */
+            if(adt_sec_day <= mid_time)
             {
                 if(adt_sec_day <= main_mngr.atdin_time)
                 {
-                    atd_mngr->attend_list[i].atdin_time = time;
-                    atd_mngr->attend_list[i].atdin_sta = ATTEND_STA_OK;
-                    status = ATTEND_STA_OK;
+                    status = ATTEND_STA_IN_OK;
                     printf("user id [%d]: attend in ok.\n", id);
                 }
                 else
                 {
-                    atd_mngr->attend_list[i].atdin_time = time;
-                    atd_mngr->attend_list[i].atdin_sta = ATTEND_STA_IN_LATE;
                     status = ATTEND_STA_IN_LATE;
                     printf("user id [%d]: attend in late.\n", id);
                 }
+                if(atd_mngr->attend_list[i].atdin_sta == ATTEND_STA_NONE)
+                {
+                    atd_mngr->attend_list[i].atdin_time = time;
+                    atd_mngr->attend_list[i].atdin_sta = status;
+                }
             }
-            else if(adt_sec_day > main_mngr.atdout_time)
+            /* attend out: use the last time */
+            else
             {
+                if(adt_sec_day < main_mngr.atdout_time)
+                {
+                    status = ATTEND_STA_OUT_EARLY;
+                    printf("user id [%d]: attend out early.\n", id);
+                }
+                else
+                {
+                    status = ATTEND_STA_OUT_OK;
+                    printf("user id [%d]: attend out ok.\n", id);
+                }
                 atd_mngr->attend_list[i].atdout_time = time;
-                atd_mngr->attend_list[i].atdout_sta = ATTEND_STA_OK;
-                status = ATTEND_STA_OK;
-                printf("user id [%d]: attend out ok.\n", id);
+                atd_mngr->attend_list[i].atdout_sta = status;
             }
         }
     }
