@@ -13,6 +13,7 @@ using namespace std;
 using namespace cv;
 using namespace cv::face;
 
+#define FRONTAL_TACE_HAAR_XML "resource/haarcascade_frontalface_alt.xml"
 
 class face_detect
 {

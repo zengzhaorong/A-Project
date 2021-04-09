@@ -41,6 +41,7 @@ face_detect::face_detect(void)
 
 int face_detect::face_detect_init(void)
 {
+	bool bret;
 	int ret;
 
 	this->frame_size = ONE_CAP_FRAME_SIZE;
@@ -55,7 +56,12 @@ int face_detect::face_detect_init(void)
 		return -1;
 	}
 
-	this->face_cascade.load("resource/haarcascade_frontalface_alt.xml");
+	bret = this->face_cascade.load(FRONTAL_TACE_HAAR_XML);
+	if(bret == false)
+	{
+		printf("%s: load [%s] failed !\n", __FUNCTION__, FRONTAL_TACE_HAAR_XML);
+		return -1;
+	}
 
 	return 0;
 }
@@ -338,7 +344,12 @@ void *opencv_face_detect_thread(void *arg)
 
 	printf("%s enter ++\n", __FUNCTION__);
 	
-	detect_unit->face_detect_init();
+	ret = detect_unit->face_detect_init();
+	if(ret != 0)
+	{
+		printf("%s: face_detect_init failed !\n", __FUNCTION__);
+		return NULL;
+	}
 
 	/* only support one client at one time */
 	/* if manager is adding user, user client can not work in face detect and recognize */
@@ -511,7 +522,12 @@ void *opencv_face_recogn_thread(void *arg)
 
 	printf("%s enter ++\n", __FUNCTION__);
 
-	recogn_unit->face_recogn_init();
+	ret = recogn_unit->face_recogn_init();
+	if(ret != 0)
+	{
+		printf("%s: face_recogn_init failed !\n", __FUNCTION__);
+		return NULL;
+	}
 
 	while(1)
 	{

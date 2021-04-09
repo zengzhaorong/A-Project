@@ -31,8 +31,9 @@ int main(int argc, char* argv[])
 	
 	start_mainwindow_task();
 
+#ifdef USER_CLIENT_ENABLE
 	start_capture_task();
-
+#endif
 	start_socket_client_task();
 
 

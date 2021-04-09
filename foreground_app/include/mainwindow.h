@@ -36,7 +36,7 @@ extern "C" {
 #define TIMER_INTERV_MS			1
 #define TIMER_ADDUSER_OK_MS		(3*1000)
 
-#define WIN_BACKGRD_IMG			"resource/backgrd.jpg"		// 界面背景图
+#define WIN_BACKGRD_IMG			"resource/background.jpg"		// 界面背景图
 
 /* tips text, support Chinese */
 #define NOT_CONNECT_SERVER		"未连接服务器"
@@ -88,7 +88,7 @@ public:
 private:
 	QWidget			*mainWindow;		// main window
 	QLabel 			*videoArea;			// video area
-	QImage			initWinImg;			// background image
+	QImage			backgroundImg;		// background image
 	QTimer 			*timer;				// display timer
 	QLabel			*clockLabel;		// display clock
 	QLabel			*LabelAtdIn;		// attend in label

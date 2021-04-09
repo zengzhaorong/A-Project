@@ -14,7 +14,7 @@
 #include "config.h"
 
 
-struct v4l2cap_info capture_info;
+struct v4l2cap_info capture_info = {0};
 
 
 int capture_init(struct v4l2cap_info *capture)
@@ -241,6 +241,9 @@ int capture_getframe(unsigned char *data, int size, int *len)
 	struct v4l2cap_info *capture = &capture_info;
 	int tmpLen;
 
+	if(!capture->run)
+		return -1;
+
 	if(data==NULL || size<=0)
 		return -1;
 
@@ -278,8 +281,9 @@ void *capture_thread(void *arg)
 	printf("capture init successfully .\n");
 
 	v4l2cap_start(capture);
+	capture->run = 1;
 
-	while(1)
+	while(capture->run)
 	{
 	
 		ret = v4l2cap_flushframe(capture);
@@ -291,17 +295,22 @@ void *capture_thread(void *arg)
 			printf("ERROR: get capture frame failed, ret: %d\n", ret);
 		}
 	}
+	capture->run = 0;
 
 	v4l2cap_stop(capture);
 
 	capture_deinit(capture);
-
+	printf("%s: exit --\n", __FUNCTION__);
+	return NULL;
 }
 
 int start_capture_task(void)
 {
 	pthread_t tid;
 	int ret;
+
+	if(capture_info.run)
+		return 0;
 
 	ret = pthread_create(&tid, NULL, capture_thread, NULL);
 	if(ret != 0)
@@ -312,4 +321,8 @@ int start_capture_task(void)
 	return 0;
 }
 
-
+int capture_task_stop(void)
+{
+	capture_info.run = 0;
+	return 0;
+}

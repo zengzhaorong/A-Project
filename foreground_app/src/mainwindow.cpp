@@ -37,11 +37,11 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 	mainWindow = new QWidget;
 	setCentralWidget(mainWindow);
 
-	initWinImg.load(WIN_BACKGRD_IMG);
+	backgroundImg.load(WIN_BACKGRD_IMG);
 
 	/* show video area */
 	videoArea = new QLabel(mainWindow);
-	videoArea->setPixmap(QPixmap::fromImage(initWinImg));
+	videoArea->setPixmap(QPixmap::fromImage(backgroundImg));
 	videoArea->setGeometry(0, 0, VIDEO_AREA_ROW, VIDEO_AREA_COL);
 	videoArea->show();
 	
@@ -256,9 +256,19 @@ void MainWindow::addUser(void)
 
 	/* get QLineEdit input text */
 	editStr = userNameEdit->text();
+	if(editStr.length() <= 0)
+	{
+		printf("%s: QLineEdit is empty !\n", __FUNCTION__);
+		return ;
+	}
 	ba = editStr.toLatin1();
 	memset(username, 0, sizeof(username));
 	strncpy((char *)username, ba.data(), strlen(ba.data()));
+
+	/* opencv camera */
+	#if defined(MANAGER_CLIENT_ENABLE) && !defined(USER_CLIENT_ENABLE)
+	start_capture_task();
+	#endif
 
 	main_mngr.work_state = WORK_STA_ADDUSER;
 
@@ -357,6 +367,11 @@ int MainWindow::switch_mainwin_mode(mainwin_mode_e mode)
 		textOnVideo->show();
 		QObject::connect(tmpShowTimer, SIGNAL(timeout()), this, SLOT(textOnVideo_show_over()));
 		tmpShowTimer->start(TIMER_ADDUSER_OK_MS);
+		/* close capture, show background image */
+		#if defined(MANAGER_CLIENT_ENABLE) && !defined(USER_CLIENT_ENABLE)
+		capture_task_stop();
+		videoArea->setPixmap(QPixmap::fromImage(backgroundImg));
+		#endif
 	}
 	else if(mode == MAINWIN_MODE_RECOGN)
 	{

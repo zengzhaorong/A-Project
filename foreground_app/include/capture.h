@@ -26,8 +26,8 @@ struct buffer_info
 
 struct v4l2cap_info
 {
+	int run;
 	int fd;
-	
 	unsigned char *frameBuf;
 	unsigned int frameLen;
 	pthread_mutex_t	frameMut;
@@ -37,7 +37,7 @@ struct v4l2cap_info
 };
 
 int capture_getframe(unsigned char *data, int size, int *len);
-
 int start_capture_task(void);
+int capture_task_stop(void);
 
 #endif	// _CAPTURE_H_
