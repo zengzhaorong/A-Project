@@ -503,36 +503,44 @@ int mainwin_set_attendList(int id, char *usr_name, uint32_t time_atdin, int sta_
 	if(sta_atdin == ATTEND_STA_IN_OK)
 	{
 		strcpy(insta_str, TEXT_ATTEND_OK);
-		color = QColor(155,187,89);	// light green
 	}
 	else if(sta_atdin == ATTEND_STA_IN_LATE)
 	{
 		strcpy(insta_str, TEXT_ATTEND_IN_LATE);
-		color = QColor(222, 221, 140);	// light yellow
 	}
 	else
 	{
 		strcpy(insta_str, TEXT_ATTEND_NULL);
-		color = QColor(192,80,77);	// light red
 	}
 	
 	if(sta_atdout == ATTEND_STA_OUT_OK)
 	{
 		strcpy(outsta_str, TEXT_ATTEND_OK);
-		color = QColor(155,187,89);	// light green
 	}
 	else if(sta_atdout == ATTEND_STA_OUT_EARLY)
 	{
 		strcpy(outsta_str, TEXT_ATTEND_OUT_EARLY);
-		color = QColor(222, 221, 140);	// light yellow
 	}
 	else
 	{
 		strcpy(outsta_str, TEXT_ATTEND_NULL);
-		color = QColor(192,80,77);	// light red
 	}
 	sprintf(sta_str, "%s : %s", insta_str, outsta_str);
 	//printf("usr_id: %s, time: %s, status: %s\n", usr_id, attend_time, attend_sta);
+
+	/* display color */
+	if(sta_atdin==ATTEND_STA_IN_OK && sta_atdout==ATTEND_STA_OUT_OK)
+	{
+		color = QColor(155,187,89);	// light green
+	}
+	else if(sta_atdin==ATTEND_STA_NONE && sta_atdout==ATTEND_STA_NONE)
+	{
+		color = QColor(192,80,77);	// light red
+	}
+	else
+	{
+		color = QColor(222, 221, 140);	// light yellow
+	}
 
 	modelRowCnt = mainwindow->userModel->rowCount();
 	mainwindow->userModel->setItem(modelRowCnt, 0, new QStandardItem(QString("%1").arg(usr_id)));

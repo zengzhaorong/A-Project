@@ -8,7 +8,7 @@ set(CROSS_TOOLSCHAIN /data/arm-linux/toolschain/4.5.1-gec210)		#交叉编译工�
 
 message("********** MECHINE_ARCH: ${MECHINE_ARCH} **********")
 message("********** LIB_QT5_PATH: ${LIB_QT5_PATH} **********")
-message("********** LIB_FFMPEG_PATH: ${LIB_FFMPEG_PATH} **********")
+message("********** CROSS_TOOLSCHAIN: ${CROSS_TOOLSCHAIN} **********")
 
 # project private setting
 set(PROJECT_NAME foreground_app)
