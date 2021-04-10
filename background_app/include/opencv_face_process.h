@@ -42,7 +42,7 @@ public:
 	Ptr<LBPHFaceRecognizer> mod_LBPH;
 	Mat face_mat;
 	sem_t recogn_sem;
-	int recogn_state;	// 0-invalid 1-valid
+	int recogn_avalid;	// 0-unavaliable 1-avalidiable
 };
 
 int face_database_train(void);

@@ -1,17 +1,17 @@
-# 目标机器架构配置 select build target
-set(MECHINE_ARCH "x86")		# "arm" or "x86"
+# 目标平台配置 select build target
+set(TARGET_PLATFORM "pc")		# "arm" or "pc"
 
 # 第三方库配置 select link libraries
 set(LIB_OPENCV_PATH /usr/local/opencv4)	# opencv库路径 set your opencv-lib path here
 set(LIB_QT5_PATH /usr/local/Qt-5.12.8)			# QT库路径 set your qt-lib path here
 set(LIB_FFMPEG_PATH /usr/local/ffmpeg)			# FFmpeg库路径 set your ffmpeg-lib here
-set(CROSS_TOOLSCHAIN /data/arm-linux/toolschain/4.5.1-gec210)		#交叉编译工具链路径 set your cross toolschain path here
+set(COMPILER_PATH /usr/bin)		#编译工具链路径 set your cross toolschain path here
 set(OPENCV_VER_IS_3XX 0)	# set 0 or 1, OPENCV版本是否为3.x.x 因3与4部分函数不同，因此要加以区分
 
-message("********** MECHINE_ARCH: ${MECHINE_ARCH} **********")
+message("********** TARGET_PLATFORM: ${TARGET_PLATFORM} **********")
 message("********** LIB_OPENCV_PATH: ${LIB_OPENCV_PATH} **********")
 message("********** LIB_QT5_PATH: ${LIB_QT5_PATH} **********")
-message("********** LIB_FFMPEG_PATH: ${LIB_FFMPEG_PATH} **********")
+message("********** COMPILER_PATH: ${COMPILER_PATH} **********")
 
 # project private setting
 set(PROJECT_NAME background_app)
@@ -22,11 +22,14 @@ cmake_minimum_required(VERSION 2.8)
 # this is background_app
 add_definitions(-D BACKGROUND_APP)
 
-if(MECHINE_ARCH STREQUAL "arm")
 	set(CMAKE_SYSTEM_NAME Linux)
+if(TARGET_PLATFORM STREQUAL "arm")
 	set(CMAKE_SYSTEM_PROCESSOR arm)
-	set(CMAKE_C_COMPILER ${CROSS_TOOLSCHAIN}/bin/arm-linux-gcc)
-	set(CMAKE_CXX_COMPILER ${CROSS_TOOLSCHAIN}/bin/arm-linux-g++)
+	set(CMAKE_C_COMPILER ${COMPILER_PATH}/arm-linux-gcc)
+	set(CMAKE_CXX_COMPILER ${COMPILER_PATH}/arm-linux-g++)
+else()
+	set(CMAKE_C_COMPILER ${COMPILER_PATH}/gcc)
+	set(CMAKE_CXX_COMPILER ${COMPILER_PATH}/g++)
 endif()
 
 #define OPENCV_VER_3_X_X, use in C/C++
@@ -64,7 +67,7 @@ set(LIB_QT5_LIB ${LIB_QT5_PATH}/lib)
 file(GLOB QT5_LIB_FILE ${LIB_QT5_LIB}/libQt5*.so*)
 
 # FFmpeg库路径及文件
-if(MECHINE_ARCH STREQUAL "x86")
+if(TARGET_PLATFORM STREQUAL "pc")
 	set(LIB_FFMPEG_INC ${LIB_FFMPEG_PATH}/include)
 	set(LIB_FFMPEG_LIB ${LIB_FFMPEG_PATH}/lib)
 	file(GLOB FFMPEG_LIB_FILE ${LIB_FFMPEG_LIB}/libopencv_*.so*)

@@ -1,14 +1,14 @@
-# 目标机器架构配置 select build target
-set(MECHINE_ARCH "x86")		# "arm" or "x86"
+# 目标平台配置 select build target
+set(TARGET_PLATFORM "pc")		# "arm" or "pc"
 
 # 第三方库配置 select link libraries
 set(LIB_QT5_PATH /usr/local/Qt-5.12.8)			# QT库路径 set your qt-lib path here
 set(LIB_FFMPEG_PATH /usr/local/ffmpeg)			# FFmpeg库路径 set your ffmpeg-lib here
-set(CROSS_TOOLSCHAIN /data/arm-linux/toolschain/4.5.1-gec210)		#交叉编译工具链路径 set your cross toolschain path here
+set(COMPILER_PATH /usr/bin)		#编译工具链路径 set your cross toolschain path here
 
-message("********** MECHINE_ARCH: ${MECHINE_ARCH} **********")
+message("********** TARGET_PLATFORM: ${TARGET_PLATFORM} **********")
 message("********** LIB_QT5_PATH: ${LIB_QT5_PATH} **********")
-message("********** CROSS_TOOLSCHAIN: ${CROSS_TOOLSCHAIN} **********")
+message("********** COMPILER_PATH: ${COMPILER_PATH} **********")
 
 # project private setting
 set(PROJECT_NAME foreground_app)
@@ -19,14 +19,16 @@ cmake_minimum_required(VERSION 2.8)
 # this is foreground_app
 add_definitions(-D FOREGROUND_APP)
 
-if(MECHINE_ARCH STREQUAL "arm")
+if(TARGET_PLATFORM STREQUAL "arm")
 	set(CMAKE_SYSTEM_NAME Linux)
 	set(CMAKE_SYSTEM_PROCESSOR arm)
-	set(CMAKE_C_COMPILER ${CROSS_TOOLSCHAIN}/bin/arm-linux-gcc)
-	set(CMAKE_CXX_COMPILER ${CROSS_TOOLSCHAIN}/bin/arm-linux-g++)
+	set(CMAKE_C_COMPILER ${COMPILER_PATH}/arm-linux-gcc)
+	set(CMAKE_CXX_COMPILER ${COMPILER_PATH}/arm-linux-g++)
 	# use as user, only face recognize
 	add_definitions(-D USER_CLIENT_ENABLE)
 else()
+	set(CMAKE_C_COMPILER ${COMPILER_PATH}/gcc)
+	set(CMAKE_CXX_COMPILER ${COMPILER_PATH}/g++)
 	# use as manager, can add & del user
 	add_definitions(-D MANAGER_CLIENT_ENABLE)
 endif()
@@ -64,7 +66,7 @@ set(LIB_QT5_LIB ${LIB_QT5_PATH}/lib)
 file(GLOB QT5_LIB_FILE ${LIB_QT5_LIB}/libQt5*.so*)
 
 # FFmpeg库路径及文件
-if(MECHINE_ARCH STREQUAL "x86")
+if(TARGET_PLATFORM STREQUAL "pc")
 	set(LIB_FFMPEG_INC ${LIB_FFMPEG_PATH}/include)
 	set(LIB_FFMPEG_LIB ${LIB_FFMPEG_PATH}/lib)
 	file(GLOB FFMPEG_LIB_FILE ${LIB_FFMPEG_LIB}/lib*.so*)

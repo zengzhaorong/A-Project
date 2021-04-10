@@ -96,13 +96,15 @@ int face_recogn::face_recogn_init(void)
 #else
 	this->mod_LBPH = LBPHFaceRecognizer::create();
 #endif
-	recogn_state = 0;
+	recogn_avalid = 0;
 
 	ret = face_database_train();
 	if(ret < 0)
 	{
+		printf("%s: Face model train failed!\n", __FUNCTION__);
 		return -1;
 	}
+	printf("%s: Face model train success.\n", __FUNCTION__);
 
 	/* wether save model file */
     //this->mod_LBPH->write("MyFaceLBPHModel.xml");  
@@ -110,8 +112,7 @@ int face_recogn::face_recogn_init(void)
 
 	this->mod_LBPH->setThreshold(FACE_RECOGN_THRES);
 
-	recogn_state = 1;
-	printf("%s: --------- Face model train succeed ---------\n", __FUNCTION__);
+	recogn_avalid = 1;
 
 	return 0;
 }
@@ -225,7 +226,7 @@ int face_resize_save(Mat& faceImg, char *path, int index)
 	}
 
 	resize(faceImg, faceSave, Size(92, 112));
-	file_path = format("%s/%d.jpg", path, index);
+	file_path = format("%s/%d.png", path, index);
 	ret = imwrite(file_path, faceSave);
 	if(ret == false)
 		return -1;
@@ -274,7 +275,7 @@ int face_database_train(void)
 	return 0;
 
 ERR_TRAIN	:
-	face_recogn_unit.recogn_state = 0;
+	face_recogn_unit.recogn_avalid = 0;
 
 	return -1;
 }
@@ -435,11 +436,11 @@ void *opencv_face_detect_thread(void *arg)
 					proto_0x04_switchWorkSta(socket_handle, WORK_STA_NORMAL, NULL);
 					proto_0x05_addUser(socket_handle, 1, user_mngr_unit.newuser);
 					main_mngr.work_state = WORK_STA_NORMAL;
-					face_recogn_unit.recogn_state = 0;
+					face_recogn_unit.recogn_avalid = 0;
 					ret = face_database_train();
 					if(ret == 0)
 					{
-						face_recogn_unit.recogn_state = 1;
+						face_recogn_unit.recogn_avalid = 1;
 					}
 					attendance_sync_userlist();
 				}
@@ -522,16 +523,12 @@ void *opencv_face_recogn_thread(void *arg)
 
 	printf("%s enter ++\n", __FUNCTION__);
 
-	ret = recogn_unit->face_recogn_init();
-	if(ret != 0)
-	{
-		printf("%s: face_recogn_init failed !\n", __FUNCTION__);
-		return NULL;
-	}
+	/* do not return if failed, because it will init again after add face. */
+	recogn_unit->face_recogn_init();
 
 	while(1)
 	{
-		if(main_mngr.work_state!=WORK_STA_NORMAL || face_recogn_unit.recogn_state!=1 || main_mngr.user_handle<0)
+		if(main_mngr.work_state!=WORK_STA_NORMAL || face_recogn_unit.recogn_avalid!=1 || main_mngr.user_handle<0)
 		{
 			usleep(300 *1000);
 			continue;
