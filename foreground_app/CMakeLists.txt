@@ -3,7 +3,6 @@ set(TARGET_PLATFORM "pc")		# "arm" or "pc"
 
 # 第三方库配置 select link libraries
 set(LIB_QT5_PATH /usr/local/Qt-5.12.8)			# QT库路径 set your qt-lib path here
-set(LIB_FFMPEG_PATH /usr/local/ffmpeg)			# FFmpeg库路径 set your ffmpeg-lib here
 set(COMPILER_PATH /usr/bin)		#编译工具链路径 set your cross toolschain path here
 
 message("********** TARGET_PLATFORM: ${TARGET_PLATFORM} **********")
@@ -65,14 +64,6 @@ set(LIB_QT5_INC ${LIB_QT5_PATH}/include ${LIB_QT5_PATH}/include/QtWidgets ${LIB_
 set(LIB_QT5_LIB ${LIB_QT5_PATH}/lib)
 file(GLOB QT5_LIB_FILE ${LIB_QT5_LIB}/libQt5*.so*)
 
-# FFmpeg库路径及文件
-if(TARGET_PLATFORM STREQUAL "pc")
-	set(LIB_FFMPEG_INC ${LIB_FFMPEG_PATH}/include)
-	set(LIB_FFMPEG_LIB ${LIB_FFMPEG_PATH}/lib)
-	file(GLOB FFMPEG_LIB_FILE ${LIB_FFMPEG_LIB}/lib*.so*)
-	#set(OTHER_3RD_LIBS ${OTHER_3RD_LIBS} -lavformat -lavcodec -lswscale -lswresample -lavutil)
-endif()
-
 # 工程H头文件路径
 set(HEAD_FILE_PATH ${HEAD_FILE_PATH} ${PROJECT_SOURCE_DIR}/include)
 set(HEAD_FILE_PATH ${HEAD_FILE_PATH} ${PROJECT_SOURCE_DIR}/../common/include)
@@ -87,10 +78,10 @@ file(GLOB SRC_LIST_CPP ${SRC_LIST_CPP} ${PROJECT_SOURCE_DIR}/src/*.cpp)
 file(GLOB SRC_LIST_CPP ${SRC_LIST_CPP} ${PROJECT_SOURCE_DIR}/../common/src/*.cpp)
 
 #指定头文件目录
-include_directories(${LIB_QT5_INC} ${LIB_FFMPEG_INC} ${HEAD_FILE_PATH})
+include_directories(${LIB_QT5_INC} ${HEAD_FILE_PATH})
 
 #指定链接库文件目录
-link_libraries(${QT5_LIB_FILE} ${FFMPEG_LIB_FILE})
+link_libraries(${QT5_LIB_FILE})
 
 # Declare the executable target built from your sources
 add_executable(${PROJECT_NAME} ${SRC_LIST_CPP} ${SRC_LIST_C} ${QT_HEAD_FILE_LIST})
