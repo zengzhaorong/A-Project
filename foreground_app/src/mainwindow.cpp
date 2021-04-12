@@ -492,7 +492,7 @@ int mainwin_set_recognInfo(int id, uint8_t confid, char *usr_name, int status)
 int mainwin_set_attendList(int id, char *usr_name, uint32_t time_atdin, int sta_atdin, uint32_t time_atdout, int sta_atdout)
 {
 	QColor color;
-	char usr_id[4] = {0};
+	char usr_id[16] = {0};
 	char intime_str[32] = {0};
 	char outtime_str[32] = {0};
 	char sta_str[32] = {0};

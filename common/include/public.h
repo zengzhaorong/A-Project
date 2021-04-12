@@ -6,6 +6,7 @@
 
 
 #define USER_NAME_LEN		32
+#define DIR_PATH_LEN		64
 
 /* user client login name */
 #define USER_CLIENT_NAME	"user_name"

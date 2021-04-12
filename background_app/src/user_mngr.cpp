@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include "user_mngr.h"
 #include "user_db.h"
+#include "config.h"
 
 
 struct userMngr_Stru		user_mngr_unit;
@@ -82,163 +83,38 @@ int user_delete(int userCnt, char *username)
 	return 0;
 }
 
-// create/update .csv file: dir_path-face lib path, csv_file: target .csv file
-int user_create_csv(char *dir_path, char *csv_file)
+/* get user face images and label(face id)*/
+int user_get_faceimg_label(vector<Mat>& images, vector<int>& labels) 
 {
-	struct stat statbuf;
-	DIR *dir = NULL;
-	DIR *dirFile = NULL;
-	struct dirent *dirp;
-	struct dirent *direntFile;
-	char 	dir_path2[64] = {0};
-	char 	fileName[128] = {0};
-	char 	witeBuf[128] = {0};
-	char 	label[10] = {0};
-	int 	fd;
-	int 	i;
+    struct userMngr_Stru *usr_mngr = &user_mngr_unit;
+    struct userdb_user user;
+	string img_path;
+    int total, cursor = 0;
+    int i, j, ret;
 
-	if(dir_path==NULL || csv_file==NULL)
-		return -1;
-
-	if(dir_path[strlen(dir_path)-1] == '/')		// eg: "/mnt/"-> "/mnt"
-		dir_path[strlen(dir_path)-1] = 0;
-
-	if(lstat(dir_path, &statbuf) < 0)
+    total = userdb_get_total(usr_mngr->userdb);
+    for(i=0; i<total +1; i++)
 	{
-		printf("lstat(%s) failed !\n", dir_path);
-		return -1;
-	}
-
-	if(S_ISDIR(statbuf.st_mode) != 1)
-	{
-		printf("%s is not dir !\n", dir_path); 
-		return -1;
-	}
-
-	dir = opendir(dir_path);
-	if( dir ==NULL)
-	{
-		printf("opendir failed.\n");
-		return -1;
-	}
-
-	fd = open(csv_file, O_RDWR | O_CREAT | O_TRUNC, 0777);
-	if(fd < 0)
-	{
-		printf("open file failed.\n");
-		return -1;
-	}
-
-	lseek(fd, 0, SEEK_SET);
-
-	while((dirp = readdir(dir)) != NULL)
-	{
-		if( strncmp(dirp->d_name, ".", strlen(dirp->d_name))==0 || 
-			 strncmp(dirp->d_name, "..", strlen(dirp->d_name))==0 )
-			continue;
-
-		memset(dir_path2, 0, sizeof(dir_path2));
-		strcat(dir_path2, dir_path);
-		strcat(dir_path2, "/");
-		strcat(dir_path2, dirp->d_name);
-
-		if(lstat(dir_path2, &statbuf) < 0)
+        ret = userdb_traverse_user(usr_mngr->userdb, &cursor, &user);
+        if(ret != 0)
+            break;
+		
+		for(j=1; j<=FACE_CNT_PER_USER; j++)
 		{
-			continue;
-		}
-
-		if(S_ISDIR(statbuf.st_mode) != 1)
-		{
-			continue;
-		}
-
-		dirFile = opendir(dir_path2);
-		if( dirFile ==NULL)
-		{
-			printf("opendir failed.\n");
-			return -1;
-		}
-
-		while((direntFile = readdir(dirFile)) != NULL)
-		{
-			if( strncmp(direntFile->d_name, ".", strlen(direntFile->d_name))==0 || 
-				 strncmp(direntFile->d_name, "..", strlen(direntFile->d_name))==0 )
-				continue;
-
-			// whole dir path
-			memset(fileName, 0, sizeof(fileName));
-			strcat(fileName, dir_path2);
-			strcat(fileName, "/");
-			strcat(fileName, direntFile->d_name);
-
-			if(lstat(fileName, &statbuf) < 0)
+			stringstream sstream;
+			sstream << user.facepath << "/" << j << ".png";
+			sstream >> img_path;
+			/* check file if exist */
+			if(access(img_path.c_str(), R_OK) == -1)
 			{
-				printf("lstat(%s) failed !\n", fileName);
-				continue;
-			}
-			if(S_ISREG(statbuf.st_mode) != 1)
-			{
-				printf("%s is not reg file !\n", fileName); 
+				printf("%s: Warning: file[%s] not exist.\n", __FUNCTION__, img_path.c_str());
 				continue;
 			}
 
-			memset(label, 0, sizeof(label));
-			memset(witeBuf, 0, sizeof(witeBuf));
-			memcpy(witeBuf, fileName, strlen(fileName));
-			strcat(witeBuf, ";");
-
-			for(i=0; i<10; i++)		// get seq
-			{
-				if(dirp->d_name[i] != '_')
-					label[i] = dirp->d_name[i];
-				else
-					break;
-			}
-			if(i == 10)
-				continue; 
-			
-			strcat(witeBuf, label);
-			strcat(witeBuf, "\n");
-
-			// write
-			if(write(fd, witeBuf, strlen(witeBuf)) != (ssize_t)strlen(witeBuf))
-			{
-				printf("%s: write failed!\n", __FUNCTION__);
-				closedir(dirFile);
-				closedir(dir);
-				close(fd);
-				return -1;
-			}
+			images.push_back(imread(img_path, 0));
+			labels.push_back(user.id);
 		}
 	}
-
-	closedir(dirFile);
-	closedir(dir);
-	close(fd);
-
-	return 0;
-}
-
-
-int user_read_csv(const string& filename, vector<Mat>& images, vector<int>& labels, char separator = ';') 
-{
-    std::ifstream file(filename.c_str(), ifstream::in);
-    if (!file) 
-	{
-        printf("No csv file!");
-		return -1;
-    }
-	
-    string line, path, classlabel;
-    while (getline(file, line)) {
-        stringstream liness(line);
-        getline(liness, path, separator);
-        getline(liness, classlabel);
-        if(!path.empty() && !classlabel.empty()) {
-            images.push_back(imread(path, 0));
-            labels.push_back(atoi(classlabel.c_str()));
-        }
-    }
 
 	return 0;
 }
@@ -338,10 +214,23 @@ int user_create_dir(char *base_dir, int id, char *usr_name, char *usr_dir)
 int user_mngr_init(void)
 {
 	struct userMngr_Stru *user_mngr = &user_mngr_unit;
+    struct userdb_user user;
+    int total, cursor = 0;
+    int i, ret;
 
 	userdb_init(&user_mngr->userdb);
 
+	/* list all user */
+    total = userdb_get_total(user_mngr->userdb);
+    for(i=0; i<total +1; i++)
+    {
+        ret = userdb_traverse_user(user_mngr->userdb, &cursor, &user);
+        if(ret != 0)
+            break;
+
+		printf("[%d] user[id: %d], name: %s\n", i+1, user.id, user.name);
+    }
+
 	return 0;
 }
-
 

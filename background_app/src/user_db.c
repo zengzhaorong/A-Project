@@ -8,7 +8,7 @@
 /* asynchronous read */
 int userdb_write(sqlite3 *db, struct userdb_user *user)
 {
-    char sql_cmd[128] = {0};
+    char sql_cmd[256] = {0};
     char *errMsg = NULL;
     int ret;
 
@@ -20,10 +20,10 @@ int userdb_write(sqlite3 *db, struct userdb_user *user)
     }
     else
     {
-        sprintf(sql_cmd, "INSERT INTO %s(%s, %s, %s, %s, %s, %s) VALUES(%d, '%s', %d, %d, %d, %d);", \
+        sprintf(sql_cmd, "INSERT INTO %s(%s, %s, %s, %s, %s, %s, %s) VALUES(%d, '%s', %d, %d, %d, %d, '%s');", \
                         USERDB_TABLE, USERDB_COL_ID, USERDB_COL_NAME, USERDB_COL_TIMEIN, \
-                        USERDB_COL_TIMEOUT, USERDB_COL_STAIN, USERDB_COL_STAOUT, user->id, user->name, \
-                        user->in_time, user->out_time, user->in_sta, user->out_sta);
+                        USERDB_COL_TIMEOUT, USERDB_COL_STAIN, USERDB_COL_STAOUT, USERDB_COL_FACEPATH, \
+                        user->id, user->name, user->in_time, user->out_time, user->in_sta, user->out_sta, user->facepath);
         ret = sqlite3_exec(db, sql_cmd, NULL, NULL, &errMsg);
         if(ret != SQLITE_OK)    // may be already exist
         {
@@ -38,15 +38,15 @@ int userdb_write(sqlite3 *db, struct userdb_user *user)
 
 int userdb_update(sqlite3 *db, struct userdb_user *user)
 {
-    char sql_cmd[128] = {0};
+    char sql_cmd[256] = {0};
     char *errMsg = NULL;
     int ret;
 
     /* CMD: UPDATE USER_TBL set a=%d, b=%d where ID=%d */
-    sprintf(sql_cmd, "UPDATE %s set %s='%s',%s=%d,%s=%d,%s=%d,%s=%d where %s=%d;", \
+    sprintf(sql_cmd, "UPDATE %s set %s='%s',%s=%d,%s=%d,%s=%d,%s=%d,%s='%s' where %s=%d;", \
                     USERDB_TABLE, USERDB_COL_NAME, user->name, USERDB_COL_TIMEIN,user->in_time, \
-                    USERDB_COL_TIMEOUT,user->out_time, USERDB_COL_STAIN,user->in_sta,
-                    USERDB_COL_STAOUT,user->out_sta, USERDB_COL_ID,user->id);
+                    USERDB_COL_TIMEOUT,user->out_time, USERDB_COL_STAIN,user->in_sta,\
+                    USERDB_COL_STAOUT,user->out_sta, USERDB_COL_FACEPATH,user->facepath, USERDB_COL_ID,user->id);
     ret = sqlite3_exec(db, sql_cmd, NULL, NULL, &errMsg);
     if(ret != SQLITE_OK)    // may be already exist
     {
@@ -82,7 +82,8 @@ int userdb_read_byId(sqlite3 *db, int id, struct userdb_user *user)
         user->out_time = sqlite3_column_int(pStmt, 3);
         user->in_sta = sqlite3_column_int(pStmt, 4);
         user->out_sta = sqlite3_column_int(pStmt, 5);
-        printf("%s: id=%d, name=%s\n", __FUNCTION__, user->id, user->name);
+		strncpy(user->facepath, (const char *)sqlite3_column_text(pStmt, 6), sizeof(user->facepath));
+        //printf("%s: id=%d, name=%s\n", __FUNCTION__, user->id, user->name);
         ret = 0;
     }
 
@@ -116,7 +117,8 @@ int userdb_read_byName(sqlite3 *db, char *name, struct userdb_user *user)
         user->out_time = sqlite3_column_int(pStmt, 3);
         user->in_sta = sqlite3_column_int(pStmt, 4);
         user->out_sta = sqlite3_column_int(pStmt, 5);
-        printf("%s: id=%d, name=%s\n", __FUNCTION__, user->id, user->name);
+		strncpy(user->facepath, (const char *)sqlite3_column_text(pStmt, 6), sizeof(user->facepath));
+        //printf("%s: id=%d, name=%s\n", __FUNCTION__, user->id, user->name);
         ret = 0;
     }
 
@@ -182,7 +184,6 @@ int userdb_get_total(sqlite3 *db)
     if(sqlite3_step(pStmt) == SQLITE_ROW)
     {
 		total = sqlite3_column_int(pStmt, 0);
-        printf("%s: total = %d\n", __FUNCTION__, total);
     }
 
     sqlite3_finalize(pStmt);
@@ -216,14 +217,15 @@ int userdb_traverse_user(sqlite3 *db, int *cursor, struct userdb_user *user)
         user->out_time = sqlite3_column_int(pStmt, 3);
         user->in_sta = sqlite3_column_int(pStmt, 4);
         user->out_sta = sqlite3_column_int(pStmt, 5);
-        printf("%s: id=%d, name=%s\n", __FUNCTION__, user->id, user->name);
+		strncpy(user->facepath, (const char *)sqlite3_column_text(pStmt, 6), sizeof(user->facepath));
+        //printf("%s: id=%d, name=%s\n", __FUNCTION__, user->id, user->name);
         (*cursor) ++;
         ret = 0;
     }
     else
     {
         sqlite3_finalize(pStmt);
-        printf("%s: over, no more user.\n", __FUNCTION__);
+        //printf("%s: over, no more user.\n", __FUNCTION__);
         ret = -1;
     }
 
@@ -242,7 +244,7 @@ int userdb_check_user_exist(sqlite3 *db, int id)
 
 int userdb_init(sqlite3 **ppdb)
 {
-    char sql_cmd[128] = {0};
+    char sql_cmd[256] = {0};
     char *errMsg = NULL;
     int ret;
 
@@ -255,9 +257,9 @@ int userdb_init(sqlite3 **ppdb)
     }
 
     /* create db table */
-	sprintf(sql_cmd, "CREATE TABLE %s(%s INT PRIMARY KEY NOT NULL, %s CHAR(%d) NOT NULL, %s INT, %s INT, %s INT, %s INT);", \
-					USERDB_TABLE, USERDB_COL_ID, USERDB_COL_NAME, USER_NAME_LEN,\
-                    USERDB_COL_TIMEIN, USERDB_COL_TIMEOUT, USERDB_COL_STAIN, USERDB_COL_STAOUT);
+	sprintf(sql_cmd, "CREATE TABLE %s(%s INT PRIMARY KEY NOT NULL, %s CHAR(%d) NOT NULL, %s INT, %s INT, %s INT, %s INT, %s TEXT);", \
+					USERDB_TABLE, USERDB_COL_ID, USERDB_COL_NAME, USER_NAME_LEN, USERDB_COL_TIMEIN, \
+                    USERDB_COL_TIMEOUT, USERDB_COL_STAIN, USERDB_COL_STAOUT, USERDB_COL_FACEPATH);
     //printf("%s: cmd: %s\n", __FUNCTION__, sql_cmd);
     ret = sqlite3_exec(*ppdb, sql_cmd, NULL, NULL, &errMsg);
     if(ret != SQLITE_OK)    // may be already exist

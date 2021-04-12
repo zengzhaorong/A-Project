@@ -12,6 +12,7 @@
 #define USERDB_COL_TIMEOUT		"TIMEOUT"
 #define USERDB_COL_STAIN		"STAIN"
 #define USERDB_COL_STAOUT		"STAOUT"
+#define USERDB_COL_FACEPATH		"FACEPATH"
 
 struct userdb_user
 {
@@ -21,6 +22,7 @@ struct userdb_user
     int out_time;      // attend out time
     int in_sta;     // attend in status
     int out_sta;    // attend in status
+    char facepath[DIR_PATH_LEN];    // face path
 };
 
 int userdb_write(sqlite3 *db, struct userdb_user *user);

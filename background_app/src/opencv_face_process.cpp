@@ -238,18 +238,11 @@ int face_resize_save(Mat& faceImg, char *path, int index)
 
 int face_database_train(void)
 {
-	string fdb_csv;
     vector<Mat> images;
     vector<int> labels;
 	int ret;
 
-	ret = user_create_csv((char *)FACES_DATABASE_PATH, (char *)FACES_DB_CSV_FILE);
-	if(ret != 0)
-		goto ERR_TRAIN;
-
-	fdb_csv = string(FACES_DB_CSV_FILE);
-
-	ret = user_read_csv(fdb_csv, images, labels, ';');
+	ret = user_get_faceimg_label(images, labels);
 	if(ret<0 || images.size() <= 0)
 	{
 		printf("read csv: No images !\n");
@@ -264,7 +257,7 @@ int face_database_train(void)
 
 	return 0;
 
-ERR_TRAIN	:
+ERR_TRAIN:
 	face_recogn_unit.recogn_avalid = 0;
 
 	return -1;
@@ -430,6 +423,7 @@ void *opencv_face_detect_thread(void *arg)
 					memset(&user, 0, sizeof(struct userdb_user));
 					user.id = user_mngr_unit.newid;
 					memcpy(user.name, user_mngr_unit.newname, USER_NAME_LEN);
+					memcpy(user.facepath, user_mngr_unit.add_userdir, DIR_PATH_LEN);
 					userdb_write(user_mngr_unit.userdb, &user);
 					main_mngr.work_state = WORK_STA_NORMAL;
 					face_recogn_unit.recogn_avalid = 0;
