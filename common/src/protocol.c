@@ -98,8 +98,8 @@ int proto_0x04_switchWorkSta(int handle, workstate_e state, uint8_t *arg)
 	
 	if(arg != NULL)
 	{
-		memcpy(tmp_protoBuf +data_len, arg, 32);
-		data_len += 32;
+		memcpy(tmp_protoBuf +data_len, arg, 64);
+		data_len += 64;
 	}
 
 	protoBuf = protoObject[handle].send_buf;
@@ -111,7 +111,8 @@ int proto_0x04_switchWorkSta(int handle, workstate_e state, uint8_t *arg)
 	return 0;
 }
 
-int proto_0x05_addUser(int handle, int userCnt, char *userlist)
+/* only support one user */
+int proto_0x05_addUser(int handle, int userCnt, int userId, char *userName)
 {
 	uint8_t *protoBuf = NULL;
 	int data_len = 0;
@@ -123,11 +124,17 @@ int proto_0x05_addUser(int handle, int userCnt, char *userlist)
 	if(protoObject[handle].send_func == NULL)
 		return -1;
 
+	/* user count */
 	memcpy(tmp_protoBuf +data_len, &userCnt, 4);
 	data_len += 4;
 
-	memcpy(tmp_protoBuf +data_len, userlist, userCnt*USER_NAME_LEN);
-	data_len += userCnt*USER_NAME_LEN;
+	/* user id */
+	memcpy(tmp_protoBuf +data_len, &userId, 4);
+	data_len += 4;
+
+	/* user name */
+	memcpy(tmp_protoBuf +data_len, userName, USER_NAME_LEN);
+	data_len += USER_NAME_LEN;
 
 	protoBuf = protoObject[handle].send_buf;
 	buf_size = protoObject[handle].buf_size;

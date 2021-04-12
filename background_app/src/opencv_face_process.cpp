@@ -238,20 +238,10 @@ int face_resize_save(Mat& faceImg, char *path, int index)
 
 int face_database_train(void)
 {
-	struct userMngr_Stru *user_mngr = &user_mngr_unit;
 	string fdb_csv;
     vector<Mat> images;
     vector<int> labels;
 	int ret;
-
-	ret = user_get_userList((char *)FACES_DATABASE_PATH, &user_mngr->userInfo, &user_mngr->userCnt);
-	if(ret < 0)
-		goto ERR_TRAIN;
-
-	for(int i=0; i<user_mngr->userCnt; i++)
-	{
-		printf("[%d].id=%d, name: %s\n", i, user_mngr->userInfo[i].id, user_mngr->userInfo[i].name);
-	}
 
 	ret = user_create_csv((char *)FACES_DATABASE_PATH, (char *)FACES_DB_CSV_FILE);
 	if(ret != 0)
@@ -337,6 +327,7 @@ int opencv_face_detect( Mat& img, CascadeClassifier& cascade,
 void *opencv_face_detect_thread(void *arg)
 {
 	class face_detect *detect_unit = &face_detect_unit;
+	struct userdb_user user;
 	int socket_handle = -1;
 	vector<Rect> faces;
 	QImage qImage;
@@ -434,7 +425,12 @@ void *opencv_face_detect_thread(void *arg)
 				if(user_mngr_unit.add_index >= FACE_CNT_PER_USER)
 				{
 					proto_0x04_switchWorkSta(socket_handle, WORK_STA_NORMAL, NULL);
-					proto_0x05_addUser(socket_handle, 1, user_mngr_unit.newuser);
+					proto_0x05_addUser(socket_handle, 1, user_mngr_unit.newid, user_mngr_unit.newname);
+					/* add user to database */
+					memset(&user, 0, sizeof(struct userdb_user));
+					user.id = user_mngr_unit.newid;
+					memcpy(user.name, user_mngr_unit.newname, USER_NAME_LEN);
+					userdb_write(user_mngr_unit.userdb, &user);
 					main_mngr.work_state = WORK_STA_NORMAL;
 					face_recogn_unit.recogn_avalid = 0;
 					ret = face_database_train();
@@ -442,7 +438,6 @@ void *opencv_face_detect_thread(void *arg)
 					{
 						face_recogn_unit.recogn_avalid = 1;
 					}
-					attendance_sync_userlist();
 				}
 			}
 			else
@@ -514,12 +509,12 @@ int opencv_face_recogn(Mat &face_mat, int *face_id, uint8_t *confid, int *status
 void *opencv_face_recogn_thread(void *arg)
 {
 	class face_recogn *recogn_unit = &face_recogn_unit;
+	struct userdb_user userInfo;
 	Mat face_mat;
 	int face_id;
 	uint8_t confidence;
 	int status;
 	int ret;
-	int i;
 
 	printf("%s enter ++\n", __FUNCTION__);
 
@@ -534,7 +529,6 @@ void *opencv_face_recogn_thread(void *arg)
 			continue;
 		}
 
-	
 		/* get one face frame to recognize */
 		ret = opencv_get_frame_recogn(face_mat);
 		if(ret != 0)
@@ -545,12 +539,8 @@ void *opencv_face_recogn_thread(void *arg)
 		ret = opencv_face_recogn(face_mat, &face_id, &confidence, &status);
 		if(ret == 0)
 		{
-			for(i=0; i<user_mngr_unit.userCnt; i++)
-			{
-				if(user_mngr_unit.userInfo[i].id == face_id)
-					break;
-			}
-			proto_0x12_sendFaceRecogn(main_mngr.user_handle, face_id, confidence, user_mngr_unit.userInfo[i].name, status);
+			userdb_read_byId(user_mngr_unit.userdb , face_id, &userInfo);
+			proto_0x12_sendFaceRecogn(main_mngr.user_handle, face_id, confidence, userInfo.name, status);
 			sleep(RECOGN_OK_DELAY_MS/1000 +1);	// more 1 second
 		}
 	}

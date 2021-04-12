@@ -58,7 +58,7 @@ struct Rect_params
 int proto_0x01_login(int handle, uint8_t *usr_name, uint8_t *password);
 int proto_0x03_sendHeartBeat(int handle);
 int proto_0x04_switchWorkSta(int handle, workstate_e state, uint8_t *arg);
-int proto_0x05_addUser(int handle, int userCnt, char *userlist);
+int proto_0x05_addUser(int handle, int userCnt, int userId, char *userName);
 int proto_0x06_deleteUser(int handle, int userCnt, char *userlist);
 int proto_0x07_getUserList(int handle);
 

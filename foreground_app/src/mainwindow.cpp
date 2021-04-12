@@ -84,10 +84,13 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     connect(setAtdtimeBtn, SIGNAL(clicked()), this, SLOT(setAttendTime()));
 	setAtdtimeBtn->setGeometry(660, 222, 120, 30);
 
-	/* user name edit */
+	/* user id - name edit */
+	userIdEdit = new QLineEdit(mainWindow);
+	userIdEdit->setPlaceholderText(codec->toUnicode(TEXT_USER_ID));
+	userIdEdit->setGeometry(645, 265, 50, 30);
 	userNameEdit = new QLineEdit(mainWindow);
 	userNameEdit->setPlaceholderText(codec->toUnicode(TEXT_USER_NAME));
-	userNameEdit->setGeometry(645, 265, 150, 30);
+	userNameEdit->setGeometry(695, 265, 100, 30);
 	/* add user button */
 	addUserBtn = new QPushButton(mainWindow);
 	addUserBtn->setText(codec->toUnicode(TEXT_ADD_USER));
@@ -250,20 +253,37 @@ void MainWindow::setAttendTime(void)
 
 void MainWindow::addUser(void)
 {
-	QString editStr;
+	char id_name[64] = {0};
+	QString idStr;
+	QString NameStr;
 	QByteArray ba;
-	uint8_t username[USER_NAME_LEN];
+	char name[USER_NAME_LEN] = {0};
+	int id;
 
-	/* get QLineEdit input text */
-	editStr = userNameEdit->text();
-	if(editStr.length() <= 0)
+	/* get input text */
+	idStr = userIdEdit->text();
+	NameStr = userNameEdit->text();
+	if(idStr.length() <= 0 || NameStr.length() <= 0)
 	{
 		printf("%s: QLineEdit is empty !\n", __FUNCTION__);
 		return ;
 	}
-	ba = editStr.toLatin1();
-	memset(username, 0, sizeof(username));
-	strncpy((char *)username, ba.data(), strlen(ba.data()));
+
+	ba = idStr.toLatin1();
+	id = atoi(ba.data());
+	if(id <= 0)
+	{
+		printf("%s: ID is illegal !\n", __FUNCTION__);
+		return ;
+	}
+
+	ba = NameStr.toLatin1();
+	memset(name, 0, sizeof(name));
+	strncpy((char *)name, ba.data(), strlen(ba.data()));
+
+	printf("user Id: %d, name: %s\n", id, name);
+	memcpy(id_name, &id, 4);
+	memcpy(id_name +4, name, USER_NAME_LEN);
 
 	/* opencv camera */
 	#if defined(MANAGER_CLIENT_ENABLE) && !defined(USER_CLIENT_ENABLE)
@@ -272,7 +292,7 @@ void MainWindow::addUser(void)
 
 	main_mngr.work_state = WORK_STA_ADDUSER;
 
-	proto_0x04_switchWorkSta(main_mngr.mngr_handle, main_mngr.work_state, username);
+	proto_0x04_switchWorkSta(main_mngr.mngr_handle, main_mngr.work_state, (uint8_t *)id_name);
 }
 
 void MainWindow::deleteUser(void)

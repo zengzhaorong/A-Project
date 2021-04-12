@@ -25,7 +25,6 @@ static struct serverInfo server_info;
 
 extern struct main_mngr_info main_mngr;
 extern struct userMngr_Stru	user_mngr_unit;
-extern struct attend_mngr_Stru attend_mngr_unit;
 
 int server_0x01_login(struct clientInfo *client, uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
 {
@@ -105,17 +104,24 @@ int server_0x04_switchWorkSta(struct clientInfo *client, uint8_t *data, int len,
 	memcpy(&state, data, 4);
 	tmplen += 4;
 
-	memcpy(user_mngr_unit.newuser, data +tmplen, 32);
-	tmplen += 4;
+	/* if add user */
+	if(state == WORK_STA_ADDUSER)
+	{
+		memcpy(&user_mngr_unit.newid, data +tmplen, 4);
+		tmplen += 4;
+
+		memcpy(user_mngr_unit.newname, data +tmplen, 32);
+		tmplen += 4;
+	}
 
 	/* create user dir */
 	memset(user_mngr_unit.add_userdir, 0, sizeof(user_mngr_unit.add_userdir));
-	user_create_dir((char *)FACES_DATABASE_PATH, user_mngr_unit.newuser, user_mngr_unit.add_userdir);
+	user_create_dir((char *)FACES_DATABASE_PATH, user_mngr_unit.newid, user_mngr_unit.newname, user_mngr_unit.add_userdir);
 	user_mngr_unit.add_index = 0;
 
 	main_mngr.work_state = (workstate_e)state;
 	
-	printf("%s: get work state: %d, name: %s\n", __FUNCTION__, state, user_mngr_unit.newuser);
+	printf("%s: get work state: %d, id: %d, name: %s\n", __FUNCTION__, state, user_mngr_unit.newid, user_mngr_unit.newname);
 
 	return 0;
 }
@@ -137,19 +143,21 @@ int client_0x06_deleteUser(struct clientInfo *client, uint8_t *data, int len, ui
 		memcpy(username, data +tmplen, USER_NAME_LEN);
 		//printf("[%d]name: %s\n", i, username);
 		user_delete(1, username);
+		userdb_delete_byName(user_mngr_unit.userdb, username);
 		tmplen += USER_NAME_LEN;
 	}
 
 	/* retrain face data base */
 	face_database_train();
-	attendance_sync_userlist();
 
 	return 0;
 }
 
 int server_0x07_getUserList(struct clientInfo *client, uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
 {
+	struct userdb_user userInfo;
 	int userCnt = 0;
+	int cursor = 0;
 	int tmplen = 0;
 	int ret = 0;
 	int i;
@@ -164,14 +172,17 @@ int server_0x07_getUserList(struct clientInfo *client, uint8_t *data, int len, u
 	tmplen += 4;
 	
 	/* user count */
-	userCnt = user_mngr_unit.userCnt;
+	userCnt = userdb_get_total(user_mngr_unit.userdb);
 	memcpy(ack_data +tmplen, &userCnt, 4);
 	tmplen += 4;
 
 	/* user name */
-	for(i=0; i<userCnt; i++)
+	for(i=0; i<userCnt +1; i++)
 	{
-		memcpy(ack_data +tmplen, user_mngr_unit.userInfo[i].name, 32);
+		ret = userdb_traverse_user(user_mngr_unit.userdb, &cursor, &userInfo);
+		if(ret == -1)
+			break;
+		memcpy(ack_data +tmplen, userInfo.name, 32);
 		tmplen += 32;
 	}
 
@@ -230,8 +241,9 @@ int server_0x13_setAttendTime(struct clientInfo *client, uint8_t *data, int len,
 
 int server_0x14_getAttendList(struct clientInfo *client, uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
 {
-    struct attend_mngr_Stru *atd_mngr = &attend_mngr_unit;
+	struct userdb_user user;
 	int userCnt = 0;
+	int cursor = 0;
 	int tmplen = 0;
 	int ret = 0;
 	int i;
@@ -246,24 +258,28 @@ int server_0x14_getAttendList(struct clientInfo *client, uint8_t *data, int len,
 	tmplen += 4;
 	
 	/* user count */
-	userCnt = atd_mngr->userCnt;
+	userCnt = userdb_get_total(user_mngr_unit.userdb);
 	memcpy(ack_data +tmplen, &userCnt, 4);
 	tmplen += 4;
 
 	/* user name */
-	for(i=0; i<userCnt; i++)
+	for(i=0; i<userCnt +1; i++)
 	{
-		memcpy(ack_data +tmplen, &atd_mngr->attend_list[i].id, 4);
+		ret = userdb_traverse_user(user_mngr_unit.userdb, &cursor, &user);
+		if(ret == -1)
+			break;
+
+		memcpy(ack_data +tmplen, &user.id, 4);
 		tmplen += 4;
-		memcpy(ack_data +tmplen, atd_mngr->attend_list[i].name, USER_NAME_LEN);
+		memcpy(ack_data +tmplen, user.name, USER_NAME_LEN);
 		tmplen += USER_NAME_LEN;
-		memcpy(ack_data +tmplen, &atd_mngr->attend_list[i].atdin_time, 4);
+		memcpy(ack_data +tmplen, &user.in_time, 4);
 		tmplen += 4;
-		memcpy(ack_data +tmplen, &atd_mngr->attend_list[i].atdin_sta, 4);
+		memcpy(ack_data +tmplen, &user.in_sta, 4);
 		tmplen += 4;
-		memcpy(ack_data +tmplen, &atd_mngr->attend_list[i].atdout_time, 4);
+		memcpy(ack_data +tmplen, &user.out_time, 4);
 		tmplen += 4;
-		memcpy(ack_data +tmplen, &atd_mngr->attend_list[i].atdout_sta, 4);
+		memcpy(ack_data +tmplen, &user.out_sta, 4);
 		tmplen += 4;
 	}
 

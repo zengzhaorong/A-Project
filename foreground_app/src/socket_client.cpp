@@ -129,6 +129,7 @@ int client_0x04_switchWorkSta(struct clientInfo *client, uint8_t *data, int len,
 int client_0x05_addUser(struct clientInfo *client, uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
 {
 	char username[USER_NAME_LEN] = {0};
+	int userId = 0;
 	int userCnt = 0;
 	int tmplen = 0;
 	int i;
@@ -140,7 +141,10 @@ int client_0x05_addUser(struct clientInfo *client, uint8_t *data, int len, uint8
 	/* user name */
 	for(i=0; i<userCnt; i++)
 	{
+		memcpy(&userId, data +tmplen, 4);
+		tmplen += 4;
 		memcpy(username, data +tmplen, USER_NAME_LEN);
+		tmplen += USER_NAME_LEN;
 		//printf("[%d]name: %s\n", i, username);
 		mainwin_set_userList(1, 1, username);
 		tmplen += USER_NAME_LEN;

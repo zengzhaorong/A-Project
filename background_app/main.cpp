@@ -34,8 +34,6 @@ int main(int argc, char* argv[])
 	
 	user_mngr_init();
 
-	attendance_init();
-
 	start_face_process_task();
 
 	start_socket_server_task();

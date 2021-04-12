@@ -6,6 +6,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include "user_mngr.h"
+#include "user_db.h"
 
 
 struct userMngr_Stru		user_mngr_unit;
@@ -60,143 +61,23 @@ int remove_dir(const char *dir)
 int user_delete(int userCnt, char *username)
 {
 	struct userMngr_Stru *user_mngr = &user_mngr_unit;
+	struct userdb_user userInfo;
 	char dir_name[64];
-	int i, j;
+	int i, ret;
 
 	for(i=0; i<userCnt; i++)
 	{
-		for(j=0; j<user_mngr->userCnt; j++)
-		{
-			if(0 == memcmp(username+i*USER_NAME_LEN, user_mngr->userInfo[j].name, USER_NAME_LEN))
-			{
-				break;
-			}
-		}
-		if(j == user_mngr->userCnt)	// not found
+		ret = userdb_read_byName(user_mngr->userdb, username+i*USER_NAME_LEN, &userInfo);
+		if(ret != 0)
 		{
 			continue;
 		}
+		ret = userdb_delete_byName(user_mngr->userdb, username+i*USER_NAME_LEN);
 
 		memset(dir_name, 0, sizeof(dir_name));
-		sprintf(dir_name, "%s/%d_%s", FACES_DATABASE_PATH, user_mngr->userInfo[j].id, user_mngr->userInfo[j].name);
+		sprintf(dir_name, "%s/%d_%s", FACES_DATABASE_PATH, userInfo.id, userInfo.name);
 		remove_dir(dir_name);
 	}
-
-	return 0;
-}
-
-// get user list
-/* if ppUserList is not null, it will be free and malloc new for it */
-int user_get_userList(char *faces_lib, struct userInfo_Stru **ppUserList, int *Count)
-{
-	struct stat statbuf;
-	DIR *dir;
-	struct dirent *dirp;
-	char 	tmpDirPath[128] = {0};
-	char	label[10] = {0};
-	struct userInfo_Stru 	tmpUserInfo;
-	struct userInfo_Stru 	*pUserMem;
-	int 	dirno = 0;
-	int 	i;
-
-	if(lstat(faces_lib, &statbuf) < 0)
-	{
-		printf("%s: lstat(%s) failed !\n", __FUNCTION__, faces_lib);
-		return -1;
-	}
-
-	if(S_ISDIR(statbuf.st_mode) != 1)
-	{
-		printf("%s: %s is not dir !\n", __FUNCTION__, faces_lib); 
-		return -1;
-	}
-
-	dir = opendir(faces_lib);
-	if( dir ==NULL)
-	{
-		printf("opendir failed.\n");
-		return -1;
-	}
-	// get count
-	while((dirp = readdir(dir)) != NULL)
-	{
-		//  '.' & '..'
-		if( strncmp(dirp->d_name, ".", strlen(dirp->d_name))==0 || 
-			 strncmp(dirp->d_name, "..", strlen(dirp->d_name))==0 )
-			continue;
-		
-		dirno ++;
-	}
-	closedir(dir);
-
-	pUserMem = (struct userInfo_Stru *)malloc(dirno *sizeof(struct userInfo_Stru));
-	if(pUserMem == NULL)
-	{
-		printf("%s: malloc for pUserMem failed.\n", __FUNCTION__);
-		return -1;
-	}
-
-	dir = opendir(faces_lib);
-	if( dir ==NULL)
-	{
-		free(pUserMem);
-		printf("opendir failed.\n");
-		return -1;
-	}
-	// get user info
-	dirno = 0;
-	while((dirp = readdir(dir)) != NULL)
-	{
-		// '.' & '..'
-		if( strncmp(dirp->d_name, ".", strlen(dirp->d_name))==0 || 
-			 strncmp(dirp->d_name, "..", strlen(dirp->d_name))==0 )
-			continue;
-
-		memset(tmpDirPath, 0, sizeof(tmpDirPath));
-		strcat(tmpDirPath, faces_lib);
-		strcat(tmpDirPath, "/");
-		strcat(tmpDirPath, dirp->d_name);
-
-		if(lstat(tmpDirPath, &statbuf) < 0)
-		{
-			continue;
-		}
-
-		if(S_ISDIR(statbuf.st_mode) != 1)
-		{
-			continue;
-		}
-
-		memset(label, 0, sizeof(label));
-		for(i=0; i<10; i++) 	// get seq
-		{
-			if(dirp->d_name[i] != '_')
-				label[i] = dirp->d_name[i];
-			else
-				break;
-		}
-		if(i == 10)
-			continue; 
-
-		// get id
-		memset(&tmpUserInfo, 0, sizeof(tmpUserInfo));
-		tmpUserInfo.id = atoi(label);
-		strncpy(tmpUserInfo.name, dirp->d_name + i+1, strlen(dirp->d_name)-(i+1));
-
-		memcpy(pUserMem+dirno, &tmpUserInfo, sizeof(struct userInfo_Stru));
-		dirno ++;
-//		printf("id: %d\t name: %s\n", (pUserMem+dirNum)->id , (pUserMem+dirNum)->name);
-	}
-
-	closedir(dir);
-
-	if(*ppUserList != NULL)		// free last time source
-	{
-		free(*ppUserList);
-		*ppUserList = NULL;
-	}
-	*ppUserList = pUserMem;
-	*Count = dirno;
 
 	return 0;
 }
@@ -402,12 +283,11 @@ int user_checkdir(char *base_dir, char *dir_head)
 }
 
 /* create user dir by user name, format: i_username, like: 1_Tony, 2_Jenny ... */
-int user_create_dir(char *base_dir, char *usr_name, char *usr_dir)
+int user_create_dir(char *base_dir, int id, char *usr_name, char *usr_dir)
 {
 	struct stat statbuf;
 	char dir_path[64] = {0};
 	char dir_head[8] = {0};
-	int dir_index = 0;
 	int ret;
 
 	if(base_dir==NULL || usr_name==NULL || usr_dir==NULL)
@@ -427,20 +307,12 @@ int user_create_dir(char *base_dir, char *usr_name, char *usr_dir)
 		if(ret != 0)
 			return -1;
 	}
-
-	/* find index not use */
-	while(1)
+	sprintf(dir_head, "%d_", id);
+	ret = user_checkdir(base_dir, dir_head);
+	if(ret == 0)
 	{
-		dir_index ++;
-
-		/* check wether dir "i_xxx" exist or not */
-		memset(dir_head, 0, sizeof(dir_head));
-		sprintf(dir_head, "%d_", dir_index);
-		ret = user_checkdir(base_dir, dir_head);
-		if(ret == 0)
-			continue;
-
-		break;
+		printf("ERROR: %s: user id [%d] is exist!\n", __FUNCTION__, id);
+		return -1;
 	}
 
 	/* current dir is valid */
@@ -466,19 +338,8 @@ int user_create_dir(char *base_dir, char *usr_name, char *usr_dir)
 int user_mngr_init(void)
 {
 	struct userMngr_Stru *user_mngr = &user_mngr_unit;
-	int ret;
 
-	user_mngr->userInfo = NULL;
-	user_mngr->userCnt = 0;
-
-	ret = user_get_userList((char *)FACES_DATABASE_PATH, &user_mngr->userInfo, &user_mngr->userCnt);
-	if(ret < 0)
-		return -1;
-
-	for(int i=0; i<user_mngr->userCnt; i++)
-	{
-		printf("[%d].id=%d, name: %s\n", i, user_mngr->userInfo[i].id, user_mngr->userInfo[i].name);
-	}
+	userdb_init(&user_mngr->userdb);
 
 	return 0;
 }

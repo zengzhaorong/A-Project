@@ -96,6 +96,7 @@ private:
 	QDateTimeEdit	*TimeEditAtdIn;		// attend in time
 	QDateTimeEdit	*TimeEditAtdOut;	// attend out time
 	QPushButton 	*setAtdtimeBtn;		// set attend time
+	QLineEdit		*userIdEdit;		// edit add user id
 	QLineEdit		*userNameEdit;		// edit add user name
 	QPushButton 	*addUserBtn;		// add user button
 	QPushButton 	*delUserBtn;		// delete user button
