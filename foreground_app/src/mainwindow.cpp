@@ -63,17 +63,21 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 	LabelAtdIn->setGeometry(660, 158, 50, 30);
 	LabelAtdIn->setText(codec->toUnicode(TEXT_ATTEND_IN":"));
 	LabelAtdIn->show();
-	TimeEditAtdIn = new QDateTimeEdit(QDateTime::currentDateTime(), this);
+	TimeEditAtdIn = new QDateTimeEdit(/*QDateTime::currentDateTime(),*/ this);
 	TimeEditAtdIn->setDisplayFormat("HH:mm:ss");
 	TimeEditAtdIn->setGeometry(700, 158, 90, 30);
 	TimeEditAtdIn->show();
+
+	/* set datetime */
+	//QDateTime datetime = QDateTime::fromString(QString("01:02:03"),"HH:mm:ss");
+	//TimeEditAtdIn->setDateTime(datetime);
 
 	/* attend out time edit */
 	LabelAtdOut = new QLabel(mainWindow);
 	LabelAtdOut->setGeometry(660, 190, 50, 30);
 	LabelAtdOut->setText(codec->toUnicode(TEXT_ATTEND_OUT":"));
 	LabelAtdOut->show();
-	TimeEditAtdOut = new QDateTimeEdit(QDateTime::currentDateTime(), this);
+	TimeEditAtdOut = new QDateTimeEdit(/*QDateTime::currentDateTime(),*/ this);
 	TimeEditAtdOut->setDisplayFormat("HH:mm:ss");
 	TimeEditAtdOut->setGeometry(700, 190, 90, 30);
 	TimeEditAtdOut->show();
@@ -107,11 +111,23 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     connect(delUserBtn, SIGNAL(clicked()), this, SLOT(deleteUser()));
 	delUserBtn->setGeometry(670, 372, 100, 30);
 
-	/* time sheet button */
+	/* display time sheet button */
 	timeSheetBtn = new QPushButton(mainWindow);
 	timeSheetBtn->setText(codec->toUnicode(TEXT_TIMESHEET));
     connect(timeSheetBtn, SIGNAL(clicked()), this, SLOT(showTimeSheet()));
 	timeSheetBtn->setGeometry(670, 415, 100, 30);
+	/* save time sheet button */
+	saveTimeSheetBtn = new QPushButton(mainWindow);
+	saveTimeSheetBtn->setText(codec->toUnicode(TEXT_SAVE));
+    connect(saveTimeSheetBtn, SIGNAL(clicked()), this, SLOT(saveTimeSheet()));
+	saveTimeSheetBtn->setGeometry(660, 447, 60, 30);
+	saveTimeSheetBtn->hide();
+	/* reset time sheet button */
+	resetTimeSheetBtn = new QPushButton(mainWindow);
+	resetTimeSheetBtn->setText(codec->toUnicode(TEXT_RESET));
+    connect(resetTimeSheetBtn, SIGNAL(clicked()), this, SLOT(resetTimeSheet()));
+	resetTimeSheetBtn->setGeometry(723, 447, 60, 30);
+	resetTimeSheetBtn->hide();
 
 	tableView = new QTableView(mainWindow);
 	userModel = new QStandardItemModel();
@@ -239,16 +255,14 @@ void MainWindow::drawFaceRectangle(QImage &img)
 
 void MainWindow::setAttendTime(void)
 {
-	uint32_t adtin_time;
-	uint32_t adtout_time;
 
 	QDateTime timeAtdIn = TimeEditAtdIn->dateTime();
 	QDateTime timeAtdOut = TimeEditAtdOut->dateTime();
 
-	adtin_time = time_t_to_sec_day(timeAtdIn.toTime_t());
-	adtout_time = time_t_to_sec_day(timeAtdOut.toTime_t());
+	main_mngr.atdin_time = time_t_to_sec_day(timeAtdIn.toTime_t());
+	main_mngr.atdout_time = time_t_to_sec_day(timeAtdOut.toTime_t());
 	
-	proto_0x13_setAttendTime(main_mngr.mngr_handle, adtin_time, adtout_time);
+	proto_0x13_setAttendTime(main_mngr.mngr_handle, main_mngr.atdin_time, main_mngr.atdout_time);
 }
 
 void MainWindow::addUser(void)
@@ -324,21 +338,71 @@ void MainWindow::showTimeSheet(void)
 
 	/* get attend list */
 	proto_0x14_getAttendList(main_mngr.mngr_handle);
-	mainwin_reset_attendList();
+	mainwin_clear_attendList();
 
 	showflag = !showflag;
 
 	if(showflag == 1)
 	{
 		tableView->setModel(userModel);
+		saveTimeSheetBtn->show();
+		resetTimeSheetBtn->show();
 		tableView->show();
-		printf("show timesheet !\n");	
 	}
 	else
 	{
+		saveTimeSheetBtn->hide();
+		resetTimeSheetBtn->hide();
 		tableView->hide();
-		printf("hide timesheet !\n");	
 	}
+
+}
+
+void MainWindow::saveTimeSheet(void)
+{
+	QString filestr;
+    struct daytm tm_day;
+    char filename[64] = {0};
+	char intime_str[32] = {0};
+	char outtime_str[32] = {0};
+
+    memset(intime_str, 0, sizeof(intime_str));
+    memset(outtime_str, 0, sizeof(outtime_str));
+    sec_day_to_daytm(main_mngr.atdin_time, &tm_day);
+    printf("%s: in time: %02d:%02d:%02d\n", __FUNCTION__,tm_day.hour, tm_day.min, tm_day.sec);
+    sprintf(intime_str, "%02d%02d%02d", tm_day.hour, tm_day.min, tm_day.sec);
+    
+    sec_day_to_daytm(main_mngr.atdout_time, &tm_day);
+    printf("%s:  out time: %02d:%02d:%02d\n", __FUNCTION__,tm_day.hour, tm_day.min, tm_day.sec);
+    sprintf(outtime_str, "%02d%02d%02d", tm_day.hour, tm_day.min, tm_day.sec);
+
+    sprintf(filename, "%s_%s_timesheet.csv", intime_str, outtime_str);
+	
+	proto_0x15_AttendSheetCtrl(main_mngr.mngr_handle, 1, filename);	// save
+
+	filestr = QString(filename);
+	QMessageBox::information(NULL, "Save", "timesheet has saved as "+filestr, QMessageBox::Yes, QMessageBox::Yes);
+}
+
+void MainWindow::resetTimeSheet(void)
+{
+	QColor color = QColor(192,80,77);;	
+	QTextCodec *codec = QTextCodec::codecForName("GBK");
+	int i;
+
+	if(QMessageBox::warning(this,"Warning", "Reset timesheet ?",QMessageBox::Yes,QMessageBox::No)==QMessageBox::No)
+	{
+		return ;
+	}
+
+	proto_0x15_AttendSheetCtrl(main_mngr.mngr_handle, 0, NULL);	// reset
+	//mainwin_clear_attendList();
+	for(i=0; i<userModel->rowCount(); i++)
+	{
+		userModel->setItem(i, TIME_TABLE_STATUS_POS, new QStandardItem(QString("%1").arg(codec->toUnicode(TEXT_ATTEND_NULL ":" TEXT_ATTEND_NULL))));
+		userModel->item(i, TIME_TABLE_STATUS_POS)->setBackground(QBrush(color));
+	}
+	
 
 }
 
@@ -567,17 +631,17 @@ int mainwin_set_attendList(int id, char *usr_name, uint32_t time_atdin, int sta_
 	mainwindow->userModel->setItem(modelRowCnt, 1, new QStandardItem(QString("%1").arg(usr_name)));
 	mainwindow->userModel->setItem(modelRowCnt, 2, new QStandardItem(QString("%1").arg(intime_str)));
 	mainwindow->userModel->setItem(modelRowCnt, 3, new QStandardItem(QString("%1").arg(outtime_str)));
-	mainwindow->userModel->setItem(modelRowCnt, 4, new QStandardItem(QString("%1").arg(codec->toUnicode(sta_str))));
+	mainwindow->userModel->setItem(modelRowCnt, TIME_TABLE_STATUS_POS, new QStandardItem(QString("%1").arg(codec->toUnicode(sta_str))));
 
 	/* set item align center */
 	mainwindow->userModel->item(modelRowCnt, 0)->setTextAlignment(Qt::AlignCenter);
 	mainwindow->userModel->item(modelRowCnt, 1)->setTextAlignment(Qt::AlignCenter);
 	mainwindow->userModel->item(modelRowCnt, 2)->setTextAlignment(Qt::AlignCenter);
 	mainwindow->userModel->item(modelRowCnt, 3)->setTextAlignment(Qt::AlignCenter);
-	mainwindow->userModel->item(modelRowCnt, 4)->setTextAlignment(Qt::AlignCenter);
+	mainwindow->userModel->item(modelRowCnt, TIME_TABLE_STATUS_POS)->setTextAlignment(Qt::AlignCenter);
 
 	/* set item background color */
-	mainwindow->userModel->item(modelRowCnt, 4)->setBackground(QBrush(color));
+	mainwindow->userModel->item(modelRowCnt, TIME_TABLE_STATUS_POS)->setBackground(QBrush(color));
 	
 	/* set item fonts(forground) color */
 	//item(x, y)->setForeground(QBrush(QColor(255, 0, 0)));
@@ -585,7 +649,7 @@ int mainwin_set_attendList(int id, char *usr_name, uint32_t time_atdin, int sta_
 	return 0;
 }
 
-void mainwin_reset_attendList(void)
+void mainwin_clear_attendList(void)
 {
 	QTextCodec *codec = QTextCodec::codecForName("GBK");
 

@@ -33,3 +33,13 @@ uint32_t time_t_to_sec_day(time_t time)
 
 	return sec_day;
 }
+
+/* convert sec in day to daytm */
+int sec_day_to_daytm(int sec_day, struct daytm *tm_day)
+{
+	tm_day->hour = sec_day / (60*60);
+	tm_day->min = sec_day % (60*60) / 60;
+	tm_day->sec = sec_day % 60;
+
+	return 0;
+}

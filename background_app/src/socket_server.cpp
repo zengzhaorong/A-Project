@@ -289,6 +289,30 @@ int server_0x14_getAttendList(struct clientInfo *client, uint8_t *data, int len,
 	return 0;
 }
 
+int server_0x15_AttendSheetCtrl(struct clientInfo *client, uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
+{
+	char filename[64] = {0};
+	uint32_t cmd;
+	int tmplen = 0;
+
+	memcpy(&cmd, data +tmplen, 4);
+	tmplen +=4;
+
+	if(cmd == 0)	// reset
+	{
+		attendance_reset_all();
+	}
+	else if(cmd == 1)	// save
+	{
+		memcpy(filename, data +tmplen, 64);
+		tmplen +=64;
+
+		attendance_save_data_csv(filename);
+	}
+
+	return 0;
+}
+
 
 int server_init(struct serverInfo *server, int port)
 {
@@ -434,6 +458,9 @@ int server_protoAnaly(struct clientInfo *client, uint8_t *pack, uint32_t pack_le
 
 		case 0x14:
 			ret = server_0x14_getAttendList(client, data, data_len, ack_buf, PROTO_PACK_MAX_LEN, &ack_len);
+			break;
+		case 0x15:
+			ret = server_0x15_AttendSheetCtrl(client, data, data_len, ack_buf, PROTO_PACK_MAX_LEN, &ack_len);
 			break;
 
 		default:

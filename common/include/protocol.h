@@ -67,6 +67,7 @@ int proto_0x11_sendFaceDetect(int handle, uint8_t count, struct Rect_params *fac
 int proto_0x12_sendFaceRecogn(int handle, int face_id, uint8_t confid, char *face_name, int status);
 int proto_0x13_setAttendTime(int handle, uint32_t atd_in_time, uint32_t atd_out_time);
 int proto_0x14_getAttendList(int handle);
+int proto_0x15_AttendSheetCtrl(int handle, uint32_t cmd, void *arg);
 
 int proto_makeupPacket(uint8_t seq, uint8_t cmd, int len, uint8_t *data, \
 								uint8_t *outbuf, int size, int *outlen);

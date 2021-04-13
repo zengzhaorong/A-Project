@@ -43,19 +43,14 @@ extern "C" {
 #define BEGIN_ADD_FACE_TEXT		"录入人脸：请正对摄像头"
 #define SUCCESS_ADD_FACE_TEXT	"录入人脸成功"
 #define TEXT_RECOGN_SUCCESS		"识别成功"			// "识别成功"、"签到成功"、"欢迎回家"
-#define TEXT_ATTEND_IN			"签到"
-#define TEXT_ATTEND_OUT			"签退"
-#define TEXT_ATTEND_OK			"正常"
-#define TEXT_ATTEND_IN_LATE		"迟到"
-#define TEXT_ATTEND_OUT_EARLY	"早退"
-#define TEXT_ATTEND_NULL		"缺勤"
 #define TEXT_SET_ATD_TIME		"设置考勤时间"
 #define TEXT_ADD_USER			"添加用户"
 #define TEXT_DEL_USER			"删除用户"
 #define TEXT_TIMESHEET			"考勤表"
-#define TEXT_USER_ID			"编号"
-#define TEXT_USER_NAME			"姓名"
-#define TEXT_STATUS				"状态"
+#define TEXT_SAVE				"保存"
+#define TEXT_RESET				"重置"
+
+#define TIME_TABLE_STATUS_POS	4	// status pos in timesheet table
 
 typedef enum {
 	MAINWIN_MODE_DISCONECT,
@@ -79,6 +74,8 @@ private slots:
 	void addUser(void);
 	void deleteUser(void);
 	void showTimeSheet(void);
+	void saveTimeSheet(void);
+	void resetTimeSheet(void);
 	void textOnVideo_show_over(void);
 	
 public:
@@ -101,6 +98,8 @@ private:
 	QPushButton 	*addUserBtn;		// add user button
 	QPushButton 	*delUserBtn;		// delete user button
 	QPushButton 	*timeSheetBtn;		// time sheet button
+	QPushButton 	*saveTimeSheetBtn;		// save sheet button
+	QPushButton 	*resetTimeSheetBtn;		// reset time sheet button
 	unsigned char 	*video_buf;
 	unsigned int 	buf_size;
 	
@@ -122,7 +121,7 @@ public:
 
 int mainwin_set_userList(int flag, int userCnt, char *usr_name);
 int mainwin_set_attendList(int id, char *usr_name, uint32_t time_atdin, int sta_atdin, uint32_t time_atdout, int sta_atdout);
-void mainwin_reset_attendList(void);
+void mainwin_clear_attendList(void);
 
 int mainwin_set_rects(int x, int y, int w, int h);
 int mainwin_set_recognInfo(int id, uint8_t confid, char *usr_name, int status);

@@ -332,6 +332,36 @@ int proto_0x14_getAttendList(int handle)
 	return 0;
 }
 
+int proto_0x15_AttendSheetCtrl(int handle, uint32_t cmd, void *arg)
+{
+	uint8_t *protoBuf = NULL;
+	int data_len = 0;
+	int buf_size = 0;
+	int packLen = 0;
+
+	if(handle < 0 || handle >=MAX_PROTO_OBJ)
+		return -1;
+	if(protoObject[handle].send_func == NULL)
+		return -1;
+
+	/* control cmd */
+	memcpy(tmp_protoBuf +data_len, &cmd, 4);
+	data_len += 4;
+	
+	if(arg != NULL)
+	{
+		memcpy(tmp_protoBuf +data_len, arg, 64);
+		data_len += 64;
+	}
+
+	protoBuf = protoObject[handle].send_buf;
+	buf_size = protoObject[handle].buf_size;
+	proto_makeupPacket(0, 0x15, data_len, tmp_protoBuf, protoBuf, buf_size, &packLen);
+
+	protoObject[handle].send_func(protoObject[handle].fd, protoBuf, packLen);
+	
+	return 0;
+}
 
 int proto_makeupPacket(uint8_t seq, uint8_t cmd, int len, uint8_t *data, \
 								uint8_t *outbuf, int size, int *outlen)
