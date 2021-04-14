@@ -30,7 +30,7 @@ int main(int argc, char* argv[])
 	if(main_mngr.config_ini == NULL)
 	{
 		printf("ERROR: %s: load [%s] failed!\n", __FUNCTION__, PATH_CONFIG_INI);
-		return -1;
+		//return -1;	// will use default value
 	}
 	main_mngr.work_state = WORK_STA_DISCONNECT;
 	main_mngr.user_handle = -1;
