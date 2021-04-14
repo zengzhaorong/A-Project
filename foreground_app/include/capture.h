@@ -5,15 +5,6 @@
 #include <linux/videodev2.h>
 
 
-/* capture format */
-#if defined(CAP_V4L2_FMT_JPEG)
-	#define VIDEO_V4L2_PIX_FMT		V4L2_PIX_FMT_JPEG
-#elif defined(CAP_V4L2_FMT_YUV)
-	#define VIDEO_V4L2_PIX_FMT		V4L2_PIX_FMT_YUYV
-#elif defined(CAP_V4L2_FMT_MJPEG)
-	#define VIDEO_V4L2_PIX_FMT		V4L2_PIX_FMT_MJPEG
-#endif
-
 #define FRAME_BUF_SIZE		(ONE_CAP_FRAME_SIZE*3)
 
 #define QUE_BUF_MAX_NUM		5

@@ -10,10 +10,6 @@
 #include <opencv2/imgproc/types_c.h> 
 #endif
 
-#if defined(CAP_V4L2_FMT_YUV)
-QImage yuv_to_QImage(int type, unsigned char *data, int width, int height);
-#endif
-
 QImage jpeg_to_QImage(uint8_t *data, int len);
 
 #ifdef BACKGROUND_APP

@@ -60,8 +60,8 @@ struct main_mngr_info
 	workstate_e work_state;
 	int user_handle;	// user client socket handle index
 	int mngr_handle;	// manager client socket handle index
-	uint32_t atdin_time;	// attend in time
-	uint32_t atdout_time;	// attend out time
+	uint32_t atdin_secday;	// attend in time: sec in day
+	uint32_t atdout_secday;	// attend out time: sec in day
 };
 
 

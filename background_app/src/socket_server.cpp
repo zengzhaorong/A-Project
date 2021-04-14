@@ -233,8 +233,8 @@ int server_0x13_setAttendTime(struct clientInfo *client, uint8_t *data, int len,
 	memcpy(&atdout_time, data +tmplen, 4);
 	tmplen +=4;
 
-	main_mngr.atdin_time = atdin_time;
-	main_mngr.atdout_time = atdout_time;
+	main_mngr.atdin_secday = atdin_time;
+	main_mngr.atdout_secday = atdout_time;
 
 	return 0;
 }

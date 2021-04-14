@@ -18,7 +18,7 @@ attend_sta_e attendance_set_one(int id, uint32_t time)
     int ret;
 
     adt_sec_day = time_t_to_sec_day(time);
-    mid_time = (main_mngr.atdin_time +main_mngr.atdout_time)/2;
+    mid_time = (main_mngr.atdin_secday +main_mngr.atdout_secday)/2;
 
     ret = userdb_read_byId(user_mngr->userdb, id, &user);
     if(ret != 0)
@@ -30,7 +30,7 @@ attend_sta_e attendance_set_one(int id, uint32_t time)
     /* attend in: use the first time */
     if(adt_sec_day <= mid_time)
     {
-        if(adt_sec_day <= main_mngr.atdin_time)
+        if(adt_sec_day <= main_mngr.atdin_secday)
         {
             status = ATTEND_STA_IN_OK;
             printf("user id [%d]: attend in ok.\n", id);
@@ -49,7 +49,7 @@ attend_sta_e attendance_set_one(int id, uint32_t time)
     /* attend out: use the last time */
     else
     {
-        if(adt_sec_day < main_mngr.atdout_time)
+        if(adt_sec_day < main_mngr.atdout_secday)
         {
             status = ATTEND_STA_OUT_EARLY;
             printf("user id [%d]: attend out early.\n", id);

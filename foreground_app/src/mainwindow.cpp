@@ -25,6 +25,7 @@ extern struct main_mngr_info main_mngr;
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 {
+	QImage image;
 	QFont font;
 	QPalette pa;
 	QTextCodec *codec = QTextCodec::codecForName("GBK");
@@ -56,6 +57,14 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 	clockLabel->setWordWrap(true);	// adapt to text, can show multi row
 	clockLabel->setGeometry(650, 0, 140, 90);	// height: set more bigger to adapt to arm
 	clockLabel->show();
+
+#if defined(USER_CLIENT_ENABLE) && !defined(MANAGER_CLIENT_ENABLE)
+	image.load(OTHER_INFO_IMG);
+	otherInfo = new QLabel(mainWindow);
+	otherInfo->setPixmap(QPixmap::fromImage(image));
+	otherInfo->setGeometry(640, 100, 160, 400);
+	otherInfo->show();
+#endif
 
 #ifdef MANAGER_CLIENT_ENABLE
 	/* attend in time edit */
@@ -181,13 +190,8 @@ void MainWindow::showMainwindow(void)
 	if(ret == 0)
 	{
 		QImage videoQImage;
-#if defined(CAP_V4L2_FMT_JPEG)
+
 		videoQImage = jpeg_to_QImage(video_buf, len);
-#elif defined(CAP_V4L2_FMT_YUV)
-		videoQImage = yuv_to_QImage(0, video_buf, CAPTURE_PIX_WIDTH, CAPTURE_PIX_HEIGH);
-#elif defined(CAP_V4L2_FMT_MJPEG)
-		videoQImage = jpeg_to_QImage(video_buf, len);
-#endif
 
 		/* draw face rectangles */
 		drawFaceRectangle(videoQImage);
@@ -259,10 +263,10 @@ void MainWindow::setAttendTime(void)
 	QDateTime timeAtdIn = TimeEditAtdIn->dateTime();
 	QDateTime timeAtdOut = TimeEditAtdOut->dateTime();
 
-	main_mngr.atdin_time = time_t_to_sec_day(timeAtdIn.toTime_t());
-	main_mngr.atdout_time = time_t_to_sec_day(timeAtdOut.toTime_t());
+	main_mngr.atdin_secday = time_t_to_sec_day(timeAtdIn.toTime_t());
+	main_mngr.atdout_secday = time_t_to_sec_day(timeAtdOut.toTime_t());
 	
-	proto_0x13_setAttendTime(main_mngr.mngr_handle, main_mngr.atdin_time, main_mngr.atdout_time);
+	proto_0x13_setAttendTime(main_mngr.mngr_handle, main_mngr.atdin_secday, main_mngr.atdout_secday);
 }
 
 void MainWindow::addUser(void)
@@ -368,11 +372,11 @@ void MainWindow::saveTimeSheet(void)
 
     memset(intime_str, 0, sizeof(intime_str));
     memset(outtime_str, 0, sizeof(outtime_str));
-    sec_day_to_daytm(main_mngr.atdin_time, &tm_day);
+    sec_day_to_daytm(main_mngr.atdin_secday, &tm_day);
     printf("%s: in time: %02d:%02d:%02d\n", __FUNCTION__,tm_day.hour, tm_day.min, tm_day.sec);
     sprintf(intime_str, "%02d%02d%02d", tm_day.hour, tm_day.min, tm_day.sec);
     
-    sec_day_to_daytm(main_mngr.atdout_time, &tm_day);
+    sec_day_to_daytm(main_mngr.atdout_secday, &tm_day);
     printf("%s:  out time: %02d:%02d:%02d\n", __FUNCTION__,tm_day.hour, tm_day.min, tm_day.sec);
     sprintf(outtime_str, "%02d%02d%02d", tm_day.hour, tm_day.min, tm_day.sec);
 

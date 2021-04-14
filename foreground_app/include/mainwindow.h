@@ -37,6 +37,7 @@ extern "C" {
 #define TIMER_ADDUSER_OK_MS		(3*1000)
 
 #define WIN_BACKGRD_IMG			"resource/background.jpg"		// 界面背景图
+#define OTHER_INFO_IMG			"resource/otherinfo.png"
 
 /* tips text, support Chinese */
 #define NOT_CONNECT_SERVER		"未连接服务器"
@@ -88,6 +89,7 @@ private:
 	QImage			backgroundImg;		// background image
 	QTimer 			*timer;				// display timer
 	QLabel			*clockLabel;		// display clock
+	QLabel 			*otherInfo;			// show as image: like author info
 	QLabel			*LabelAtdIn;		// attend in label
 	QLabel			*LabelAtdOut;		// attend out label
 	QDateTimeEdit	*TimeEditAtdIn;		// attend in time

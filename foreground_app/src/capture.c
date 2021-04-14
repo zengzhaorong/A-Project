@@ -23,6 +23,7 @@ int capture_init(struct v4l2cap_info *capture)
 	struct v4l2_format format;
 	struct v4l2_requestbuffers reqbuf_param;
 	struct v4l2_buffer buffer[QUE_BUF_MAX_NUM];
+	int v4l2_fmt[2] = {V4L2_PIX_FMT_MJPEG, V4L2_PIX_FMT_JPEG};
 	int i, ret;
 
 	memset(capture, 0, sizeof(struct v4l2cap_info));
@@ -51,49 +52,55 @@ int capture_init(struct v4l2cap_info *capture)
 		}
 	}while(ret == 0);
 
-	/* configure video format */
-	memset(&format, 0, sizeof(struct v4l2_format));
-	format.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-	format.fmt.pix.width = CAPTURE_PIX_WIDTH;
-	format.fmt.pix.height = CAPTURE_PIX_HEIGH;
-	format.fmt.pix.pixelformat = VIDEO_V4L2_PIX_FMT;
-	format.fmt.pix.field = V4L2_FIELD_INTERLACED;
-	ret = ioctl(capture->fd, VIDIOC_S_FMT, &format);
-	if(ret < 0)
+	for(i=0; i<sizeof(v4l2_fmt)/sizeof(int); i++)
 	{
-		ret = -2;
-		goto ERR_2;
-	}
-	printf("set video width * height = %d * %d\n", format.fmt.pix.width, format.fmt.pix.height);
+		/* configure video format */
+		memset(&format, 0, sizeof(struct v4l2_format));
+		format.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+		format.fmt.pix.width = CAPTURE_PIX_WIDTH;
+		format.fmt.pix.height = CAPTURE_PIX_HEIGH;
+		format.fmt.pix.pixelformat = v4l2_fmt[i];
+		format.fmt.pix.field = V4L2_FIELD_INTERLACED;
+		ret = ioctl(capture->fd, VIDIOC_S_FMT, &format);
+		if(ret < 0)
+		{
+			ret = -2;
+			goto ERR_2;
+		}
+		printf("[try %d] set v4l2 format = %d\n", i, v4l2_fmt[i]);
 
-	/* get video format */
-	capture->format.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-	ret = ioctl(capture->fd, VIDIOC_G_FMT, &capture->format);
-	if(ret < 0)
-	{
-		printf("ERROR: get video format failed[ret:%d] !\n", ret);
-		ret = -3;
-		goto ERR_3;
-	}
-	
-	printf("get video width * height = %d * %d\n", capture->format.fmt.pix.width, capture->format.fmt.pix.height);
-	printf("video pixelformat: ");
-	switch(capture->format.fmt.pix.pixelformat)
-	{
- 		case V4L2_PIX_FMT_JPEG: printf("V4L2_PIX_FMT_JPEG \n");
-			break;
-		case V4L2_PIX_FMT_YUYV: printf("V4L2_PIX_FMT_YUYV \n");
-			break;
-		case V4L2_PIX_FMT_MJPEG: printf("V4L2_PIX_FMT_MJPEG \n");
-			break;
+		/* get video format */
+		capture->format.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+		ret = ioctl(capture->fd, VIDIOC_G_FMT, &capture->format);
+		if(ret < 0)
+		{
+			printf("ERROR: get video format failed[ret:%d] !\n", ret);
+			ret = -3;
+			goto ERR_3;
+		}
 		
-		default:
-			printf("ERROR: value is illegal !\n");
+		if(capture->format.fmt.pix.pixelformat == v4l2_fmt[i])
+		{
+			printf("get video width * height = %d * %d\n", capture->format.fmt.pix.width, capture->format.fmt.pix.height);
+			printf("video pixelformat: ");
+			switch(capture->format.fmt.pix.pixelformat)
+			{
+				case V4L2_PIX_FMT_JPEG: printf("V4L2_PIX_FMT_JPEG \n");
+					break;
+				case V4L2_PIX_FMT_YUYV: printf("V4L2_PIX_FMT_YUYV \n");
+					break;
+				case V4L2_PIX_FMT_MJPEG: printf("V4L2_PIX_FMT_MJPEG \n");
+					break;
+				
+				default:
+					printf("ERROR: value is illegal !\n");
+			}
+			break;
+		}
 	}
-
-	if(capture->format.fmt.pix.pixelformat != VIDEO_V4L2_PIX_FMT)
+	if(i >= sizeof(v4l2_fmt)/sizeof(int))
 	{
-		printf("ERROR: Not support this foramt !!!\n");
+		printf("ERROR: Not support capture foramt !!!\n");
 		ret = -4;
 		goto ERR_4;
 	}
