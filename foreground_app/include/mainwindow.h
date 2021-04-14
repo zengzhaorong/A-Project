@@ -28,11 +28,6 @@ extern "C" {
 #endif
 
 
-#define MAIN_WIN_ROW			LCD_PIX_WIDTH
-#define MAIN_WIN_COL			LCD_PIX_HEIGH
-#define VIDEO_AREA_ROW			CAPTURE_PIX_WIDTH
-#define VIDEO_AREA_COL			CAPTURE_PIX_HEIGH
-
 #define TIMER_INTERV_MS			1
 #define TIMER_ADDUSER_OK_MS		(3*1000)
 

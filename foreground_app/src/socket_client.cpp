@@ -517,7 +517,7 @@ void *socket_client_thread(void *arg)
 	time_t tmpTime;
 	int ret;
 
-	ret = client_init(client, (char *)DEFAULT_SERVER_IP, DEFAULT_SERVER_PORT);
+	ret = client_init(client, (char *)CONFIG_SERVER_IP(main_mngr.config_ini), CONFIG_SERVER_PORT(main_mngr.config_ini));
 	if(ret != 0)
 	{
 		return NULL;

@@ -195,7 +195,7 @@ int server_0x07_getUserList(struct clientInfo *client, uint8_t *data, int len, u
 int server_0x10_getOneFrame(struct clientInfo *client, uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
 {
 	uint8_t type = 0;
-	uint32_t frame_len = 0;
+	int frame_len = 0;
 	uint8_t *frame = NULL;
 	int32_t tmpLen = 0;
 	int ret;
@@ -538,7 +538,7 @@ void *socket_listen_thread(void *arg)
 	int ret;
 	int i;
 
-	ret = server_init(server, DEFAULT_SERVER_PORT);
+	ret = server_init(server, CONFIG_SERVER_PORT(main_mngr.config_ini));
 	if(ret != 0)
 	{
 		return NULL;

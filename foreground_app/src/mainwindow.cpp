@@ -31,9 +31,9 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 	QTextCodec *codec = QTextCodec::codecForName("GBK");
 
 	/* can show Chinese word */
-	setWindowTitle(codec->toUnicode(MAINWINDOW_TITLE));
+	setWindowTitle(codec->toUnicode(CONFIG_WINDOW_TITLE(main_mngr.config_ini)));
 	
-	resize(MAIN_WIN_ROW, MAIN_WIN_COL);
+	resize(CONFIG_WINDOW_WIDTH(main_mngr.config_ini), CONFIG_WINDOW_HEIGHT(main_mngr.config_ini));
 
 	mainWindow = new QWidget;
 	setCentralWidget(mainWindow);
@@ -43,7 +43,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 	/* show video area */
 	videoArea = new QLabel(mainWindow);
 	videoArea->setPixmap(QPixmap::fromImage(backgroundImg));
-	videoArea->setGeometry(0, 0, VIDEO_AREA_ROW, VIDEO_AREA_COL);
+	videoArea->setGeometry(0, 0, CONFIG_CAPTURE_WIDTH(main_mngr.config_ini), CONFIG_CAPTURE_HEIGH(main_mngr.config_ini));
 	videoArea->show();
 	
 	font.setPointSize(20);
@@ -144,11 +144,11 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 	tableView->setSelectionBehavior(QAbstractItemView::SelectRows);		// set select the whole row 
 	//tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);	// adapt to table veiw
 	tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents );	// adapt to text
-	tableView->setGeometry(0, 0, VIDEO_AREA_ROW, VIDEO_AREA_COL);
+	tableView->setGeometry(0, 0, CONFIG_CAPTURE_WIDTH(main_mngr.config_ini), CONFIG_CAPTURE_HEIGH(main_mngr.config_ini));
 	tableView->hide();
 #endif
 
-	buf_size = VIDEO_AREA_ROW*VIDEO_AREA_COL*3;
+	buf_size = CONFIG_CAPTURE_WIDTH(main_mngr.config_ini) *CONFIG_CAPTURE_HEIGH(main_mngr.config_ini) *3;
 	video_buf = (unsigned char *)malloc(buf_size);
 	if(video_buf == NULL)
 	{
@@ -431,7 +431,7 @@ int MainWindow::switch_mainwin_mode(mainwin_mode_e mode)
 	{
 		tmpShowTimer->stop();
 		addface_x = 240;
-		textOnVideo->setGeometry(addface_x, 0, VIDEO_AREA_ROW -addface_x, 50);
+		textOnVideo->setGeometry(addface_x, 0, CONFIG_CAPTURE_WIDTH(main_mngr.config_ini) -addface_x, 50);
 		textOnVideo->setText(codec->toUnicode(NOT_CONNECT_SERVER));
 		textOnVideo->show();
 	}
@@ -443,14 +443,14 @@ int MainWindow::switch_mainwin_mode(mainwin_mode_e mode)
 	{
 		tmpShowTimer->stop();
 		addface_x = 200;
-		textOnVideo->setGeometry(addface_x, 0, VIDEO_AREA_ROW -addface_x, 50);
+		textOnVideo->setGeometry(addface_x, 0, CONFIG_CAPTURE_WIDTH(main_mngr.config_ini) -addface_x, 50);
 		textOnVideo->setText(codec->toUnicode(BEGIN_ADD_FACE_TEXT));
 		textOnVideo->show();
 	}
 	else if(mode == MAINWIN_MODE_ADDUSER_OK)
 	{
 		addface_x = 230;
-		textOnVideo->setGeometry(addface_x, 0, VIDEO_AREA_ROW -addface_x, 50);
+		textOnVideo->setGeometry(addface_x, 0, CONFIG_CAPTURE_WIDTH(main_mngr.config_ini) -addface_x, 50);
 		textOnVideo->setText(codec->toUnicode(SUCCESS_ADD_FACE_TEXT));
 		textOnVideo->show();
 		QObject::connect(tmpShowTimer, SIGNAL(timeout()), this, SLOT(textOnVideo_show_over()));
@@ -464,7 +464,7 @@ int MainWindow::switch_mainwin_mode(mainwin_mode_e mode)
 	else if(mode == MAINWIN_MODE_RECOGN)
 	{
 		addface_x = 200;
-		textOnVideo->setGeometry(addface_x, 0, VIDEO_AREA_ROW -addface_x, 50);
+		textOnVideo->setGeometry(addface_x, 0, CONFIG_CAPTURE_WIDTH(main_mngr.config_ini) -addface_x, 50);
 		if(face_status == ATTEND_STA_IN_OK)
 		{
 			sprintf(showText, "%s: %s - %d%c", TEXT_ATTEND_IN, userRecogn, confidence, '%');
@@ -484,7 +484,7 @@ int MainWindow::switch_mainwin_mode(mainwin_mode_e mode)
 		textOnVideo->setText(codec->toUnicode(showText));
 		textOnVideo->show();
 		QObject::connect(tmpShowTimer, SIGNAL(timeout()), this, SLOT(textOnVideo_show_over()));
-		tmpShowTimer->start(RECOGN_OK_DELAY_MS);
+		tmpShowTimer->start(CONFIG_FACE_RECOINTERVAL(main_mngr.config_ini));
 	}
 	else
 	{

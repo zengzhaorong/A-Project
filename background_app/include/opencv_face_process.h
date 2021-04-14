@@ -46,8 +46,8 @@ public:
 };
 
 int face_database_train(void);
-int opencv_put_frame_detect(uint8_t *buf, uint32_t len);
-int opencv_get_frame_detect(uint8_t *buf, uint32_t size);
+int opencv_put_frame_detect(uint8_t *buf, int len);
+int opencv_get_frame_detect(uint8_t *buf, int size);
 int start_face_process_task(void);
 
 

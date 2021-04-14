@@ -31,7 +31,8 @@ extern struct userMngr_Stru	user_mngr_unit;
 class face_detect face_detect_unit;
 class face_recogn face_recogn_unit;
 
-static uint8_t detect_buf[ONE_CAP_FRAME_SIZE] = {0};
+
+static uint8_t *detect_buf = NULL;
 
 
 face_detect::face_detect(void)
@@ -44,7 +45,7 @@ int face_detect::face_detect_init(void)
 	bool bret;
 	int ret;
 
-	this->frame_size = ONE_CAP_FRAME_SIZE;
+	this->frame_size = FRAME_BUF_SIZE;
 	this->frame_buf = (uint8_t *)malloc(this->frame_size);
 	if(this->frame_buf == NULL)
 		return -1;
@@ -123,7 +124,7 @@ void face_recogn::face_recogn_deinit(void)
 }
 
 /* put frame to detect buffer */
-int opencv_put_frame_detect(uint8_t *buf, uint32_t len)
+int opencv_put_frame_detect(uint8_t *buf, int len)
 {
 	int value = 0;
 	int tmpLen;
@@ -131,7 +132,7 @@ int opencv_put_frame_detect(uint8_t *buf, uint32_t len)
 	if(buf==NULL || len<=0)
 		return -1;
 
-	tmpLen = (len>sizeof(detect_buf) ? sizeof(detect_buf):len);
+	tmpLen = (len>(int)FRAME_BUF_SIZE ? (int)FRAME_BUF_SIZE:len);
 	memcpy(detect_buf, buf, tmpLen);
 
 	sem_getvalue(&face_detect_unit.detect_sem, &value);
@@ -143,7 +144,7 @@ int opencv_put_frame_detect(uint8_t *buf, uint32_t len)
 }
 
 /* get frame from detect buffer */
-int opencv_get_frame_detect(uint8_t *buf, uint32_t size)
+int opencv_get_frame_detect(uint8_t *buf, int size)
 {
 	struct timespec ts;
 	int tmpLen;
@@ -163,7 +164,7 @@ int opencv_get_frame_detect(uint8_t *buf, uint32_t size)
 	if(ret != 0)
 		return -1;
 
-	tmpLen = (size>sizeof(detect_buf) ? sizeof(detect_buf):size);
+	tmpLen = (size>(int)FRAME_BUF_SIZE ? (int)FRAME_BUF_SIZE:size);
 
 	memcpy(buf, detect_buf, tmpLen);
 
@@ -409,7 +410,7 @@ void *opencv_face_detect_thread(void *arg)
 				user_mngr_unit.add_index ++;
 
 				/* finish add user, change work state */
-				if(user_mngr_unit.add_index >= FACE_CNT_PER_USER)
+				if(user_mngr_unit.add_index >= CONFIG_FACE_IMGCNTUSER(main_mngr.config_ini))
 				{
 					proto_0x04_switchWorkSta(socket_handle, WORK_STA_NORMAL, NULL);
 					proto_0x05_addUser(socket_handle, 1, user_mngr_unit.newid, user_mngr_unit.newname);
@@ -444,6 +445,7 @@ int opencv_face_recogn(Mat &face_mat, int *face_id, uint8_t *confid, int *status
 	Mat recogn_mat;
 	int predict;
 	double confidence = 0.0;
+	double recoThres00, recoThres80, recoThres100;
 
 	if(face_mat.empty())
 	{
@@ -451,7 +453,7 @@ int opencv_face_recogn(Mat &face_mat, int *face_id, uint8_t *confid, int *status
 		return -1;
 	}
 
-	if(face_mat.rows < FACE_ROW_MIN)
+	if(face_mat.rows < CONFIG_FACE_IMGSIZEMIN(main_mngr.config_ini))
 	{
 		printf("ERROR: face mat row [%d] is too short!\n", face_mat.rows);
 		return -1;
@@ -468,18 +470,22 @@ int opencv_face_recogn(Mat &face_mat, int *face_id, uint8_t *confid, int *status
 	
 	*face_id = predict;
 
+	recoThres00 = CONFIG_FACE_RECOTHRES00(main_mngr.config_ini);
+	recoThres80 = CONFIG_FACE_RECOTHRES80(main_mngr.config_ini);
+	recoThres100 = CONFIG_FACE_RECOTHRES100(main_mngr.config_ini);
+
 	/* calculate confidence */
-	if(confidence < FACE_RECOGN_THRES_100)
+	if(confidence < recoThres100)
 	{
 		*confid = 100;
 	}
-	else if(confidence < FACE_RECOGN_THRES_80)
+	else if(confidence < recoThres80)
 	{
-		*confid = 80 +(FACE_RECOGN_THRES_80 -confidence)*20/(FACE_RECOGN_THRES_80 -FACE_RECOGN_THRES_100);
+		*confid = 80 +(recoThres80 -confidence)*20/(recoThres80 -recoThres100);
 	}
-	else if(confidence < FACE_RECOGN_THRES_00)
+	else if(confidence < recoThres00)
 	{
-		*confid = (FACE_RECOGN_THRES_00 -confidence)*80 /(FACE_RECOGN_THRES_00 -FACE_RECOGN_THRES_80);
+		*confid = (recoThres00 -confidence)*80 /(recoThres00 -recoThres80);
 	}
 	else
 	{
@@ -529,7 +535,7 @@ void *opencv_face_recogn_thread(void *arg)
 		{
 			userdb_read_byId(user_mngr_unit.userdb , face_id, &userInfo);
 			proto_0x12_sendFaceRecogn(main_mngr.user_handle, face_id, confidence, userInfo.name, status);
-			sleep(RECOGN_OK_DELAY_MS/1000 +1);	// more 1 second
+			sleep(CONFIG_FACE_RECOINTERVAL(main_mngr.config_ini)/1000 +1);	// more 1 second
 		}
 	}
 
@@ -538,7 +544,13 @@ void *opencv_face_recogn_thread(void *arg)
 
 int face_process_init()
 {
-	memset(detect_buf, 0, sizeof(detect_buf));
+	detect_buf = (uint8_t *)malloc(FRAME_BUF_SIZE);
+	if(detect_buf == NULL)
+	{
+		printf("ERROR: %s: malloc failed!", __FUNCTION__);
+		return -1;
+	}
+	memset(detect_buf, 0, FRAME_BUF_SIZE);
 
 	return 0;
 }
@@ -547,6 +559,10 @@ int start_face_process_task(void)
 {
 	pthread_t tid;
 	int ret;
+
+	ret = face_process_init();
+	if(ret < 0)
+		return -1;
 
 	ret = pthread_create(&tid, NULL, opencv_face_detect_thread, NULL);
 	if(ret != 0)

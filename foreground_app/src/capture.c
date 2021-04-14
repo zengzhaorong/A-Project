@@ -11,10 +11,12 @@
 #include <fcntl.h>
 #include <pthread.h>
 #include "capture.h"
+#include "public.h"
 #include "config.h"
 
 
 struct v4l2cap_info capture_info = {0};
+extern struct main_mngr_info main_mngr;
 
 
 int capture_init(struct v4l2cap_info *capture)
@@ -30,14 +32,14 @@ int capture_init(struct v4l2cap_info *capture)
 
 	pthread_mutex_init(&capture->frameMut, NULL);
 
-	capture->fd = open(VIDEO_DEV_NAME, O_RDWR);
+	capture->fd = open(CONFIG_CAPTURE_DEV(main_mngr.config_ini), O_RDWR);
 	if(capture->fd < 0)
 	{
-		printf("ERROR: open video dev [%s] failed !\n", VIDEO_DEV_NAME);
+		printf("ERROR: open video dev [%s] failed !\n", CONFIG_CAPTURE_DEV(main_mngr.config_ini));
 		ret = -1;
 		goto ERR_1;
 	}
-	printf("open video dev [%s] successfully .\n", VIDEO_DEV_NAME);
+	printf("open video dev [%s] successfully .\n", CONFIG_CAPTURE_DEV(main_mngr.config_ini));
 
 	/* get supported format */
 	memset(&fmtdesc, 0, sizeof(struct v4l2_fmtdesc));
@@ -57,8 +59,8 @@ int capture_init(struct v4l2cap_info *capture)
 		/* configure video format */
 		memset(&format, 0, sizeof(struct v4l2_format));
 		format.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-		format.fmt.pix.width = CAPTURE_PIX_WIDTH;
-		format.fmt.pix.height = CAPTURE_PIX_HEIGH;
+		format.fmt.pix.width = CONFIG_CAPTURE_WIDTH(main_mngr.config_ini);
+		format.fmt.pix.height = CONFIG_CAPTURE_HEIGH(main_mngr.config_ini);
 		format.fmt.pix.pixelformat = v4l2_fmt[i];
 		format.fmt.pix.field = V4L2_FIELD_INTERLACED;
 		ret = ioctl(capture->fd, VIDIOC_S_FMT, &format);

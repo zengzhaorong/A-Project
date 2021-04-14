@@ -3,7 +3,12 @@
 
 #include <time.h>
 #include "type.h"
+#include "dictionary.h"
+#include "iniparser.h"
 
+
+/* config.ini path */
+#define PATH_CONFIG_INI	"./config.ini"
 
 #define USER_NAME_LEN		32
 #define DIR_PATH_LEN		64
@@ -24,6 +29,8 @@
 #define TEXT_ATTEND_IN_LATE		"³Ùµ½"
 #define TEXT_ATTEND_OUT_EARLY	"ÔçÍË"
 #define TEXT_ATTEND_NULL		"È±ÇÚ"
+
+#define FRAME_BUF_SIZE		(CONFIG_CAPTURE_WIDTH(main_mngr.config_ini) *CONFIG_CAPTURE_HEIGH(main_mngr.config_ini) *3)
 
 
 typedef enum {
@@ -57,6 +64,7 @@ struct daytm
 
 struct main_mngr_info
 {
+	dictionary *config_ini;	// .ini config file
 	workstate_e work_state;
 	int user_handle;	// user client socket handle index
 	int mngr_handle;	// manager client socket handle index

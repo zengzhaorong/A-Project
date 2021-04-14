@@ -5,8 +5,6 @@
 #include <linux/videodev2.h>
 
 
-#define FRAME_BUF_SIZE		(ONE_CAP_FRAME_SIZE*3)
-
 #define QUE_BUF_MAX_NUM		5
 
 struct buffer_info

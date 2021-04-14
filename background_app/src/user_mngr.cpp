@@ -11,6 +11,7 @@
 
 
 struct userMngr_Stru		user_mngr_unit;
+extern struct main_mngr_info main_mngr;
 
 // remove dir not empty
 int remove_dir(const char *dir)
@@ -99,7 +100,7 @@ int user_get_faceimg_label(vector<Mat>& images, vector<int>& labels)
         if(ret != 0)
             break;
 		
-		for(j=1; j<=FACE_CNT_PER_USER; j++)
+		for(j=1; j<=CONFIG_FACE_IMGCNTUSER(main_mngr.config_ini); j++)
 		{
 			stringstream sstream;
 			sstream << user.facepath << "/" << j << ".png";
