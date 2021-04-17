@@ -3,7 +3,6 @@
 #include "opencv_face_process.h"
 #include "socket_server.h"
 #include "user_mngr.h"
-#include "attendance.h"
 
 
 /* C++ include C */

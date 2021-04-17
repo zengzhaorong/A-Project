@@ -268,60 +268,6 @@ int userdb_init(sqlite3 **ppdb)
     }
     
     printf("%s: successfully.\n", __FUNCTION__);
-#if 0
-    struct userdb_user user = {0};
-    int i, total, cursor;
-    /* test */
-    user.id = 1;
-    strcpy(user.name, "Jenny");
-    userdb_write(*ppdb, &user);
-    user.id = 2;
-    strcpy(user.name, "Tony");
-    userdb_write(*ppdb, &user);
-    user.id = 3;
-    strcpy(user.name, "Gogo");
-    userdb_write(*ppdb, &user);
-    user.id = 4;
-    strcpy(user.name, "Jimmy");
-    userdb_write(*ppdb, &user);
-    user.id = 5;
-    strcpy(user.name, "paul");
-    userdb_write(*ppdb, &user);
-    user.id = 2;
-    strcpy(user.name, "Tony_bak");
-    userdb_write(*ppdb, &user);
-    printf("---------- write -----------\n");
-    total = userdb_get_total(*ppdb);
-    cursor = 0;
-    for(i=0; i<total+1; i++)
-    {
-        ret = userdb_traverse_user(*ppdb, &cursor, &user);
-        if(ret != 0)
-        {
-            printf("---------traverse over.\n");
-            break;
-        }
-        printf("[%d] user id=%d name: %s\n", cursor, user.id, user.name);
-    }
-    
-    userdb_read_byId(*ppdb, 1, &user);
-    userdb_read_byName(*ppdb, "Tony", &user);
-    userdb_read_byName(*ppdb, "Tony_bak", &user);
-    userdb_read_byId(*ppdb, 3, &user);
-    printf("---------- read -----------\n");
-    userdb_get_total(*ppdb);
 
-    userdb_delete_byId(*ppdb, 1);
-    userdb_delete_byName(*ppdb, "Tony_bak");
-    printf("---------- delete -----------\n");
-    userdb_get_total(*ppdb);
-
-    userdb_read_byId(*ppdb, 1, &user);
-    userdb_read_byName(*ppdb, "Tony_bak", &user);
-    userdb_read_byId(*ppdb, 3, &user);
-    printf("---------- read -----------\n");
-
-    exit(0);
-#endif
     return 0;
 }

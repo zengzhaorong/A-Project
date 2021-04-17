@@ -120,45 +120,6 @@ int user_get_faceimg_label(vector<Mat>& images, vector<int>& labels)
 	return 0;
 }
 
-/* check dir begin with "%d_" exist or not */
-/* 0 -exist, -1 -not exist */
-int user_checkdir(char *base_dir, char *dir_head)
-{
-	struct stat statbuf;
-	DIR *dir;
-	struct dirent *dirent;
-	int ret;
-
-	ret = lstat(base_dir, &statbuf);
-	if(ret < 0)
-		return -1;
-
-	if(S_ISDIR(statbuf.st_mode) != 1)
-		return -1;
-
-	dir = opendir(base_dir);
-	if(dir == NULL)
-		return -1;
-
-	/* traversal dir */
-	while((dirent=readdir(dir)) != NULL)
-	{
-		/* skip "." and ".." */
-		if(!strncmp(dirent->d_name, ".", strlen(dirent->d_name)) ||
-			!strncmp(dirent->d_name, "..", strlen(dirent->d_name)))
-		{
-			continue;
-		}
-
-		if(strncmp(dirent->d_name, dir_head, strlen(dir_head)) == 0)
-		{
-			return 0;
-		}
-	}
-
-	return -1;
-}
-
 /* create user dir by user name, format: i_username, like: 1_Tony, 2_Jenny ... */
 int user_create_dir(char *base_dir, int id, char *usr_name, char *usr_dir)
 {
@@ -184,13 +145,8 @@ int user_create_dir(char *base_dir, int id, char *usr_name, char *usr_dir)
 		if(ret != 0)
 			return -1;
 	}
+	
 	sprintf(dir_head, "%d_", id);
-	ret = user_checkdir(base_dir, dir_head);
-	if(ret == 0)
-	{
-		printf("ERROR: %s: user id [%d] is exist!\n", __FUNCTION__, id);
-		return -1;
-	}
 
 	/* current dir is valid */
 	memset(dir_path, 0, sizeof(dir_path));
@@ -203,7 +159,8 @@ int user_create_dir(char *base_dir, int id, char *usr_name, char *usr_dir)
 	ret = mkdir((char *)dir_path, 0777);
 	if(ret == -1)
 	{
-		return -1;
+		printf("%s: mkdir %s not succeess, maybe exist.\n", __FUNCTION__, dir_path);
+		//return -1;
 	}
 
 	memcpy(usr_dir, dir_path, strlen(dir_path));

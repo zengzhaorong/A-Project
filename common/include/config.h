@@ -4,9 +4,10 @@
 /******************** get configure value ********************/
 
 // [WINDOW]
-#define CONFIG_WINDOW_TITLE(ini)    iniparser_getstring(ini, "WINDOW:windowTitle", DEFAULT_WINDOW_TITLE)
-#define CONFIG_WINDOW_WIDTH(ini)    iniparser_getint(ini, "WINDOW:windowWidth", DEFAULT_WINDOW_WIDTH)
-#define CONFIG_WINDOW_HEIGHT(ini)   iniparser_getint(ini, "WINDOW:windowHeight", DEFAULT_WINDOW_HEIGHT)
+#define CONFIG_WINDOW_TITLE(ini)        iniparser_getstring(ini, "WINDOW:windowTitle", DEFAULT_WINDOW_TITLE)
+#define CONFIG_WINDOW_WIDTH(ini)        iniparser_getint(ini, "WINDOW:windowWidth", DEFAULT_WINDOW_WIDTH)
+#define CONFIG_WINDOW_HEIGHT(ini)       iniparser_getint(ini, "WINDOW:windowHeight", DEFAULT_WINDOW_HEIGHT)
+#define CONFIG_WINDOW_FONT_SIZE(ini)   iniparser_getint(ini, "WINDOW:windowFontSize", DEFAULT_WINDOW_FONT_SIZE)
 
 // [CAPTURE]
 #define CONFIG_CAPTURE_DEV(ini)     iniparser_getstring(ini, "CAPTURE:captureDev", DEFAULT_CAPTURE_DEV)
@@ -32,6 +33,7 @@
 #define DEFAULT_WINDOW_TITLE		"人脸识别系统"
 #define DEFAULT_WINDOW_WIDTH		800
 #define DEFAULT_WINDOW_HEIGHT		480
+#define DEFAULT_WINDOW_FONT_SIZE	24
 
 
 // [CAPTURE]

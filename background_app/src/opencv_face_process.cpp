@@ -102,7 +102,7 @@ int face_recogn::face_recogn_init(void)
 	ret = face_database_train();
 	if(ret < 0)
 	{
-		printf("%s: Face model train failed!\n", __FUNCTION__);
+		printf("%s: Face database maybe is 0.\n", __FUNCTION__);
 		return -1;
 	}
 	printf("%s: Face model train success.\n", __FUNCTION__);
@@ -246,7 +246,7 @@ int face_database_train(void)
 	ret = user_get_faceimg_label(images, labels);
 	if(ret<0 || images.size() <= 0)
 	{
-		printf("read csv: No images !\n");
+		printf("%s: user_get_faceimg_label no images.\n", __FUNCTION__);
 		goto ERR_TRAIN;
 	}
 

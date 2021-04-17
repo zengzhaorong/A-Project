@@ -86,7 +86,7 @@ int client_0x03_heartbeat(struct clientInfo *client, uint8_t *data, int len, uin
 	tmplen += 4;
 
 	/* check timezone */
-	/* Attendtion: localtime() and gmtime() return pointer is the same memory(shared).  */
+	/* Attention: localtime() and gmtime() return pointer is the same memory(shared).  */
 	getTime = time(NULL);
 	ptm = localtime(&getTime);
 	memcpy(&local_info, ptm, sizeof(struct tm));
