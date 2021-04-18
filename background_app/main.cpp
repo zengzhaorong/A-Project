@@ -36,6 +36,7 @@ int main(int argc, char* argv[])
 	main_mngr.work_state = WORK_STA_NORMAL;
 	main_mngr.user_handle = -1;
 	main_mngr.mngr_handle = -1;
+	main_mngr.capture_flag = 0;
 	
 	user_mngr_init();
 

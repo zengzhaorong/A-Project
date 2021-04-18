@@ -51,7 +51,7 @@ int proto_0x01_login(int handle, uint8_t *usr_name, uint8_t *password)
 	buf_size = protoObject[handle].buf_size;
 	proto_makeupPacket(0, 0x01, data_len, tmp_protoBuf, protoBuf, buf_size, &packLen);
 
-	protoObject[handle].send_func(protoObject[handle].fd, protoBuf, packLen);
+	protoObject[handle].send_func(protoObject[handle].arg, protoBuf, packLen);
 	
 	return 0;
 }
@@ -76,7 +76,7 @@ int proto_0x03_sendHeartBeat(int handle)
 	buf_size = protoObject[handle].buf_size;
 	proto_makeupPacket(0, 0x03, data_len, (uint8_t *)&time_now, protoBuf, buf_size, &packLen);
 
-	protoObject[handle].send_func(protoObject[handle].fd, protoBuf, packLen);
+	protoObject[handle].send_func(protoObject[handle].arg, protoBuf, packLen);
 	
 	return 0;
 }
@@ -106,7 +106,7 @@ int proto_0x04_switchWorkSta(int handle, workstate_e state, uint8_t *arg)
 	buf_size = protoObject[handle].buf_size;
 	proto_makeupPacket(0, 0x04, data_len, tmp_protoBuf, protoBuf, buf_size, &packLen);
 
-	protoObject[handle].send_func(protoObject[handle].fd, protoBuf, packLen);
+	protoObject[handle].send_func(protoObject[handle].arg, protoBuf, packLen);
 	
 	return 0;
 }
@@ -140,7 +140,7 @@ int proto_0x05_addUser(int handle, int userCnt, int userId, char *userName)
 	buf_size = protoObject[handle].buf_size;
 	proto_makeupPacket(0, 0x05, data_len, tmp_protoBuf, protoBuf, buf_size, &packLen);
 
-	protoObject[handle].send_func(protoObject[handle].fd, protoBuf, packLen);
+	protoObject[handle].send_func(protoObject[handle].arg, protoBuf, packLen);
 	
 	return 0;
 }
@@ -167,7 +167,7 @@ int proto_0x06_deleteUser(int handle, int userCnt, char *userlist)
 	buf_size = protoObject[handle].buf_size;
 	proto_makeupPacket(0, 0x06, data_len, tmp_protoBuf, protoBuf, buf_size, &packLen);
 
-	protoObject[handle].send_func(protoObject[handle].fd, protoBuf, packLen);
+	protoObject[handle].send_func(protoObject[handle].arg, protoBuf, packLen);
 	
 	return 0;
 }
@@ -185,7 +185,7 @@ int proto_0x07_getUserList(int handle)
 	buf_size = protoObject[handle].buf_size;
 	proto_makeupPacket(0, 0x07, 0, NULL, protoBuf, buf_size, &packLen);
 
-	protoObject[handle].send_func(protoObject[handle].fd, protoBuf, packLen);
+	protoObject[handle].send_func(protoObject[handle].arg, protoBuf, packLen);
 
 	return 0;
 }
@@ -203,7 +203,7 @@ int proto_0x10_getOneFrame(int handle)
 	buf_size = protoObject[handle].buf_size;
 	proto_makeupPacket(0, 0x10, 0, NULL, protoBuf, buf_size, &packLen);
 
-	protoObject[handle].send_func(protoObject[handle].fd, protoBuf, packLen);
+	protoObject[handle].send_func(protoObject[handle].arg, protoBuf, packLen);
 
 	return 0;
 }
@@ -241,7 +241,7 @@ int proto_0x11_sendFaceDetect(int handle, uint8_t count, struct Rect_params *fac
 	buf_size = protoObject[handle].buf_size;
 	proto_makeupPacket(0, 0x11, bufLen, tmp_protoBuf, protoBuf, buf_size, &packLen);
 
-	protoObject[handle].send_func(protoObject[handle].fd, protoBuf, packLen);
+	protoObject[handle].send_func(protoObject[handle].arg, protoBuf, packLen);
 
 	return 0;
 }
@@ -279,7 +279,7 @@ int proto_0x12_sendFaceRecogn(int handle, int face_id, uint8_t confid, char *fac
 
 	proto_makeupPacket(0, 0x12, bufLen, tmp_protoBuf, protoBuf, buf_size, &packLen);
 
-	protoObject[handle].send_func(protoObject[handle].fd, protoBuf, packLen);
+	protoObject[handle].send_func(protoObject[handle].arg, protoBuf, packLen);
 
 	return 0;
 }
@@ -309,7 +309,7 @@ int proto_0x13_setAttendTime(int handle, uint32_t atd_in_time, uint32_t atd_out_
 	buf_size = protoObject[handle].buf_size;
 	proto_makeupPacket(0, 0x13, data_len, tmp_protoBuf, protoBuf, buf_size, &packLen);
 
-	protoObject[handle].send_func(protoObject[handle].fd, protoBuf, packLen);
+	protoObject[handle].send_func(protoObject[handle].arg, protoBuf, packLen);
 	
 	return 0;
 }
@@ -327,7 +327,7 @@ int proto_0x14_getAttendList(int handle)
 	buf_size = protoObject[handle].buf_size;
 	proto_makeupPacket(0, 0x14, 0, NULL, protoBuf, buf_size, &packLen);
 
-	protoObject[handle].send_func(protoObject[handle].fd, protoBuf, packLen);
+	protoObject[handle].send_func(protoObject[handle].arg, protoBuf, packLen);
 
 	return 0;
 }
@@ -358,10 +358,69 @@ int proto_0x15_AttendSheetCtrl(int handle, uint32_t cmd, void *arg)
 	buf_size = protoObject[handle].buf_size;
 	proto_makeupPacket(0, 0x15, data_len, tmp_protoBuf, protoBuf, buf_size, &packLen);
 
-	protoObject[handle].send_func(protoObject[handle].fd, protoBuf, packLen);
+	protoObject[handle].send_func(protoObject[handle].arg, protoBuf, packLen);
 	
 	return 0;
 }
+
+int proto_0x20_switchCapture(int handle, int flag)
+{
+	uint8_t *protoBuf = NULL;
+	int data_len = 0;
+	int buf_size = 0;
+	int packLen = 0;
+
+	if(handle < 0 || handle >=MAX_PROTO_OBJ)
+		return -1;
+	if(protoObject[handle].send_func == NULL)
+		return -1;
+
+	/* flag */
+	memcpy(tmp_protoBuf +data_len, &flag, 4);
+	data_len += 4;
+
+	protoBuf = protoObject[handle].send_buf;
+	buf_size = protoObject[handle].buf_size;
+	proto_makeupPacket(0, 0x20, data_len, tmp_protoBuf, protoBuf, buf_size, &packLen);
+
+	protoObject[handle].send_func(protoObject[handle].arg, protoBuf, packLen);
+	
+	return 0;
+}
+
+int proto_0x21_sendCaptureFrame(int handle, int format, void *frame, int len)
+{
+	uint8_t *protoBuf = NULL;
+	int data_len = 0;
+	int buf_size = 0;
+	int packLen = 0;
+
+	if(handle < 0 || handle >=MAX_PROTO_OBJ)
+		return -1;
+	if(protoObject[handle].send_func == NULL)
+		return -1;
+
+	/* format */
+	memcpy(tmp_protoBuf +data_len, &format, 4);
+	data_len += 4;
+
+	/* data len */
+	memcpy(tmp_protoBuf +data_len, &len, 4);
+	data_len += 4;
+
+	/* frame data */
+	memcpy(tmp_protoBuf +data_len, frame, len);
+	data_len += len;
+
+	protoBuf = protoObject[handle].send_buf;
+	buf_size = protoObject[handle].buf_size;
+	proto_makeupPacket(0, 0x21, data_len, tmp_protoBuf, protoBuf, buf_size, &packLen);
+
+	protoObject[handle].send_func(protoObject[handle].arg, protoBuf, packLen);
+	
+	return 0;
+}
+
 
 int proto_makeupPacket(uint8_t seq, uint8_t cmd, int len, uint8_t *data, \
 								uint8_t *outbuf, int size, int *outlen)
@@ -555,7 +614,7 @@ int proto_detectPack(struct ringbuffer *ringbuf, struct detect_info *detect, \
 }
 
 /* return: handle */
-int proto_register(int fd, send_func_t send_func, int buf_size)
+int proto_register(void *arg, send_func_t send_func, int buf_size)
 {
 	int handle = -1;
 	int i;
@@ -564,7 +623,7 @@ int proto_register(int fd, send_func_t send_func, int buf_size)
 	{
 		if(protoObject[i].used == 0)
 		{
-			protoObject[i].fd = fd;
+			protoObject[i].arg = arg;
 			protoObject[i].send_func = send_func;
 
 			protoObject[i].buf_size = buf_size;

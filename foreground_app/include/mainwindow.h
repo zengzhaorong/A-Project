@@ -45,6 +45,7 @@ extern "C" {
 #define TEXT_TIMESHEET			"øº«⁄±Ì"
 #define TEXT_SAVE				"±£¥Ê"
 #define TEXT_RESET				"÷ÿ÷√"
+#define TEXT_SWIT_CAPTURE		"«–ªªª≠√Ê"
 
 #define TIME_TABLE_STATUS_POS	4	// status pos in timesheet table
 
@@ -72,6 +73,7 @@ private slots:
 	void showTimeSheet(void);
 	void saveTimeSheet(void);
 	void resetTimeSheet(void);
+	void switchCapture(void);
 	void textOnVideo_show_over(void);
 	
 public:
@@ -97,6 +99,7 @@ private:
 	QPushButton 	*timeSheetBtn;		// time sheet button
 	QPushButton 	*saveTimeSheetBtn;		// save sheet button
 	QPushButton 	*resetTimeSheetBtn;		// reset time sheet button
+	QPushButton 	*switchCaptureBtn;		// switch capture button
 	unsigned char 	*video_buf;
 	unsigned int 	buf_size;
 	

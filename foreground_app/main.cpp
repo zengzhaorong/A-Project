@@ -35,9 +35,11 @@ int main(int argc, char* argv[])
 	main_mngr.work_state = WORK_STA_DISCONNECT;
 	main_mngr.user_handle = -1;
 	main_mngr.mngr_handle = -1;
+	main_mngr.capture_flag = 0;
 	
 	start_mainwindow_task();
 
+	newframe_mem_init();
 #ifdef USER_CLIENT_ENABLE
 	start_capture_task();
 #endif

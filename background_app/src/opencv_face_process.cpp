@@ -408,6 +408,7 @@ void *opencv_face_detect_thread(void *arg)
 					continue;
 				
 				user_mngr_unit.add_index ++;
+				usleep(500 *1000);
 
 				/* finish add user, change work state */
 				if(user_mngr_unit.add_index >= CONFIG_FACE_IMGCNTUSER(main_mngr.config_ini))

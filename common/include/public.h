@@ -70,6 +70,7 @@ struct main_mngr_info
 	int mngr_handle;	// manager client socket handle index
 	uint32_t atdin_secday;	// attend in time: sec in day
 	uint32_t atdout_secday;	// attend out time: sec in day
+	int capture_flag;	// 0-local, 1-remote
 };
 
 

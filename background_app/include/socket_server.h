@@ -15,14 +15,15 @@ extern "C" {
 
 #define MAX_CLIENT_NUM 				2
 #define MAX_LISTEN_NUM 				5
-#define RECV_BUFFER_SIZE			PROTO_PACK_MAX_LEN
-#define SEND_BUFFER_SIZE			PROTO_PACK_MAX_LEN
+#define SVR_RECVBUF_SIZE			(PROTO_PACK_MAX_LEN*6)
+#define SVR_SENDBUF_SIZE			PROTO_PACK_MAX_LEN
 
 
 struct clientInfo
 {
 	int fd;
 	int protoHandle;
+	pthread_mutex_t	send_mutex;
 	struct sockaddr_in addr;
 	struct ringbuffer recvRingBuf;			// socket receive data ring buffer
 	struct detect_info detectInfo;
@@ -43,6 +44,7 @@ struct serverInfo
 };
 
 
+int server_sendData(void *arg, uint8_t *data, int len);
 int start_socket_server_task(void);
 
 

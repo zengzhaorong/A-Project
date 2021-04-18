@@ -21,10 +21,6 @@ extern "C" {
 #endif
 
 
-#define RECV_BUFFER_SIZE			(1 *1024 *1024)
-#define SEND_BUFFER_SIZE			(1 *1024 *1024)
-#define HEARTBEAT_INTERVAL_S		10
-
 struct clientInfo client_info;
 int global_seq;
 
@@ -200,7 +196,7 @@ int client_0x10_getOneFrame(struct clientInfo *client, uint8_t *data, int len, u
 	tmplen += 1;
 
 	/* frame data */
-	ret = capture_getframe(ack_data +tmplen +4, size-tmplen, &frame_len);
+	ret = capture_get_newframe(ack_data +tmplen +4, size-tmplen, &frame_len);
 	if(ret == -1)
 		return -1;
 
@@ -315,6 +311,40 @@ int client_0x14_getAttendList(struct clientInfo *client, uint8_t *data, int len,
 	return 0;
 }
 
+int client_0x20_switchCapture(struct clientInfo *client, uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
+{
+	int flag = 0;
+	int offset = 0;
+
+	/* capture flag */
+	memcpy(&flag, data +offset, 4);
+	offset += 4;
+
+	main_mngr.capture_flag = flag;
+	printf("%s: set flag = %d\n", __FUNCTION__, flag);
+
+	return 0;
+}
+
+int client_0x21_sendCaptureFrame(struct clientInfo *client, uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
+{
+	int format = 0;
+	int frame_len = 0;
+	int offset = 0;
+	
+	/* format */
+	memcpy(&format, data +offset, 4);
+	offset += 4;
+
+	/* frame len */
+	memcpy(&frame_len, data +offset, 4);
+	offset += 4;
+
+	/* frame data */
+	v4l2cap_update_newframe(data +offset, frame_len);
+
+	return 0;
+}
 
 int client_init(struct clientInfo *client, char *srv_ip, int srv_port)
 {
@@ -332,6 +362,8 @@ int client_init(struct clientInfo *client, char *srv_ip, int srv_port)
 		goto ERR_1;
 	}
 
+	pthread_mutex_init(&client->send_mutex, NULL);
+
 	flags = fcntl(client->fd, F_GETFL, 0);
 	fcntl(client->fd, F_SETFL, flags | O_NONBLOCK);
 
@@ -339,7 +371,7 @@ int client_init(struct clientInfo *client, char *srv_ip, int srv_port)
 	inet_pton(AF_INET, srv_ip, &client->srv_addr.sin_addr);
 	client->srv_addr.sin_port = htons(srv_port);
 
-	ret = ringbuf_init(&client->recvRingBuf, RECV_BUFFER_SIZE);
+	ret = ringbuf_init(&client->recvRingBuf, CLI_RECVBUF_SIZE);
 	if(ret != 0)
 	{
 		ret = -2;
@@ -364,8 +396,9 @@ void client_deinit(struct clientInfo *client)
 	close(client->fd);
 }
 
-int client_sendData(int sodkfd, uint8_t *data, int len)
+int client_sendData(void *arg, uint8_t *data, int len)
 {
+	struct clientInfo *client = (struct clientInfo *)arg;
 	int total = 0;
 	int ret;
 
@@ -376,8 +409,9 @@ int client_sendData(int sodkfd, uint8_t *data, int len)
 	data[PROTO_SEQ_OFFSET] = global_seq++;
 
 	// lock
+	pthread_mutex_lock(&client->send_mutex);
 	do{
-		ret = send(sodkfd, data +total, len -total, 0);
+		ret = send(client->fd, data +total, len -total, 0);
 		if(ret < 0)
 		{
 			usleep(1000);
@@ -386,26 +420,30 @@ int client_sendData(int sodkfd, uint8_t *data, int len)
 		total += ret;
 	}while(total < len);
 	// unlock
+	pthread_mutex_unlock(&client->send_mutex);
 
 	return total;
 }
 
 int client_recvData(struct clientInfo *client)
 {
-	int len;
+	uint8_t *tmpBuf = client->tmpBuf;
+	int len, space;
+	int ret = 0;
 
 	if(client == NULL)
 		return -1;
 
-	memset(client->tmpBuf, 0, PROTO_PACK_MAX_LEN);
-	len = recv(client->fd, client->tmpBuf, PROTO_PACK_MAX_LEN, 0);
+	space = ringbuf_space(&client->recvRingBuf);
 
+	memset(tmpBuf, 0, PROTO_PACK_MAX_LEN);
+	len = recv(client->fd, tmpBuf, PROTO_PACK_MAX_LEN>space ? space:PROTO_PACK_MAX_LEN, 0);
 	if(len > 0)
 	{
-		len = ringbuf_write(&client->recvRingBuf, client->tmpBuf, len);
+		ret = ringbuf_write(&client->recvRingBuf, tmpBuf, len);
 	}
 
-	return len;
+	return ret;
 }
 
 int client_protoAnaly(struct clientInfo *client, uint8_t *pack, uint32_t pack_len)
@@ -468,6 +506,16 @@ int client_protoAnaly(struct clientInfo *client, uint8_t *pack, uint32_t pack_le
 			ret = client_0x14_getAttendList(client, data, data_len, ack_buf, PROTO_PACK_MAX_LEN, &ack_len);
 			break;
 
+		case 0x20:
+			ret = client_0x20_switchCapture(client, data, data_len, ack_buf, PROTO_PACK_MAX_LEN, &ack_len);
+			break;
+
+#if !defined(USER_CLIENT_ENABLE) && defined(MANAGER_CLIENT_ENABLE)
+		case 0x21:
+			ret = client_0x21_sendCaptureFrame(client, data, data_len, ack_buf, PROTO_PACK_MAX_LEN, &ack_len);
+			break;
+#endif
+
 		default:
 			printf("ERROR: protocol cmd[0x%02x] not exist!\n", cmd);
 			break;
@@ -477,7 +525,7 @@ int client_protoAnaly(struct clientInfo *client, uint8_t *pack, uint32_t pack_le
 	if(ret==0 && ack_len>0)
 	{
 		proto_makeupPacket(seq, cmd, ack_len, ack_buf, tmpBuf, PROTO_PACK_MAX_LEN, &tmpLen);
-		client_sendData(client->fd, tmpBuf, tmpLen);
+		client_sendData(client, tmpBuf, tmpLen);
 	}
 
 	return 0;
@@ -502,7 +550,7 @@ int client_protoHandle(struct clientInfo *client)
 
 	if(recv_ret<=0 && det_ret!=0)
 	{
-		usleep(200*1000);
+		usleep(30*1000);
 	}
 
 	return 0;
@@ -535,7 +583,7 @@ void *socket_client_thread(void *arg)
 				ret = connect(client->fd, (struct sockaddr *)&client->srv_addr, sizeof(client->srv_addr));
 				if(ret == 0)
 				{
-					client->protoHandle = proto_register(client->fd, client_sendData, SEND_BUFFER_SIZE);
+					client->protoHandle = proto_register(client, client_sendData, CLI_SENDBUF_SIZE);
 					client->state = STATE_CONNECTED;
 					printf("********** socket connect successfully, handle: %d.\n", client->protoHandle);
 				}

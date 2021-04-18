@@ -313,6 +313,30 @@ int server_0x15_AttendSheetCtrl(struct clientInfo *client, uint8_t *data, int le
 	return 0;
 }
 
+/* transmit to other client */
+/* client: current client */
+int server_transmit_packet(struct clientInfo *client, uint8_t *data, int len)
+{
+	struct serverInfo *server = &server_info;
+	struct clientInfo *other_client = NULL;
+
+	if(server->client_cnt < 2)
+		return -1;
+
+	if(server->client[0].fd == client->fd)
+	{
+		other_client = &server->client[1];
+	}
+	else
+	{
+		other_client = &server->client[0];
+	}
+
+	server_sendData(other_client, data, len);
+
+	return 0;
+}
+
 
 int server_init(struct serverInfo *server, int port)
 {
@@ -364,16 +388,19 @@ void server_deinit(void)
 	
 }
 
-int server_sendData(int sodkfd, uint8_t *data, int len)
+int server_sendData(void *arg, uint8_t *data, int len)
 {
+	struct clientInfo *client = (struct clientInfo *)arg;
 	int total = 0;
 	int ret;
 
 	if(data == NULL)
 		return -1;
 	
+	// lock
+	pthread_mutex_lock(&client->send_mutex);
 	do{
-		ret = send(sodkfd, data +total, len -total, 0);
+		ret = send(client->fd, data +total, len -total, 0);
 		if(ret < 0)
 		{
 			usleep(1000);
@@ -381,6 +408,8 @@ int server_sendData(int sodkfd, uint8_t *data, int len)
 		}
 		total += ret;
 	}while(total < len);
+	// unlock
+	pthread_mutex_unlock(&client->send_mutex);
 
 	return total;
 }
@@ -388,20 +417,22 @@ int server_sendData(int sodkfd, uint8_t *data, int len)
 int server_recvData(struct clientInfo *client)
 {
 	uint8_t *tmpBuf = client->tmpBuf;
-	int len;
+	int len, space;
+	int ret = 0;
 
 	if(client == NULL)
 		return -1;
 
-	memset(tmpBuf, 0, PROTO_PACK_MAX_LEN);
-	len = recv(client->fd, tmpBuf, PROTO_PACK_MAX_LEN, 0);
+	space = ringbuf_space(&client->recvRingBuf);
 
+	memset(tmpBuf, 0, PROTO_PACK_MAX_LEN);
+	len = recv(client->fd, tmpBuf, PROTO_PACK_MAX_LEN>space ? space:PROTO_PACK_MAX_LEN, 0);
 	if(len > 0)
 	{
-		len = ringbuf_write(&client->recvRingBuf, tmpBuf, len);
+		ret = ringbuf_write(&client->recvRingBuf, tmpBuf, len);
 	}
 
-	return len;
+	return ret;
 }
 
 int server_protoAnaly(struct clientInfo *client, uint8_t *pack, uint32_t pack_len)
@@ -463,6 +494,11 @@ int server_protoAnaly(struct clientInfo *client, uint8_t *pack, uint32_t pack_le
 			ret = server_0x15_AttendSheetCtrl(client, data, data_len, ack_buf, PROTO_PACK_MAX_LEN, &ack_len);
 			break;
 
+		case 0x20:
+		case 0x21:
+			ret = server_transmit_packet(client, pack, pack_len);
+			break;
+
 		default:
 			printf("ERROR: protocol cmd[0x%02x] not exist!\n", cmd);
 			break;
@@ -472,7 +508,7 @@ int server_protoAnaly(struct clientInfo *client, uint8_t *pack, uint32_t pack_le
 	if(ret==0 && ack_len>0)
 	{
 		proto_makeupPacket(seq, cmd, ack_len, ack_buf, tmpBuf, PROTO_PACK_MAX_LEN, &tmpLen);
-		server_sendData(client->fd, tmpBuf, tmpLen);
+		server_sendData(client, tmpBuf, tmpLen);
 	}
 
 	return 0;
@@ -496,7 +532,7 @@ int server_protoHandle(struct clientInfo *client)
 
 	if(recv_ret<=0 && det_ret!=0)
 	{
-		usleep(200*1000);
+		usleep(30*1000);
 	}
 
 	return 0;
@@ -510,14 +546,16 @@ void *socket_handle_thread(void *arg)
 
 	printf("%s %d: enter ++\n", __FUNCTION__, __LINE__);
 
+	pthread_mutex_init(&client->send_mutex, NULL);
+
 	flags = fcntl(client->fd, F_GETFL, 0);
 	fcntl(client->fd, F_SETFL, flags | O_NONBLOCK);
 
-	ret = ringbuf_init(&client->recvRingBuf, RECV_BUFFER_SIZE);
+	ret = ringbuf_init(&client->recvRingBuf, SVR_RECVBUF_SIZE);
 	if(ret < 0)
 		return NULL;
 
-	client->protoHandle = proto_register(client->fd, server_sendData, SEND_BUFFER_SIZE);
+	client->protoHandle = proto_register(client, server_sendData, SVR_SENDBUF_SIZE);
 	client->identity = -1;
 
 	while(1)

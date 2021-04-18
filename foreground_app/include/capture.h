@@ -17,16 +17,15 @@ struct v4l2cap_info
 {
 	int run;
 	int fd;
-	unsigned char *frameBuf;
-	unsigned int frameLen;
-	pthread_mutex_t	frameMut;
-	
 	struct v4l2_format format;
 	struct buffer_info buffer[QUE_BUF_MAX_NUM];
 };
 
-int capture_getframe(unsigned char *data, int size, int *len);
+int v4l2cap_update_newframe(unsigned char *data, int len);
+int capture_get_newframe(unsigned char *data, int size, int *len);
+int v4l2cap_clear_newframe(void);
 int start_capture_task(void);
 int capture_task_stop(void);
+int newframe_mem_init(void);
 
 #endif	// _CAPTURE_H_

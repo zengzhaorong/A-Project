@@ -13,7 +13,12 @@
 #include "capture.h"
 #include "public.h"
 #include "config.h"
+#include "protocol.h"
 
+
+unsigned char *newframe_buf;
+unsigned int newframe_len;
+pthread_mutex_t	newframe_mut;
 
 struct v4l2cap_info capture_info = {0};
 extern struct main_mngr_info main_mngr;
@@ -29,8 +34,6 @@ int capture_init(struct v4l2cap_info *capture)
 	int i, ret;
 
 	memset(capture, 0, sizeof(struct v4l2cap_info));
-
-	pthread_mutex_init(&capture->frameMut, NULL);
 
 	capture->fd = open(CONFIG_CAPTURE_DEV(main_mngr.config_ini), O_RDWR);
 	if(capture->fd < 0)
@@ -54,6 +57,7 @@ int capture_init(struct v4l2cap_info *capture)
 		}
 	}while(ret == 0);
 
+	/* try the capture format */
 	for(i=0; i<sizeof(v4l2_fmt)/sizeof(int); i++)
 	{
 		/* configure video format */
@@ -69,7 +73,8 @@ int capture_init(struct v4l2cap_info *capture)
 			ret = -2;
 			goto ERR_2;
 		}
-		printf("[try %d] set v4l2 format = %d\n", i, v4l2_fmt[i]);
+
+		printf("[try %d] set v4l2 format: ", i);
 
 		/* get video format */
 		capture->format.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
@@ -80,23 +85,23 @@ int capture_init(struct v4l2cap_info *capture)
 			ret = -3;
 			goto ERR_3;
 		}
+		switch(v4l2_fmt[i])
+		{
+			case V4L2_PIX_FMT_JPEG: printf("V4L2_PIX_FMT_JPEG \n");
+				break;
+			case V4L2_PIX_FMT_YUYV: printf("V4L2_PIX_FMT_YUYV \n");
+				break;
+			case V4L2_PIX_FMT_MJPEG: printf("V4L2_PIX_FMT_MJPEG \n");
+				break;
+			
+			default:
+				printf("ERROR: value is illegal !\n");
+		}
 		
 		if(capture->format.fmt.pix.pixelformat == v4l2_fmt[i])
 		{
-			printf("get video width * height = %d * %d\n", capture->format.fmt.pix.width, capture->format.fmt.pix.height);
-			printf("video pixelformat: ");
-			switch(capture->format.fmt.pix.pixelformat)
-			{
-				case V4L2_PIX_FMT_JPEG: printf("V4L2_PIX_FMT_JPEG \n");
-					break;
-				case V4L2_PIX_FMT_YUYV: printf("V4L2_PIX_FMT_YUYV \n");
-					break;
-				case V4L2_PIX_FMT_MJPEG: printf("V4L2_PIX_FMT_MJPEG \n");
-					break;
-				
-				default:
-					printf("ERROR: value is illegal !\n");
-			}
+			printf("try successfully.\n");
+			printf("video width * height = %d * %d\n", capture->format.fmt.pix.width, capture->format.fmt.pix.height);
 			break;
 		}
 	}
@@ -105,13 +110,6 @@ int capture_init(struct v4l2cap_info *capture)
 		printf("ERROR: Not support capture foramt !!!\n");
 		ret = -4;
 		goto ERR_4;
-	}
-
-	capture->frameBuf = (unsigned char *)calloc(1, FRAME_BUF_SIZE);
-	if(capture->frameBuf == NULL)
-	{
-		ret = -5;
-		goto ERR_5;
 	}
 
 	memset(&reqbuf_param, 0, sizeof(struct v4l2_requestbuffers));
@@ -162,8 +160,6 @@ int capture_init(struct v4l2cap_info *capture)
 				munmap(capture->buffer[i].addr, capture->buffer[i].len);
 		}
 	ERR_6:
-		free(capture->frameBuf);
-	ERR_5:
 	ERR_4:
 	ERR_3:
 	ERR_2:
@@ -183,8 +179,6 @@ void capture_deinit(struct v4l2cap_info *capture)
 		munmap(capture->buffer[i].addr, capture->buffer[i].len);
 	}
 	
-	free(capture->frameBuf);
-
 	close(capture->fd);
 }
 
@@ -209,57 +203,39 @@ void v4l2cap_stop(struct v4l2cap_info *capture)
 	ioctl(capture->fd, VIDIOC_STREAMOFF, &type);
 }
 
-int v4l2cap_flushframe(struct v4l2cap_info *capture)
+int v4l2cap_update_newframe(unsigned char *data, int len)
 {
-	struct v4l2_buffer v4l2buf;
-	static unsigned int index = 0;
-	int ret;
+	int flush_len = 0;
 
-	memset(&v4l2buf, 0, sizeof(struct v4l2_buffer));
-	v4l2buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-	v4l2buf.memory = V4L2_MEMORY_MMAP;
-	v4l2buf.index = index % QUE_BUF_MAX_NUM;
-	
-	ret = ioctl(capture->fd, VIDIOC_DQBUF, &v4l2buf);
-	if(ret < 0)
-	{
-		printf("ERROR: get VIDIOC_DQBUF failed, ret: %d\n", ret);
-		return -1;
-	}
+	if(len > FRAME_BUF_SIZE)
+		flush_len = FRAME_BUF_SIZE;
+	else
+		flush_len = len;
 
-	pthread_mutex_lock(&capture->frameMut);
-	memset(capture->frameBuf, 0, FRAME_BUF_SIZE);
-	memcpy(capture->frameBuf, capture->buffer[v4l2buf.index].addr, capture->buffer[v4l2buf.index].len);
-	pthread_mutex_unlock(&capture->frameMut);
-	capture->frameLen = capture->buffer[v4l2buf.index].len;
-
-	ret = ioctl(capture->fd, VIDIOC_QBUF, &v4l2buf);
-	if(ret < 0)
-	{
-		printf("ERROR: get VIDIOC_QBUF failed, ret: %d\n", ret);
-		return -1;
-	}
-
-	index ++;
+	pthread_mutex_lock(&newframe_mut);
+	memset(newframe_buf, 0, FRAME_BUF_SIZE);
+	memcpy(newframe_buf, data, flush_len);
+	pthread_mutex_unlock(&newframe_mut);
+	newframe_len = flush_len;
 
 	return 0;
 }
 
-int capture_getframe(unsigned char *data, int size, int *len)
+int capture_get_newframe(unsigned char *data, int size, int *len)
 {
 	struct v4l2cap_info *capture = &capture_info;
 	int tmpLen;
 
-	if(!capture->run)
+	if(!capture->run && !main_mngr.capture_flag)
 		return -1;
 
 	if(data==NULL || size<=0)
 		return -1;
 
-	tmpLen = (capture->frameLen <size ? capture->frameLen:size);
-	if(tmpLen < capture->frameLen)
+	tmpLen = (newframe_len <size ? newframe_len:size);
+	if(tmpLen < newframe_len)
 	{
-		printf("Warning: %s: bufout size[%d] < frame size[%d] !!!\n", __FUNCTION__, size, capture->frameLen);
+		printf("Warning: %s: bufout size[%d] < frame size[%d] !!!\n", __FUNCTION__, size, newframe_len);
 	}
 	if(tmpLen <= 0)
 	{
@@ -267,19 +243,35 @@ int capture_getframe(unsigned char *data, int size, int *len)
 		return -1;
 	}
 
-	pthread_mutex_lock(&capture->frameMut);
-	memcpy(data, capture->frameBuf, tmpLen);
-	pthread_mutex_unlock(&capture->frameMut);
+	pthread_mutex_lock(&newframe_mut);
+	memcpy(data, newframe_buf, tmpLen);
+	pthread_mutex_unlock(&newframe_mut);
 	*len = tmpLen;
 
 	return 0;
 }
 
+int v4l2cap_clear_newframe(void)
+{
+	pthread_mutex_lock(&newframe_mut);
+	memset(newframe_buf, 0, FRAME_BUF_SIZE);
+	pthread_mutex_unlock(&newframe_mut);
+	newframe_len = 0;
+
+	return 0;
+}
 
 void *capture_thread(void *arg)
 {
 	struct v4l2cap_info *capture = &capture_info;
+	struct v4l2_buffer v4l2buf;
+	static unsigned int index = 0;
+	void *frame_buf = NULL;
+	int frame_size;
+	int frame_len;
 	int ret;
+
+	(void)frame_len;
 
 	ret = capture_init(capture);
 	if(ret != 0)
@@ -292,17 +284,51 @@ void *capture_thread(void *arg)
 	v4l2cap_start(capture);
 	capture->run = 1;
 
+	frame_size = FRAME_BUF_SIZE;
+	frame_buf = malloc(frame_size);
+	if(frame_buf == NULL)
+	{
+		printf("ERROR: %s: malloc for frame_buf failed!\n", __FUNCTION__);
+		return NULL;
+	}
+
 	while(capture->run)
 	{
-	
-		ret = v4l2cap_flushframe(capture);
-		if(ret == 0)
+		memset(&v4l2buf, 0, sizeof(struct v4l2_buffer));
+		v4l2buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+		v4l2buf.memory = V4L2_MEMORY_MMAP;
+		v4l2buf.index = index % QUE_BUF_MAX_NUM;
+		
+		/* get v4l2 frame data */
+		ret = ioctl(capture->fd, VIDIOC_DQBUF, &v4l2buf);
+		if(ret < 0)
 		{
+			printf("ERROR: get VIDIOC_DQBUF failed, ret: %d\n", ret);
+			continue;
 		}
-		else
+
+		v4l2cap_update_newframe(capture->buffer[v4l2buf.index].addr, capture->buffer[v4l2buf.index].len);
+
+		ret = ioctl(capture->fd, VIDIOC_QBUF, &v4l2buf);
+		if(ret < 0)
 		{
-			printf("ERROR: get capture frame failed, ret: %d\n", ret);
+			printf("ERROR: get VIDIOC_QBUF failed, ret: %d\n", ret);
+			continue;
 		}
+
+		index ++;
+
+		#if defined(USER_CLIENT_ENABLE) && !defined(MANAGER_CLIENT_ENABLE)
+		/* send frame to server */
+		if(main_mngr.capture_flag == 1)
+		{
+			ret = capture_get_newframe(frame_buf, frame_size, &frame_len);
+			if(ret == 0)
+			{
+				proto_0x21_sendCaptureFrame(main_mngr.user_handle, 0, frame_buf, frame_len);
+			}
+		}
+		#endif
 	}
 	capture->run = 0;
 
@@ -333,5 +359,21 @@ int start_capture_task(void)
 int capture_task_stop(void)
 {
 	capture_info.run = 0;
+	return 0;
+}
+
+/* the frame memory use to sotre the newest one frame from capture or server */
+int newframe_mem_init(void)
+{
+
+	pthread_mutex_init(&newframe_mut, NULL);
+
+	newframe_buf = (unsigned char *)calloc(1, FRAME_BUF_SIZE);
+	if(newframe_buf == NULL)
+	{
+		printf("ERROR: %s: malloc failed\n", __FUNCTION__);
+		return -1;
+	}
+
 	return 0;
 }

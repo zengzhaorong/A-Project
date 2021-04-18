@@ -15,6 +15,10 @@ extern "C" {
 #endif
 
 
+#define CLI_SENDBUF_SIZE			PROTO_PACK_MAX_LEN
+#define CLI_RECVBUF_SIZE			(PROTO_PACK_MAX_LEN*3)
+#define HEARTBEAT_INTERVAL_S		10
+
 typedef enum
 {
 	STATE_DISABLE,
@@ -27,6 +31,7 @@ struct clientInfo
 {
 	int fd;
 	int protoHandle;
+	pthread_mutex_t	send_mutex;
 	sockState_e state;
 	struct sockaddr_in 	srv_addr;		// server ip addr
 	struct ringbuffer recvRingBuf;			// socket receive data ring buffer
