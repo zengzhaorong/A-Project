@@ -53,24 +53,19 @@ project(${PROJECT_NAME})
 #find_package(OpenCV REQUIRED)
 set(LIB_OPENCV_INC ${LIB_OPENCV_PATH}/include ${LIB_OPENCV_PATH}/include/opencv4)
 set(LIB_OPENCV_LIB ${LIB_OPENCV_PATH}/lib)
-file(GLOB OPENCV_LIB_FILE ${LIB_OPENCV_LIB}/libopencv_*.so*)
+file(GLOB OPENCV_LIB_FILE 	${LIB_OPENCV_LIB}/libopencv_core.so ${LIB_OPENCV_LIB}/libopencv_face.so
+							${LIB_OPENCV_LIB}/libopencv_highgui.so ${LIB_OPENCV_LIB}/libopencv_imgproc.so
+							${LIB_OPENCV_LIB}/libopencv_imgcodecs.so ${LIB_OPENCV_LIB}/libopencv_objdetect.so)
 
 # QT5库路径及文件
-#set xxx_DIR to xxx/lib/cmake/xxxConfig.cmake, for find_package(xxx)
-set(Qt5Widgets_DIR ${LIB_QT5_PATH}/lib/cmake/Qt5Widgets/)
-set(Qt5Gui_DIR ${LIB_QT5_PATH}/lib/cmake/Qt5Qt5Gui/)
-set(Qt5Core_DIR ${LIB_QT5_PATH}/lib/cmake/Qt5Core/)
-find_package(Qt5Widgets REQUIRED)
-find_package(Qt5Gui REQUIRED)
-find_package(Qt5Core REQUIRED)
-set(LIB_QT5_INC ${LIB_QT5_PATH}/include ${LIB_QT5_PATH}/include/QtWidgets ${LIB_QT5_PATH}/include/QtGui ${LIB_QT5_PATH}/include/QtCore)
+set(LIB_QT5_INC ${LIB_QT5_PATH}/include ${LIB_QT5_PATH}/include/QtCore ${LIB_QT5_PATH}/include/QtGui ${LIB_QT5_PATH}/include/QtWidgets)
 set(LIB_QT5_LIB ${LIB_QT5_PATH}/lib)
-file(GLOB QT5_LIB_FILE ${LIB_QT5_LIB}/libQt5*.so*)
+file(GLOB QT5_LIB_FILE ${LIB_QT5_LIB}/libQt5Core.so ${LIB_QT5_LIB}/libQt5Gui.so ${LIB_QT5_LIB}/libQt5Widgets.so)
 
 # SQLITE3库路径及文件
 set(LIB_SQLITE3_INC ${LIB_SQLITE3_PATH}/include)
 set(LIB_SQLITE3_LIB ${LIB_SQLITE3_PATH}/lib)
-file(GLOB SQLITE3_LIB_FILE ${LIB_SQLITE3_LIB}/libsqlite3*.so*)
+file(GLOB SQLITE3_LIB_FILE ${LIB_SQLITE3_LIB}/libsqlite3.so)
 
 # 工程H头文件路径
 set(HEAD_FILE_PATH ${HEAD_FILE_PATH} ${PROJECT_SOURCE_DIR}/include)

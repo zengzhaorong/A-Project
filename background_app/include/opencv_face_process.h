@@ -1,13 +1,13 @@
 #ifndef _OPENCV_FACE_PROCESS_H_
 #define _OPENCV_FACE_PROCESS_H_
 
-#include <semaphore.h>
-#include "opencv2/objdetect.hpp"
-#include "type.h"
 #include "opencv2/core.hpp"
+#include "opencv2/objdetect.hpp"
 #include "opencv2/imgproc.hpp"
 #include "opencv2/highgui.hpp"
 #include "opencv2/face.hpp"
+#include <semaphore.h>
+#include "type.h"
 
 using namespace std;
 using namespace cv;
