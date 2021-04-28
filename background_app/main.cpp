@@ -30,7 +30,7 @@ int main(int argc, char* argv[])
 	main_mngr.config_ini = iniparser_load(PATH_CONFIG_INI);
 	if(main_mngr.config_ini == NULL)
 	{
-		printf("ERROR: %s: load [%s] failed!\n", __FUNCTION__, PATH_CONFIG_INI);
+		printf("WARNING: %s: load [%s] failed, will use default value.\n", __FUNCTION__, PATH_CONFIG_INI);
 		//return -1;	// will use default value
 	}
 	main_mngr.work_state = WORK_STA_NORMAL;

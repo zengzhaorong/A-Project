@@ -418,6 +418,9 @@ void MainWindow::resetTimeSheet(void)
 	//mainwin_clear_attendList();
 	for(i=0; i<userModel->rowCount(); i++)
 	{
+		/* clear attend in time and attend out time */
+		mainwindow->userModel->setItem(i, 2, new QStandardItem(QString("")));
+		mainwindow->userModel->setItem(i, 3, new QStandardItem(QString("")));
 		userModel->setItem(i, TIME_TABLE_STATUS_POS, new QStandardItem(QString("%1").arg(codec->toUnicode(TEXT_ATTEND_NULL ":" TEXT_ATTEND_NULL))));
 		userModel->item(i, TIME_TABLE_STATUS_POS)->setBackground(QBrush(color));
 	}
