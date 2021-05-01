@@ -261,7 +261,7 @@ int client_0x12_faceRecogn(struct clientInfo *client, uint8_t *data, int len, ui
 	memcpy(&status, data +offset, 4);
 	offset += 4;
 
-	printf("[recogn]: ****** face id: %d, confid: %d, face name: %s\n", face_id, confidence, face_name);
+	printf("[recogn]: ****** id: %d, name: %s, confid: %d, status: %d \n", face_id, face_name, confidence, status);
 	mainwin_set_recognInfo(face_id, confidence, face_name, status);
 	main_mngr.work_state = WORK_STA_RECOGN;
 
