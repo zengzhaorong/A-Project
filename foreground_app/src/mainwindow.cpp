@@ -25,11 +25,18 @@ extern struct main_mngr_info main_mngr;
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 {
+	int y_pix = 0;
+	int funcArea_width;
+	int funcArea_height;
+	int widget_height;
 	QImage image;
 	QFont font;
 	QPalette pa;
 	QTextCodec *codec = QTextCodec::codecForName("GBK");
 
+	funcArea_width = CONFIG_WINDOW_WIDTH(main_mngr.config_ini) -CONFIG_CAPTURE_WIDTH(main_mngr.config_ini);
+	funcArea_height = CONFIG_WINDOW_HEIGHT(main_mngr.config_ini);
+	
 	/* can show Chinese word */
 	setWindowTitle(codec->toUnicode(CONFIG_WINDOW_TITLE(main_mngr.config_ini)));
 	
@@ -53,90 +60,117 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 	textOnVideo->setPalette(pa);
 
 	/* clock */
+	y_pix += Y_INTERV_PIXEL_EX;
+	widget_height = 40;
 	clockLabel = new QLabel(mainWindow);
 	clockLabel->setWordWrap(true);	// adapt to text, can show multi row
-	clockLabel->setGeometry(650, 0, 140, 90);	// height: set more bigger to adapt to arm
+	clockLabel->setGeometry(FUNC_AREA_PIXEL_X +5, 0, funcArea_width, widget_height);	// height: set more bigger to adapt to arm
 	clockLabel->show();
+	y_pix += widget_height;
 
-#if defined(USER_CLIENT_ENABLE) && !defined(MANAGER_CLIENT_ENABLE)
-	image.load(OTHER_INFO_IMG);
-	otherInfo = new QLabel(mainWindow);
-	otherInfo->setPixmap(QPixmap::fromImage(image));
-	otherInfo->setGeometry(640, 100, 160, 400);
-	otherInfo->show();
+#ifdef MANAGER_CLIENT_ENABLE
+	image.load(EXTRAINFO_MNGR_IMG);
+	widget_height = 130;
+#else
+	image.load(EXTRAINFO_USER_IMG);
+	widget_height = funcArea_height - y_pix;
 #endif
+	extraInfo = new QLabel(mainWindow);
+	extraInfo->setPixmap(QPixmap::fromImage(image));
+	extraInfo->setGeometry(FUNC_AREA_PIXEL_X, y_pix, funcArea_width, widget_height);
+	extraInfo->show();
+	y_pix += widget_height;
 
 #ifdef MANAGER_CLIENT_ENABLE
 	/* attend in time edit */
+	y_pix += Y_INTERV_PIXEL_IN;
 	LabelAtdIn = new QLabel(mainWindow);
-	LabelAtdIn->setGeometry(660, 158, 50, 30);
+	LabelAtdIn->setGeometry(FUNC_AREA_PIXEL_X +20, y_pix, 50, WIDGET_HEIGHT_PIXEL);
 	LabelAtdIn->setText(codec->toUnicode(TEXT_ATTEND_IN":"));
 	LabelAtdIn->show();
 	TimeEditAtdIn = new QDateTimeEdit(/*QDateTime::currentDateTime(),*/ this);
 	TimeEditAtdIn->setDisplayFormat("HH:mm:ss");
-	TimeEditAtdIn->setGeometry(700, 158, 90, 30);
+	TimeEditAtdIn->setGeometry(FUNC_AREA_PIXEL_X +60, y_pix, 90, WIDGET_HEIGHT_PIXEL);
 	TimeEditAtdIn->show();
+	y_pix += WIDGET_HEIGHT_PIXEL;
 
 	/* set datetime */
 	//QDateTime datetime = QDateTime::fromString(QString("01:02:03"),"HH:mm:ss");
 	//TimeEditAtdIn->setDateTime(datetime);
 
 	/* attend out time edit */
+	y_pix += Y_INTERV_PIXEL_IN;
 	LabelAtdOut = new QLabel(mainWindow);
-	LabelAtdOut->setGeometry(660, 190, 50, 30);
+	LabelAtdOut->setGeometry(FUNC_AREA_PIXEL_X +20, y_pix, 50, WIDGET_HEIGHT_PIXEL);
 	LabelAtdOut->setText(codec->toUnicode(TEXT_ATTEND_OUT":"));
 	LabelAtdOut->show();
 	TimeEditAtdOut = new QDateTimeEdit(/*QDateTime::currentDateTime(),*/ this);
 	TimeEditAtdOut->setDisplayFormat("HH:mm:ss");
-	TimeEditAtdOut->setGeometry(700, 190, 90, 30);
+	TimeEditAtdOut->setGeometry(FUNC_AREA_PIXEL_X +60, y_pix, 90, WIDGET_HEIGHT_PIXEL);
 	TimeEditAtdOut->show();
+	y_pix += WIDGET_HEIGHT_PIXEL;
 
 	/* attend time set button */
+	y_pix += Y_INTERV_PIXEL_IN;
 	setAtdtimeBtn = new QPushButton(mainWindow);
 	setAtdtimeBtn->setText(codec->toUnicode(TEXT_SET_ATD_TIME));
     connect(setAtdtimeBtn, SIGNAL(clicked()), this, SLOT(setAttendTime()));
-	setAtdtimeBtn->setGeometry(660, 222, 120, 30);
+	setAtdtimeBtn->setGeometry(FUNC_AREA_PIXEL_X +20, y_pix, 120, WIDGET_HEIGHT_PIXEL);
+	y_pix += WIDGET_HEIGHT_PIXEL;
 
 	/* user id - name edit */
+	y_pix += Y_INTERV_PIXEL_EX;
 	userIdEdit = new QLineEdit(mainWindow);
 	userIdEdit->setPlaceholderText(codec->toUnicode(TEXT_USER_ID));
-	userIdEdit->setGeometry(645, 265, 50, 30);
+	userIdEdit->setGeometry(FUNC_AREA_PIXEL_X +5, y_pix, 50, WIDGET_HEIGHT_PIXEL);
 	userNameEdit = new QLineEdit(mainWindow);
 	userNameEdit->setPlaceholderText(codec->toUnicode(TEXT_USER_NAME));
-	userNameEdit->setGeometry(695, 265, 100, 30);
+	userNameEdit->setGeometry(FUNC_AREA_PIXEL_X +5 +50 +2, y_pix, 100, WIDGET_HEIGHT_PIXEL);
+	y_pix += WIDGET_HEIGHT_PIXEL;
 	/* add user button */
+	y_pix += Y_INTERV_PIXEL_IN;
 	addUserBtn = new QPushButton(mainWindow);
 	addUserBtn->setText(codec->toUnicode(TEXT_ADD_USER));
     connect(addUserBtn, SIGNAL(clicked()), this, SLOT(addUser()));
-	addUserBtn->setGeometry(670, 297, 100, 30);
+	addUserBtn->setGeometry(FUNC_AREA_PIXEL_X +30, y_pix, 100, WIDGET_HEIGHT_PIXEL);
+	y_pix += WIDGET_HEIGHT_PIXEL;
 
 	/* user list box */
+	y_pix += Y_INTERV_PIXEL_EX;
 	userListBox = new QComboBox(mainWindow);
-	userListBox->setGeometry(645, 340, 150, 30);
+	userListBox->setGeometry(FUNC_AREA_PIXEL_X +5, y_pix, 150, WIDGET_HEIGHT_PIXEL);
 	userListBox->setEditable(true);
+	y_pix += WIDGET_HEIGHT_PIXEL;
 	/* delete user button */
+	y_pix += Y_INTERV_PIXEL_IN;
 	delUserBtn = new QPushButton(mainWindow);
 	delUserBtn->setText(codec->toUnicode(TEXT_DEL_USER));
     connect(delUserBtn, SIGNAL(clicked()), this, SLOT(deleteUser()));
-	delUserBtn->setGeometry(670, 372, 100, 30);
+	delUserBtn->setGeometry(FUNC_AREA_PIXEL_X +30, y_pix, 100, WIDGET_HEIGHT_PIXEL);
+	y_pix += WIDGET_HEIGHT_PIXEL;
 
 	/* display time sheet button */
+	y_pix += Y_INTERV_PIXEL_EX;
 	timeSheetBtn = new QPushButton(mainWindow);
 	timeSheetBtn->setText(codec->toUnicode(TEXT_TIMESHEET));
     connect(timeSheetBtn, SIGNAL(clicked()), this, SLOT(showTimeSheet()));
-	timeSheetBtn->setGeometry(670, 415, 100, 30);
+	timeSheetBtn->setGeometry(FUNC_AREA_PIXEL_X +30, y_pix, 100, WIDGET_HEIGHT_PIXEL);
+	y_pix += WIDGET_HEIGHT_PIXEL;
+	
 	/* save time sheet button */
+	y_pix += Y_INTERV_PIXEL_IN;
 	saveTimeSheetBtn = new QPushButton(mainWindow);
 	saveTimeSheetBtn->setText(codec->toUnicode(TEXT_SAVE));
     connect(saveTimeSheetBtn, SIGNAL(clicked()), this, SLOT(saveTimeSheet()));
-	saveTimeSheetBtn->setGeometry(660, 447, 60, 30);
+	saveTimeSheetBtn->setGeometry(FUNC_AREA_PIXEL_X +20, y_pix, 60, WIDGET_HEIGHT_PIXEL);
 	saveTimeSheetBtn->hide();
 	/* reset time sheet button */
 	resetTimeSheetBtn = new QPushButton(mainWindow);
 	resetTimeSheetBtn->setText(codec->toUnicode(TEXT_RESET));
     connect(resetTimeSheetBtn, SIGNAL(clicked()), this, SLOT(resetTimeSheet()));
-	resetTimeSheetBtn->setGeometry(723, 447, 60, 30);
+	resetTimeSheetBtn->setGeometry(FUNC_AREA_PIXEL_X +20 +60 +3, y_pix, 60, WIDGET_HEIGHT_PIXEL);
 	resetTimeSheetBtn->hide();
+	y_pix += WIDGET_HEIGHT_PIXEL;
 
 	tableView = new QTableView(mainWindow);
 	userModel = new QStandardItemModel();
@@ -152,7 +186,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 	switchCaptureBtn = new QPushButton(mainWindow);
 	switchCaptureBtn->setText(codec->toUnicode(TEXT_SWIT_CAPTURE));
     connect(switchCaptureBtn, SIGNAL(clicked()), this, SLOT(switchCapture()));
-	switchCaptureBtn->setGeometry(560, 450, 80, 30);
+	switchCaptureBtn->setGeometry(FUNC_AREA_PIXEL_X -80, CONFIG_CAPTURE_HEIGH(main_mngr.config_ini) -WIDGET_HEIGHT_PIXEL, 80, WIDGET_HEIGHT_PIXEL);
 #endif
 
 	buf_size = CONFIG_CAPTURE_WIDTH(main_mngr.config_ini) *CONFIG_CAPTURE_HEIGH(main_mngr.config_ini) *3;

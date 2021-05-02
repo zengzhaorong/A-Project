@@ -83,5 +83,5 @@ link_libraries(${QT5_LIB_FILE})
 add_executable(${PROJECT_NAME} ${SRC_LIST_CPP} ${SRC_LIST_C} ${QT_HEAD_FILE_LIST})
 
 # Link your application with 3rd libraries
-set(OTHER_3RD_LIBS ${OTHER_3RD_LIBS} -lpthread -lrt)
+set(OTHER_3RD_LIBS ${OTHER_3RD_LIBS} -lpthread -lrt -ldl)
 target_link_libraries(${PROJECT_NAME} ${OTHER_3RD_LIBS})

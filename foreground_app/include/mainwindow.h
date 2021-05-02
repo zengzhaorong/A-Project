@@ -27,12 +27,18 @@ extern "C" {
 }
 #endif
 
+/* widget locate pixel */
+#define Y_INTERV_PIXEL_IN		3
+#define Y_INTERV_PIXEL_EX		8
+#define WIDGET_HEIGHT_PIXEL		25
+#define FUNC_AREA_PIXEL_X		CONFIG_CAPTURE_WIDTH(main_mngr.config_ini)
 
 #define TIMER_INTERV_MS			1
 #define TIMER_ADDUSER_OK_MS		(3*1000)
 
 #define WIN_BACKGRD_IMG			"resource/background.jpg"		// 界面背景图
-#define OTHER_INFO_IMG			"resource/otherinfo.png"
+#define EXTRAINFO_MNGR_IMG		"resource/extraInfo_mngr.png"
+#define EXTRAINFO_USER_IMG		"resource/extraInfo_user.png"
 
 /* tips text, support Chinese */
 #define NOT_CONNECT_SERVER		"未连接服务器"
@@ -86,7 +92,7 @@ private:
 	QImage			backgroundImg;		// background image
 	QTimer 			*timer;				// display timer
 	QLabel			*clockLabel;		// display clock
-	QLabel 			*otherInfo;			// show as image: like author info
+	QLabel 			*extraInfo;			// show as image
 	QLabel			*LabelAtdIn;		// attend in label
 	QLabel			*LabelAtdOut;		// attend out label
 	QDateTimeEdit	*TimeEditAtdIn;		// attend in time

@@ -41,6 +41,7 @@ int main(int argc, char* argv[])
 
 	newframe_mem_init();
 #ifdef USER_CLIENT_ENABLE
+	sleep(1);	// only to show background image
 	start_capture_task();
 #endif
 	start_socket_client_task();
