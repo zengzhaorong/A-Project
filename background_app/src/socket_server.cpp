@@ -142,8 +142,7 @@ int client_0x06_deleteUser(struct clientInfo *client, uint8_t *data, int len, ui
 	{
 		memcpy(username, data +tmplen, USER_NAME_LEN);
 		//printf("[%d]name: %s\n", i, username);
-		user_delete(1, username);
-		userdb_delete_byName(user_mngr_unit.userdb, username);
+		user_delete(username);
 		tmplen += USER_NAME_LEN;
 	}
 
@@ -179,7 +178,7 @@ int server_0x07_getUserList(struct clientInfo *client, uint8_t *data, int len, u
 	/* user name */
 	for(i=0; i<userCnt +1; i++)
 	{
-		ret = userdb_traverse_user(user_mngr_unit.userdb, &cursor, &userInfo);
+		ret = userdb_traverse_user(user_mngr_unit.userdb, NULL, &cursor, &userInfo);
 		if(ret == -1)
 			break;
 		memcpy(ack_data +tmplen, userInfo.name, 32);
@@ -221,98 +220,6 @@ int server_0x10_getOneFrame(struct clientInfo *client, uint8_t *data, int len, u
 	return 0;
 }
 
-int server_0x13_setAttendTime(struct clientInfo *client, uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
-{
-	uint32_t atdin_time;
-	uint32_t atdout_time;
-	int tmplen = 0;
-
-	memcpy(&atdin_time, data +tmplen, 4);
-	tmplen +=4;
-
-	memcpy(&atdout_time, data +tmplen, 4);
-	tmplen +=4;
-
-	main_mngr.atdin_secday = atdin_time;
-	main_mngr.atdout_secday = atdout_time;
-
-	return 0;
-}
-
-int server_0x14_getAttendList(struct clientInfo *client, uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
-{
-	struct userdb_user user;
-	int userCnt = 0;
-	int cursor = 0;
-	int tmplen = 0;
-	int ret = 0;
-	int i;
-
-	/* request part */
-	// NULL
-
-	/* ack part */
-	/* return value */
-	ret = 0;
-	memcpy(ack_data, &ret, 4);
-	tmplen += 4;
-	
-	/* user count */
-	userCnt = userdb_get_total(user_mngr_unit.userdb);
-	memcpy(ack_data +tmplen, &userCnt, 4);
-	tmplen += 4;
-
-	/* user name */
-	for(i=0; i<userCnt +1; i++)
-	{
-		ret = userdb_traverse_user(user_mngr_unit.userdb, &cursor, &user);
-		if(ret == -1)
-			break;
-
-		memcpy(ack_data +tmplen, &user.id, 4);
-		tmplen += 4;
-		memcpy(ack_data +tmplen, user.name, USER_NAME_LEN);
-		tmplen += USER_NAME_LEN;
-		memcpy(ack_data +tmplen, &user.in_time, 4);
-		tmplen += 4;
-		memcpy(ack_data +tmplen, &user.in_sta, 4);
-		tmplen += 4;
-		memcpy(ack_data +tmplen, &user.out_time, 4);
-		tmplen += 4;
-		memcpy(ack_data +tmplen, &user.out_sta, 4);
-		tmplen += 4;
-	}
-
-	if(ack_len != NULL)
-		*ack_len = tmplen;
-
-	return 0;
-}
-
-int server_0x15_AttendSheetCtrl(struct clientInfo *client, uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
-{
-	char filename[64] = {0};
-	uint32_t cmd;
-	int tmplen = 0;
-
-	memcpy(&cmd, data +tmplen, 4);
-	tmplen +=4;
-
-	if(cmd == 0)	// reset
-	{
-		attendance_reset_all();
-	}
-	else if(cmd == 1)	// save
-	{
-		memcpy(filename, data +tmplen, 64);
-		tmplen +=64;
-
-		attendance_save_data_csv(filename);
-	}
-
-	return 0;
-}
-
 /* transmit to other client */
 /* client: current client */
 int server_transmit_packet(struct clientInfo *client, uint8_t *data, int len)
@@ -337,6 +244,138 @@ int server_transmit_packet(struct clientInfo *client, uint8_t *data, int len)
 	return 0;
 }
 
+int server_0x30_setAttendTable(struct clientInfo *client, uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
+{
+	char course[COURSE_NAME_LEN];
+	char table[TABLE_NAME_LEN];
+	int count;
+	int tmplen = 0;
+
+	memcpy(&count, data +tmplen, 4);
+	tmplen +=4;
+
+	for(int i=0; i<count; i++)
+	{
+		memset(course, 0, sizeof(course));
+		memcpy(course, data +tmplen, 32);
+		tmplen +=32;
+
+		/* create table in sqlite */
+		sprintf(table, TABLE_NAME_PRE"%s", course);
+		attendance_set_tbl(table);
+	}
+
+	return 0;
+}
+
+int server_0x31_setAttendTime(struct clientInfo *client, uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
+{
+	uint32_t atdin_time;
+	uint32_t atdout_time;
+	char course[COURSE_NAME_LEN];
+	char table[TABLE_NAME_LEN];
+	int tmplen = 0;
+
+	memcpy(course, data +tmplen, 32);
+	tmplen +=32;
+
+	memcpy(&atdin_time, data +tmplen, 4);
+	tmplen +=4;
+
+	memcpy(&atdout_time, data +tmplen, 4);
+	tmplen +=4;
+
+	memcpy(main_mngr.course, course, COURSE_NAME_LEN);
+	main_mngr.atdin_secday = atdin_time;
+	main_mngr.atdout_secday = atdout_time;
+
+	sprintf(table, TABLE_NAME_PRE"%s", course);
+	attendance_set_tbl(table);
+
+	return 0;
+}
+
+int server_0x32_getAttendList(struct clientInfo *client, uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
+{
+	struct userdb_user user;
+	char table[TABLE_NAME_LEN] = TABLE_NAME_PRE;
+	int userCnt = 0;
+	int cursor = 0;
+	int tmplen = 0;
+	int cnt_pos = 0;
+	int ret = 0;
+
+	/* request part */
+	memcpy(table +strlen(table), data +tmplen, 32);
+	tmplen +=32;
+
+	/* ack part */
+	tmplen = 0;
+	/* return value */
+	ret = 0;
+	memcpy(ack_data, &ret, 4);
+	tmplen += 4;
+	
+	/* user count */
+	cnt_pos = tmplen;
+	tmplen += 4;
+
+	/* user name */
+	userCnt = 0;
+	for(; ret==0; )
+	{
+		ret = userdb_traverse_user(user_mngr_unit.userdb, table, &cursor, &user);
+		if(ret == -1)
+			break;
+
+		memcpy(ack_data +tmplen, &user.id, 4);
+		tmplen += 4;
+		memcpy(ack_data +tmplen, user.name, USER_NAME_LEN);
+		tmplen += USER_NAME_LEN;
+		memcpy(ack_data +tmplen, &user.in_time, 4);
+		tmplen += 4;
+		memcpy(ack_data +tmplen, &user.in_sta, 4);
+		tmplen += 4;
+		memcpy(ack_data +tmplen, &user.out_time, 4);
+		tmplen += 4;
+		memcpy(ack_data +tmplen, &user.out_sta, 4);
+		tmplen += 4;
+
+		userCnt ++;
+	}
+
+	/* update user count */
+	memcpy(ack_data +cnt_pos, &userCnt, 4);
+
+	if(ack_len != NULL)
+		*ack_len = tmplen;
+
+	return 0;
+}
+
+int server_0x33_AttendSheetCtrl(struct clientInfo *client, uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
+{
+	char filename[64] = {0};
+	uint32_t cmd;
+	int tmplen = 0;
+
+	memcpy(&cmd, data +tmplen, 4);
+	tmplen +=4;
+
+	if(cmd == 0)	// reset
+	{
+		attendance_reset_tbl(user_mngr_unit.curr_tbl);
+	}
+	else if(cmd == 1)	// save
+	{
+		memcpy(filename, data +tmplen, 64);
+		tmplen +=64;
+
+		attendance_save_data_csv(filename);
+	}
+
+	return 0;
+}
 
 int server_init(struct serverInfo *server, int port)
 {
@@ -483,20 +522,23 @@ int server_protoAnaly(struct clientInfo *client, uint8_t *pack, uint32_t pack_le
 			ret = server_0x10_getOneFrame(client, data, data_len, ack_buf, PROTO_PACK_MAX_LEN, &ack_len);
 			break;
 
-		case 0x13:
-			ret = server_0x13_setAttendTime(client, data, data_len, ack_buf, PROTO_PACK_MAX_LEN, &ack_len);
-			break;
-
-		case 0x14:
-			ret = server_0x14_getAttendList(client, data, data_len, ack_buf, PROTO_PACK_MAX_LEN, &ack_len);
-			break;
-		case 0x15:
-			ret = server_0x15_AttendSheetCtrl(client, data, data_len, ack_buf, PROTO_PACK_MAX_LEN, &ack_len);
-			break;
-
 		case 0x20:
 		case 0x21:
 			ret = server_transmit_packet(client, pack, pack_len);
+			break;
+
+		case 0x30:
+			ret = server_0x30_setAttendTable(client, data, data_len, ack_buf, PROTO_PACK_MAX_LEN, &ack_len);
+			break;
+		case 0x31:
+			ret = server_0x31_setAttendTime(client, data, data_len, ack_buf, PROTO_PACK_MAX_LEN, &ack_len);
+			break;
+
+		case 0x32:
+			ret = server_0x32_getAttendList(client, data, data_len, ack_buf, PROTO_PACK_MAX_LEN, &ack_len);
+			break;
+		case 0x33:
+			ret = server_0x33_AttendSheetCtrl(client, data, data_len, ack_buf, PROTO_PACK_MAX_LEN, &ack_len);
 			break;
 
 		default:

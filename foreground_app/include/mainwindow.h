@@ -93,6 +93,8 @@ private:
 	QTimer 			*timer;				// display timer
 	QLabel			*clockLabel;		// display clock
 	QLabel 			*extraInfo;			// show as image
+	QLabel			*LabelCourse;		// course label
+	QComboBox		*courseListBox;		// course list box
 	QLabel			*LabelAtdIn;		// attend in label
 	QLabel			*LabelAtdOut;		// attend out label
 	QDateTimeEdit	*TimeEditAtdIn;		// attend in time

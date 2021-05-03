@@ -2,7 +2,17 @@
 #include <string.h>
 #include "attendance.h"
 #include "user_mngr.h"
+
+/* C++ include C */
+#ifdef __cplusplus
+extern "C" {
+#endif
 #include "public.h"
+#include "user_db.h"
+#ifdef __cplusplus
+}
+#endif
+
 
 extern struct main_mngr_info main_mngr;
 extern struct userMngr_Stru	user_mngr_unit;
@@ -20,7 +30,7 @@ attend_sta_e attendance_set_one(int id, uint32_t time)
     adt_sec_day = time_t_to_sec_day(time);
     mid_time = (main_mngr.atdin_secday +main_mngr.atdout_secday)/2;
 
-    ret = userdb_read_byId(user_mngr->userdb, id, &user);
+    ret = userdb_read_byId(user_mngr->userdb, user_mngr->curr_tbl, id, &user);
     if(ret != 0)
     {
         printf("ERROR: %s: not find user!\n", __FUNCTION__);
@@ -62,24 +72,24 @@ attend_sta_e attendance_set_one(int id, uint32_t time)
         user.out_time = time;
         user.out_sta = status;
     }
-    userdb_write(user_mngr->userdb, &user);
+    userdb_write(user_mngr->userdb, user_mngr->curr_tbl, &user);
 
     return status;
 }
 
-void attendance_reset_all(void)
+void attendance_reset_tbl(char *tbl_name)
 {
-    struct userMngr_Stru *usr_mngr = &user_mngr_unit;
+    struct userMngr_Stru *user_mngr = &user_mngr_unit;
     struct userdb_user user;
     int total, cursor = 0;
     int i, ret;
     
-    total = userdb_get_total(usr_mngr->userdb);
+    total = userdb_get_total(user_mngr->userdb);
 
     // reset all user attend info
     for(i=0; i<total +1; i++)
     {
-        ret = userdb_traverse_user(usr_mngr->userdb, &cursor, &user);
+        ret = userdb_traverse_user(user_mngr->userdb, tbl_name, &cursor, &user);
         if(ret != 0)
             break;
 
@@ -87,7 +97,7 @@ void attendance_reset_all(void)
         user.out_time = 0;
         user.in_sta = ATTEND_STA_NONE;
         user.out_sta = ATTEND_STA_NONE;
-        userdb_write(usr_mngr->userdb, &user);
+        userdb_write(user_mngr->userdb, user_mngr->curr_tbl, &user);
     }
     
 }
@@ -122,7 +132,7 @@ int attendance_save_data_csv(char *filename)
     total = userdb_get_total(user_mngr->userdb);
     for(i=0; i<total +1; i++)
     {
-        ret = userdb_traverse_user(user_mngr->userdb, &cursor, &user);
+        ret = userdb_traverse_user(user_mngr->userdb, NULL, &cursor, &user);
         if(ret != 0)
             break;
 
@@ -177,3 +187,12 @@ int attendance_save_data_csv(char *filename)
     return 0;
 }
 
+int attendance_set_tbl(char *tbl_name)
+{
+
+    memcpy(user_mngr_unit.curr_tbl, tbl_name, TABLE_NAME_LEN);
+
+    userdb_creat_tbl(user_mngr_unit.userdb, tbl_name);
+
+    return 0;
+}

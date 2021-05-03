@@ -320,6 +320,7 @@ int opencv_face_detect( Mat& img, CascadeClassifier& cascade,
 
 void *opencv_face_detect_thread(void *arg)
 {
+    struct userMngr_Stru *user_mngr = &user_mngr_unit;
 	class face_detect *detect_unit = &face_detect_unit;
 	struct userdb_user user;
 	int socket_handle = -1;
@@ -403,24 +404,24 @@ void *opencv_face_detect_thread(void *arg)
 			}
 			else if(main_mngr.work_state == WORK_STA_ADDUSER)
 			{
-				ret = face_resize_save(face_mat, user_mngr_unit.add_userdir, user_mngr_unit.add_index +1);
+				ret = face_resize_save(face_mat, user_mngr->add_userdir, user_mngr->add_index +1);
 				if(ret != 0)
 					continue;
 				
-				user_mngr_unit.add_index ++;
+				user_mngr->add_index ++;
 				usleep(500 *1000);
 
 				/* finish add user, change work state */
-				if(user_mngr_unit.add_index >= CONFIG_FACE_IMGCNTUSER(main_mngr.config_ini))
+				if(user_mngr->add_index >= CONFIG_FACE_IMGCNTUSER(main_mngr.config_ini))
 				{
 					proto_0x04_switchWorkSta(socket_handle, WORK_STA_NORMAL, NULL);
-					proto_0x05_addUser(socket_handle, 1, user_mngr_unit.newid, user_mngr_unit.newname);
+					proto_0x05_addUser(socket_handle, 1, user_mngr->newid, user_mngr->newname);
 					/* add user to database */
 					memset(&user, 0, sizeof(struct userdb_user));
-					user.id = user_mngr_unit.newid;
-					memcpy(user.name, user_mngr_unit.newname, USER_NAME_LEN);
-					memcpy(user.facepath, user_mngr_unit.add_userdir, DIR_PATH_LEN);
-					userdb_write(user_mngr_unit.userdb, &user);
+					user.id = user_mngr->newid;
+					memcpy(user.name, user_mngr->newname, USER_NAME_LEN);
+					memcpy(user.facepath, user_mngr->add_userdir, DIR_PATH_LEN);
+					user_add(&user);
 					main_mngr.work_state = WORK_STA_NORMAL;
 					face_recogn_unit.recogn_avalid = 0;
 					ret = face_database_train();
@@ -534,7 +535,7 @@ void *opencv_face_recogn_thread(void *arg)
 		ret = opencv_face_recogn(face_mat, &face_id, &confidence, &status);
 		if(ret == 0)
 		{
-			userdb_read_byId(user_mngr_unit.userdb , face_id, &userInfo);
+			userdb_read_byId(user_mngr_unit.userdb , user_mngr_unit.curr_tbl, face_id, &userInfo);
 			proto_0x12_sendFaceRecogn(main_mngr.user_handle, face_id, confidence, userInfo.name, status);
 			sleep(CONFIG_FACE_RECOINTERVAL(main_mngr.config_ini)/1000 +1);	// more 1 second
 		}

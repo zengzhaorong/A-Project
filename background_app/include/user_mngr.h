@@ -22,7 +22,6 @@ using namespace cv;
 using namespace std;
 
 #define FACES_DATABASE_PATH		"faces"
-#define FACES_DB_CSV_FILE			(FACES_DATABASE_PATH"/""faces.csv")
 
 
 struct userMngr_Stru
@@ -32,10 +31,12 @@ struct userMngr_Stru
 	int 	newid;		// new user id
 	char 	newname[USER_NAME_LEN];	// the newest user
 	int 	add_index;		// add user num
+	char 	curr_tbl[TABLE_NAME_LEN];	// table name
 };
 
 
-int user_delete(int userCnt, char *username);
+int user_add(struct userdb_user *user);
+int user_delete(char *username);
 int user_create_dir(char *base_dir, int id, char *usr_name, char *usr_dir);
 int user_get_faceimg_label(vector<Mat>& images, vector<int>& labels);
 int user_mngr_init(void);

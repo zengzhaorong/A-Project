@@ -25,11 +25,13 @@ struct clientInfo client_info;
 int global_seq;
 
 extern struct main_mngr_info main_mngr;
-
+extern char course_str[][COURSE_NAME_LEN];
 
 int client_0x01_login(struct clientInfo *client, uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
 {
+	int count = 0;
 	int ret = 0;
+	(void)count;
 
 	/* return value */
 	memcpy(&ret, data, 4);
@@ -43,11 +45,19 @@ int client_0x01_login(struct clientInfo *client, uint8_t *data, int len, uint8_t
 		client->identity = IDENTITY_ROOT;
 		main_mngr.mngr_handle = client->protoHandle;
 		main_mngr.user_handle = client->protoHandle;
+		/* set attend table */
+		for(int i=0; strlen(course_str[i])>0; i++)
+			count ++;
+		proto_0x30_setAttendTable(main_mngr.mngr_handle, count, (char *)course_str);
+		/* set attend time */
+		proto_0x31_setAttendTime(main_mngr.mngr_handle, main_mngr.course, main_mngr.atdin_secday, main_mngr.atdout_secday);
 		/* get user list from server(backbround app) */
 		proto_0x07_getUserList(client->protoHandle);
 #elif MANAGER_CLIENT_ENABLE
 		client->identity = IDENTITY_MANAGER;
 		main_mngr.mngr_handle = client->protoHandle;
+		/* set attend time */
+		proto_0x31_setAttendTime(main_mngr.mngr_handle, main_mngr.course, main_mngr.atdin_secday, main_mngr.atdout_secday);
 		/* get user list from server(backbround app) */
 		proto_0x07_getUserList(client->protoHandle);
 #else
@@ -268,7 +278,7 @@ int client_0x12_faceRecogn(struct clientInfo *client, uint8_t *data, int len, ui
 	return 0;
 }
 
-int client_0x14_getAttendList(struct clientInfo *client, uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
+int client_0x32_getAttendList(struct clientInfo *client, uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
 {
 	char user_name[USER_NAME_LEN] = {0};
 	int user_id;
@@ -304,7 +314,7 @@ int client_0x14_getAttendList(struct clientInfo *client, uint8_t *data, int len,
 		tmplen += 4;
 		memcpy(&sta_atdout, data +tmplen, 4);
 		tmplen += 4;
-		//printf("id: %d, name: %s, time: %ld, status: %d\n", user_id, user_name, time, status);
+		//printf("%s: id: %d, name: %s, \n", __FUNCTION__, user_id, user_name);
 		mainwin_set_attendList(user_id, user_name, time_atdin, sta_atdin, time_atdout, sta_atdout);
 	}
 
@@ -502,10 +512,6 @@ int client_protoAnaly(struct clientInfo *client, uint8_t *pack, uint32_t pack_le
 			ret = client_0x12_faceRecogn(client, data, data_len, ack_buf, PROTO_PACK_MAX_LEN, &ack_len);
 			break;
 
-		case 0x14:
-			ret = client_0x14_getAttendList(client, data, data_len, ack_buf, PROTO_PACK_MAX_LEN, &ack_len);
-			break;
-
 		case 0x20:
 			ret = client_0x20_switchCapture(client, data, data_len, ack_buf, PROTO_PACK_MAX_LEN, &ack_len);
 			break;
@@ -515,6 +521,10 @@ int client_protoAnaly(struct clientInfo *client, uint8_t *pack, uint32_t pack_le
 			ret = client_0x21_sendCaptureFrame(client, data, data_len, ack_buf, PROTO_PACK_MAX_LEN, &ack_len);
 			break;
 #endif
+
+		case 0x32:
+			ret = client_0x32_getAttendList(client, data, data_len, ack_buf, PROTO_PACK_MAX_LEN, &ack_len);
+			break;
 
 		default:
 			printf("ERROR: protocol cmd[0x%02x] not exist!\n", cmd);

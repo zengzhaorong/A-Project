@@ -19,9 +19,10 @@ extern "C" {
 #endif
 
 
+char course_str[][COURSE_NAME_LEN] = {{TEST_COURSE_CHN}, {TEST_COURSE_MATH}, {TEST_COURSE_ENG}, {0}};
+
 static MainWindow *mainwindow;
 extern struct main_mngr_info main_mngr;
-
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 {
@@ -71,6 +72,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 #ifdef MANAGER_CLIENT_ENABLE
 	image.load(EXTRAINFO_MNGR_IMG);
 	widget_height = 130;
+	(void)funcArea_height;
 #else
 	image.load(EXTRAINFO_USER_IMG);
 	widget_height = funcArea_height - y_pix;
@@ -82,6 +84,23 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 	y_pix += widget_height;
 
 #ifdef MANAGER_CLIENT_ENABLE
+	/* course name list box*/
+	y_pix += Y_INTERV_PIXEL_EX;
+	LabelCourse = new QLabel(mainWindow);
+	LabelCourse->setGeometry(FUNC_AREA_PIXEL_X +20, y_pix, 50, WIDGET_HEIGHT_PIXEL);
+	LabelCourse->setText(codec->toUnicode(TEXT_COURSE":"));
+	LabelCourse->show();
+	courseListBox = new QComboBox(mainWindow);
+	courseListBox->setGeometry(FUNC_AREA_PIXEL_X +60, y_pix, 90, WIDGET_HEIGHT_PIXEL);
+	courseListBox->setEditable(true);
+	y_pix += WIDGET_HEIGHT_PIXEL;
+
+	/* set course */
+	for(int i=0; strlen(course_str[i])>0; i++)
+	{
+		courseListBox->addItem(course_str[i]);
+	}
+
 	/* attend in time edit */
 	y_pix += Y_INTERV_PIXEL_IN;
 	LabelAtdIn = new QLabel(mainWindow);
@@ -94,10 +113,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 	TimeEditAtdIn->show();
 	y_pix += WIDGET_HEIGHT_PIXEL;
 
-	/* set datetime */
-	//QDateTime datetime = QDateTime::fromString(QString("01:02:03"),"HH:mm:ss");
-	//TimeEditAtdIn->setDateTime(datetime);
-
 	/* attend out time edit */
 	y_pix += Y_INTERV_PIXEL_IN;
 	LabelAtdOut = new QLabel(mainWindow);
@@ -109,6 +124,11 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 	TimeEditAtdOut->setGeometry(FUNC_AREA_PIXEL_X +60, y_pix, 90, WIDGET_HEIGHT_PIXEL);
 	TimeEditAtdOut->show();
 	y_pix += WIDGET_HEIGHT_PIXEL;
+
+	/* set default datetime */
+	TimeEditAtdIn->setDateTime(QDateTime::fromString("2021-01-01 09:00:00", "yyyy-MM-dd hh:mm:ss"));
+	TimeEditAtdOut->setDateTime(QDateTime::fromString("2021-01-01 10:00:00", "yyyy-MM-dd hh:mm:ss"));
+	setAttendTime();
 
 	/* attend time set button */
 	y_pix += Y_INTERV_PIXEL_IN;
@@ -300,14 +320,24 @@ void MainWindow::drawFaceRectangle(QImage &img)
 
 void MainWindow::setAttendTime(void)
 {
-
+	QString qCourse = courseListBox->currentText();
 	QDateTime timeAtdIn = TimeEditAtdIn->dateTime();
 	QDateTime timeAtdOut = TimeEditAtdOut->dateTime();
+	char course[COURSE_NAME_LEN] = {0};
+	QByteArray ba;
 
+	ba = qCourse.toLatin1();
+	strncpy(course, ba.data(), strlen(ba.data()));
+
+	memcpy(main_mngr.course, course, COURSE_NAME_LEN);
 	main_mngr.atdin_secday = time_t_to_sec_day(timeAtdIn.toTime_t());
 	main_mngr.atdout_secday = time_t_to_sec_day(timeAtdOut.toTime_t());
+
+	printf("%d\n",timeAtdIn.toTime_t());
+	printf("%d\n",timeAtdOut.toTime_t());
+	printf("course: %s, in: %d, out: %d\n", main_mngr.course, main_mngr.atdin_secday, main_mngr.atdout_secday);
 	
-	proto_0x13_setAttendTime(main_mngr.mngr_handle, main_mngr.atdin_secday, main_mngr.atdout_secday);
+	proto_0x31_setAttendTime(main_mngr.mngr_handle, main_mngr.course, main_mngr.atdin_secday, main_mngr.atdout_secday);
 }
 
 void MainWindow::addUser(void)
@@ -387,10 +417,16 @@ void MainWindow::deleteUser(void)
 
 void MainWindow::showTimeSheet(void)
 {
+	QString qCourse = courseListBox->currentText();
+	char course[COURSE_NAME_LEN] = {0};
+	QByteArray ba;
 	static bool showflag = 0;
 
+	ba = qCourse.toLatin1();
+	strncpy(course, ba.data(), strlen(ba.data()));
+
 	/* get attend list */
-	proto_0x14_getAttendList(main_mngr.mngr_handle);
+	proto_0x32_getAttendList(main_mngr.mngr_handle, course);
 	mainwin_clear_attendList();
 
 	showflag = !showflag;
@@ -429,9 +465,9 @@ void MainWindow::saveTimeSheet(void)
     printf("%s:  out time: %02d:%02d:%02d\n", __FUNCTION__,tm_day.hour, tm_day.min, tm_day.sec);
     sprintf(outtime_str, "%02d%02d%02d", tm_day.hour, tm_day.min, tm_day.sec);
 
-    sprintf(filename, "%s_%s_timesheet.csv", intime_str, outtime_str);
+    sprintf(filename, "%s_%s_%s_timesheet.csv", main_mngr.course, intime_str, outtime_str);
 	
-	proto_0x15_AttendSheetCtrl(main_mngr.mngr_handle, 1, filename);	// save
+	proto_0x33_AttendSheetCtrl(main_mngr.mngr_handle, 1, filename);	// save
 
 	filestr = QString(filename);
 	QMessageBox::information(NULL, "Save", "timesheet has saved as "+filestr, QMessageBox::Yes, QMessageBox::Yes);
@@ -448,7 +484,7 @@ void MainWindow::resetTimeSheet(void)
 		return ;
 	}
 
-	proto_0x15_AttendSheetCtrl(main_mngr.mngr_handle, 0, NULL);	// reset
+	proto_0x33_AttendSheetCtrl(main_mngr.mngr_handle, 0, NULL);	// reset
 	//mainwin_clear_attendList();
 	for(i=0; i<userModel->rowCount(); i++)
 	{

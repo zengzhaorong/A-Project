@@ -60,26 +60,54 @@ int remove_dir(const char *dir)
     return 0;
 }
 
-int user_delete(int userCnt, char *username)
+int user_add(struct userdb_user *user)
 {
 	struct userMngr_Stru *user_mngr = &user_mngr_unit;
-	struct userdb_user userInfo;
-	char dir_name[64];
-	int i, ret;
+	char tbl_name[TABLE_NAME_LEN] = {0};
+	int cursor = 0;
+	int ret = 0;
 
-	for(i=0; i<userCnt; i++)
+	for(; ret==0; )
 	{
-		ret = userdb_read_byName(user_mngr->userdb, username+i*USER_NAME_LEN, &userInfo);
-		if(ret != 0)
+		ret = userdb_traverse_tbl(user_mngr->userdb, &cursor, tbl_name);
+		if(ret == 0)
 		{
-			continue;
+			userdb_write(user_mngr->userdb, tbl_name, user);
 		}
-		ret = userdb_delete_byName(user_mngr->userdb, username+i*USER_NAME_LEN);
-
-		memset(dir_name, 0, sizeof(dir_name));
-		sprintf(dir_name, "%s/%d_%s", FACES_DATABASE_PATH, userInfo.id, userInfo.name);
-		remove_dir(dir_name);
 	}
+    printf("%s: id=%d, name: %s\n", __FUNCTION__, user->id, user->name);
+
+	return 0;
+}
+
+int user_delete(char *username)
+{
+	struct userMngr_Stru *user_mngr = &user_mngr_unit;
+	struct userdb_user user;
+	char tbl_name[TABLE_NAME_LEN] = {0};
+	char dir_name[64];
+	int cursor = 0;
+	int ret;
+
+	ret = 0;
+	for(; ret==0; )
+	{
+		ret = userdb_traverse_tbl(user_mngr->userdb, &cursor, tbl_name);
+		if(ret == 0)
+		{
+			ret = userdb_read_byName(user_mngr->userdb, tbl_name, username, &user);
+			if(ret != 0)
+			{
+				continue;
+			}
+			ret = userdb_delete_byName(user_mngr->userdb, tbl_name, username);
+
+			memset(dir_name, 0, sizeof(dir_name));
+			sprintf(dir_name, "%s/%d_%s", FACES_DATABASE_PATH, user.id, user.name);
+			remove_dir(dir_name);
+		}
+	}
+    printf("%s: name: %s\n", __FUNCTION__, username);
 
 	return 0;
 }
@@ -96,7 +124,7 @@ int user_get_faceimg_label(vector<Mat>& images, vector<int>& labels)
     total = userdb_get_total(usr_mngr->userdb);
     for(i=0; i<total +1; i++)
 	{
-        ret = userdb_traverse_user(usr_mngr->userdb, &cursor, &user);
+        ret = userdb_traverse_user(usr_mngr->userdb, NULL, &cursor, &user);
         if(ret != 0)
             break;
 		
@@ -176,13 +204,15 @@ int user_mngr_init(void)
     int total, cursor = 0;
     int i, ret;
 
+	memset(user_mngr, 0, sizeof(struct userMngr_Stru));
+
 	userdb_init(&user_mngr->userdb);
 
 	/* list all user */
     total = userdb_get_total(user_mngr->userdb);
     for(i=0; i<total +1; i++)
     {
-        ret = userdb_traverse_user(user_mngr->userdb, &cursor, &user);
+        ret = userdb_traverse_user(user_mngr->userdb, NULL, &cursor, &user);
         if(ret != 0)
             break;
 

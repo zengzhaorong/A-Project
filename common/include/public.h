@@ -11,6 +11,7 @@
 #define PATH_CONFIG_INI	"./config.ini"
 
 #define USER_NAME_LEN		32
+#define COURSE_NAME_LEN		32
 #define DIR_PATH_LEN		64
 
 /* user client login name */
@@ -23,12 +24,17 @@
 #define TEXT_USER_ID			"±àºÅ"
 #define TEXT_USER_NAME			"ÐÕÃû"
 #define TEXT_STATUS				"×´Ì¬"
+#define TEXT_COURSE				"¿Î³Ì"
 #define TEXT_ATTEND_IN			"Ç©µ½"
 #define TEXT_ATTEND_OUT			"Ç©ÍË"
 #define TEXT_ATTEND_OK			"Õý³£"
 #define TEXT_ATTEND_IN_LATE		"³Ùµ½"
 #define TEXT_ATTEND_OUT_EARLY	"ÔçÍË"
 #define TEXT_ATTEND_NULL		"È±ÇÚ"
+
+#define TEST_COURSE_CHN			"Chinese"
+#define TEST_COURSE_MATH		"Math"
+#define TEST_COURSE_ENG			"English"
 
 #define FRAME_BUF_SIZE		(CONFIG_CAPTURE_WIDTH(main_mngr.config_ini) *CONFIG_CAPTURE_HEIGH(main_mngr.config_ini) *3)
 
@@ -68,6 +74,7 @@ struct main_mngr_info
 	workstate_e work_state;
 	int user_handle;	// user client socket handle index
 	int mngr_handle;	// manager client socket handle index
+	char course[COURSE_NAME_LEN];	// course
 	uint32_t atdin_secday;	// attend in time: sec in day
 	uint32_t atdout_secday;	// attend out time: sec in day
 	int capture_flag;	// 0-local, 1-remote

@@ -284,85 +284,6 @@ int proto_0x12_sendFaceRecogn(int handle, int face_id, uint8_t confid, char *fac
 	return 0;
 }
 
-/* time: time(NULL) return value */
-int proto_0x13_setAttendTime(int handle, uint32_t atd_in_time, uint32_t atd_out_time)
-{
-	uint8_t *protoBuf = NULL;
-	int data_len = 0;
-	int buf_size = 0;
-	int packLen = 0;
-
-	if(handle < 0 || handle >=MAX_PROTO_OBJ)
-		return -1;
-	if(protoObject[handle].send_func == NULL)
-		return -1;
-
-	/* attend in time */
-	memcpy(tmp_protoBuf +data_len, &atd_in_time, 4);
-	data_len += 4;
-	
-	/* attend out time */
-	memcpy(tmp_protoBuf +data_len, &atd_out_time, 4);
-	data_len += 4;
-	
-	protoBuf = protoObject[handle].send_buf;
-	buf_size = protoObject[handle].buf_size;
-	proto_makeupPacket(0, 0x13, data_len, tmp_protoBuf, protoBuf, buf_size, &packLen);
-
-	protoObject[handle].send_func(protoObject[handle].arg, protoBuf, packLen);
-	
-	return 0;
-}
-
-int proto_0x14_getAttendList(int handle)
-{
-	uint8_t *protoBuf = NULL;
-	int buf_size = 0;
-	int packLen = 0;
-
-	if(handle < 0 || handle >=MAX_PROTO_OBJ)
-		return -1;
-
-	protoBuf = protoObject[handle].send_buf;
-	buf_size = protoObject[handle].buf_size;
-	proto_makeupPacket(0, 0x14, 0, NULL, protoBuf, buf_size, &packLen);
-
-	protoObject[handle].send_func(protoObject[handle].arg, protoBuf, packLen);
-
-	return 0;
-}
-
-int proto_0x15_AttendSheetCtrl(int handle, uint32_t cmd, void *arg)
-{
-	uint8_t *protoBuf = NULL;
-	int data_len = 0;
-	int buf_size = 0;
-	int packLen = 0;
-
-	if(handle < 0 || handle >=MAX_PROTO_OBJ)
-		return -1;
-	if(protoObject[handle].send_func == NULL)
-		return -1;
-
-	/* control cmd */
-	memcpy(tmp_protoBuf +data_len, &cmd, 4);
-	data_len += 4;
-	
-	if(arg != NULL)
-	{
-		memcpy(tmp_protoBuf +data_len, arg, 64);
-		data_len += 64;
-	}
-
-	protoBuf = protoObject[handle].send_buf;
-	buf_size = protoObject[handle].buf_size;
-	proto_makeupPacket(0, 0x15, data_len, tmp_protoBuf, protoBuf, buf_size, &packLen);
-
-	protoObject[handle].send_func(protoObject[handle].arg, protoBuf, packLen);
-	
-	return 0;
-}
-
 int proto_0x20_switchCapture(int handle, int flag)
 {
 	uint8_t *protoBuf = NULL;
@@ -415,6 +336,126 @@ int proto_0x21_sendCaptureFrame(int handle, int format, void *frame, int len)
 	protoBuf = protoObject[handle].send_buf;
 	buf_size = protoObject[handle].buf_size;
 	proto_makeupPacket(0, 0x21, data_len, tmp_protoBuf, protoBuf, buf_size, &packLen);
+
+	protoObject[handle].send_func(protoObject[handle].arg, protoBuf, packLen);
+	
+	return 0;
+}
+
+
+int proto_0x30_setAttendTable(int handle, int count, char *tbl_list)
+{
+	uint8_t *protoBuf = NULL;
+	int data_len = 0;
+	int buf_size = 0;
+	int packLen = 0;
+
+	if(handle < 0 || handle >=MAX_PROTO_OBJ)
+		return -1;
+	if(protoObject[handle].send_func == NULL)
+		return -1;
+
+	/* count */
+	memcpy(tmp_protoBuf +data_len, &count, 4);
+	data_len += 4;
+
+	for(int i=0; i<count; i++)
+	{
+		memcpy(tmp_protoBuf +data_len, tbl_list +i*32, 32);
+		data_len += 32;
+	}
+	
+	protoBuf = protoObject[handle].send_buf;
+	buf_size = protoObject[handle].buf_size;
+	proto_makeupPacket(0, 0x30, data_len, tmp_protoBuf, protoBuf, buf_size, &packLen);
+
+	protoObject[handle].send_func(protoObject[handle].arg, protoBuf, packLen);
+	
+	return 0;
+}
+
+/* time: time(NULL) return value */
+int proto_0x31_setAttendTime(int handle, char *course, uint32_t atd_in_time, uint32_t atd_out_time)
+{
+	uint8_t *protoBuf = NULL;
+	int data_len = 0;
+	int buf_size = 0;
+	int packLen = 0;
+
+	if(handle < 0 || handle >=MAX_PROTO_OBJ)
+		return -1;
+	if(protoObject[handle].send_func == NULL)
+		return -1;
+
+	/* course */
+	memcpy(tmp_protoBuf +data_len, course, 32);
+	data_len += 32;
+
+	/* attend in time */
+	memcpy(tmp_protoBuf +data_len, &atd_in_time, 4);
+	data_len += 4;
+	
+	/* attend out time */
+	memcpy(tmp_protoBuf +data_len, &atd_out_time, 4);
+	data_len += 4;
+	
+	protoBuf = protoObject[handle].send_buf;
+	buf_size = protoObject[handle].buf_size;
+	proto_makeupPacket(0, 0x31, data_len, tmp_protoBuf, protoBuf, buf_size, &packLen);
+
+	protoObject[handle].send_func(protoObject[handle].arg, protoBuf, packLen);
+	
+	return 0;
+}
+
+int proto_0x32_getAttendList(int handle, char *course)
+{
+	uint8_t *protoBuf = NULL;
+	int data_len = 0;
+	int buf_size = 0;
+	int packLen = 0;
+
+	if(handle < 0 || handle >=MAX_PROTO_OBJ)
+		return -1;
+
+	/* course */
+	memcpy(tmp_protoBuf +data_len, course, 32);
+	data_len += 32;
+
+	protoBuf = protoObject[handle].send_buf;
+	buf_size = protoObject[handle].buf_size;
+	proto_makeupPacket(0, 0x32, data_len, tmp_protoBuf, protoBuf, buf_size, &packLen);
+
+	protoObject[handle].send_func(protoObject[handle].arg, protoBuf, packLen);
+
+	return 0;
+}
+
+int proto_0x33_AttendSheetCtrl(int handle, uint32_t cmd, void *arg)
+{
+	uint8_t *protoBuf = NULL;
+	int data_len = 0;
+	int buf_size = 0;
+	int packLen = 0;
+
+	if(handle < 0 || handle >=MAX_PROTO_OBJ)
+		return -1;
+	if(protoObject[handle].send_func == NULL)
+		return -1;
+
+	/* control cmd */
+	memcpy(tmp_protoBuf +data_len, &cmd, 4);
+	data_len += 4;
+	
+	if(arg != NULL)
+	{
+		memcpy(tmp_protoBuf +data_len, arg, 64);
+		data_len += 64;
+	}
+
+	protoBuf = protoObject[handle].send_buf;
+	buf_size = protoObject[handle].buf_size;
+	proto_makeupPacket(0, 0x33, data_len, tmp_protoBuf, protoBuf, buf_size, &packLen);
 
 	protoObject[handle].send_func(protoObject[handle].arg, protoBuf, packLen);
 	
