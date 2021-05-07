@@ -35,6 +35,7 @@ extern "C" {
 
 #define TIMER_INTERV_MS			1
 #define TIMER_ADDUSER_OK_MS		(3*1000)
+#define FACE_RECT_LASTING_MS	30	// face rectangle lasting time(ms)
 
 #define WIN_BACKGRD_IMG			"resource/background.jpg"		// ΩÁ√Ê±≥æ∞Õº
 #define EXTRAINFO_MNGR_IMG		"resource/extraInfo_mngr.png"

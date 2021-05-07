@@ -303,13 +303,14 @@ void MainWindow::drawFaceRectangle(QImage &img)
 	{
 		old_rect = face_rects;
 		face_rects.setWidth(0);
+		old_rect_cnt = 0;
 	}
 	if(old_rect.width() > 0)
 	{
 		painter.setPen(QPen(Qt::green, 3, Qt::SolidLine, Qt::RoundCap));
 		painter.drawRect(old_rect.x(), old_rect.y(), old_rect.width(), old_rect.height());
 		old_rect_cnt ++;
-		if(old_rect_cnt *TIMER_INTERV_MS > 10)
+		if(old_rect_cnt *TIMER_INTERV_MS > FACE_RECT_LASTING_MS)
 		{
 			old_rect.setWidth(0);
 			old_rect_cnt = 0;

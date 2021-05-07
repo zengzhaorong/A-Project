@@ -102,8 +102,9 @@ int user_delete(char *username)
 			}
 			ret = userdb_delete_byName(user_mngr->userdb, tbl_name, username);
 
+			/* remove face images */
 			memset(dir_name, 0, sizeof(dir_name));
-			sprintf(dir_name, "%s/%d_%s", FACES_DATABASE_PATH, user.id, user.name);
+			sprintf(dir_name, "%s/%d_%s", FACES_IMAGES_PATH, user.id, user.name);
 			remove_dir(dir_name);
 		}
 	}

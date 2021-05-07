@@ -105,7 +105,7 @@ int client_0x03_heartbeat(struct clientInfo *client, uint8_t *data, int len, uin
 	hour_diff = 8 -hour_diff;
 
 	/* synchronize system time */
-	if(abs(time(NULL) -hour_diff*3600 - svrTime) >= +3)
+	if(abs(int(time(NULL) -hour_diff*3600 - svrTime)) >= +3)
 	{
 		svrTime += hour_diff*3600;
 		tv.tv_sec = svrTime;

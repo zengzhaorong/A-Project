@@ -116,7 +116,7 @@ int server_0x04_switchWorkSta(struct clientInfo *client, uint8_t *data, int len,
 
 	/* create user dir */
 	memset(user_mngr_unit.add_userdir, 0, sizeof(user_mngr_unit.add_userdir));
-	user_create_dir((char *)FACES_DATABASE_PATH, user_mngr_unit.newid, user_mngr_unit.newname, user_mngr_unit.add_userdir);
+	user_create_dir((char *)FACES_IMAGES_PATH, user_mngr_unit.newid, user_mngr_unit.newname, user_mngr_unit.add_userdir);
 	user_mngr_unit.add_index = 0;
 
 	main_mngr.work_state = (workstate_e)state;
