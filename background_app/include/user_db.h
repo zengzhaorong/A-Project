@@ -17,7 +17,15 @@
 #define TABLE_NAME_PRE      "TBL_"
 #define TABLE_NAME_LEN      64
 
-struct userdb_user
+
+struct db_userinfo
+{
+    int id;
+    char name[USER_NAME_LEN];
+    char facepath[DIR_PATH_LEN];    // face path
+};
+
+struct db_attend
 {
     int id;
     char name[USER_NAME_LEN];
@@ -25,20 +33,30 @@ struct userdb_user
     int out_time;      // attend out time
     int in_sta;     // attend in status
     int out_sta;    // attend in status
-    char facepath[DIR_PATH_LEN];    // face path
 };
 
-int userdb_write(sqlite3 *db, char *tbl_name, struct userdb_user *user);
-int userdb_update(sqlite3 *db, char *tbl_name, struct userdb_user *user);
-int userdb_read_byId(sqlite3 *db, char *tbl_name, int id, struct userdb_user *user);
-int userdb_read_byName(sqlite3 *db, char *tbl_name, char *name, struct userdb_user *userInfo);
-int userdb_delete_byId(sqlite3 *db, char *tbl_name, int id);
-int userdb_delete_byName(sqlite3 *db, char *tbl_name, char *name);
-int userdb_get_total(sqlite3 *db);
-int userdb_traverse_user(sqlite3 *db, char *tbl_name, int *cursor, struct userdb_user *userInfo);
-int userdb_check_user_exist(sqlite3 *db, char *tbl_name, int id);
-int userdb_traverse_tbl(sqlite3 *db, int *cursor, char *tbl_name);
-int userdb_creat_tbl(sqlite3 *db, char *tbl_name);
+
+int db_user_write(sqlite3 *db, struct db_userinfo *user);
+int db_user_update(sqlite3 *db, struct db_userinfo *user);
+int db_user_read_byId(sqlite3 *db, int id, struct db_userinfo *user);
+int db_user_read_byName(sqlite3 *db, char *name, struct db_userinfo *user);
+int db_user_delete_byId(sqlite3 *db, int id);
+int db_user_delete_byName(sqlite3 *db, char *name);
+int db_user_get_total(sqlite3 *db);
+int db_user_traverse_user(sqlite3 *db, int *cursor, struct db_userinfo *user);
+int db_user_check_exist(sqlite3 *db, int id);
+int db_user_creat_tbl(sqlite3 *db, char *tbl_name);
+
+int db_attend_write(sqlite3 *db, char *tbl_name, struct db_attend *attend);
+int db_attend_update(sqlite3 *db, char *tbl_name, struct db_attend *attend);
+int db_attend_read_byId(sqlite3 *db, char *tbl_name, int id, struct db_attend *attend);
+int db_attend_read_byName(sqlite3 *db, char *tbl_name, char *name, struct db_attend *attend);
+int db_attend_delete_byId(sqlite3 *db, char *tbl_name, int id);
+int db_attend_delete_byName(sqlite3 *db, char *tbl_name, char *name);
+int db_attend_traverse_user(sqlite3 *db, char *tbl_name, int *cursor, struct db_attend *attend);
+int db_attend_check_user_exist(sqlite3 *db, char *tbl_name, int id);
+int db_attend_traverse_tbl(sqlite3 *db, int *cursor, char *tbl_name);
+int db_attend_creat_tbl(sqlite3 *db, char *tbl_name);
 
 int userdb_init(sqlite3 **ppdb);
 

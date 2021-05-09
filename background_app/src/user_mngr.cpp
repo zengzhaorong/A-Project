@@ -60,22 +60,31 @@ int remove_dir(const char *dir)
     return 0;
 }
 
-int user_add(struct userdb_user *user)
+int user_add(struct db_userinfo *user)
 {
 	struct userMngr_Stru *user_mngr = &user_mngr_unit;
+	struct db_attend attend;
 	char tbl_name[TABLE_NAME_LEN] = {0};
 	int cursor = 0;
 	int ret = 0;
 
+	/* write user info to user table */
+	db_user_write(user_mngr->userdb, user);
+	
+	/* create and set user attend info null */
+	memset(&attend, 0, sizeof(struct db_attend));
+	attend.id = user->id;
+	memcpy(attend.name, user->name, USER_NAME_LEN);
+
 	for(; ret==0; )
 	{
-		ret = userdb_traverse_tbl(user_mngr->userdb, &cursor, tbl_name);
-		if(ret == 0)
+		ret = db_attend_traverse_tbl(user_mngr->userdb, &cursor, tbl_name);
+		if(ret==0 && strncmp(tbl_name, USERDB_TABLE, strlen(USERDB_TABLE)))
 		{
-			userdb_write(user_mngr->userdb, tbl_name, user);
+			db_attend_write(user_mngr->userdb, tbl_name, &attend);
 		}
 	}
-    printf("%s: id=%d, name: %s\n", __FUNCTION__, user->id, user->name);
+    printf("%s: id=%d, name: %s, face: %s\n", __FUNCTION__, user->id, user->name, user->facepath);
 
 	return 0;
 }
@@ -83,7 +92,7 @@ int user_add(struct userdb_user *user)
 int user_delete(char *username)
 {
 	struct userMngr_Stru *user_mngr = &user_mngr_unit;
-	struct userdb_user user;
+	struct db_attend attend;
 	char tbl_name[TABLE_NAME_LEN] = {0};
 	char dir_name[64];
 	int cursor = 0;
@@ -92,22 +101,24 @@ int user_delete(char *username)
 	ret = 0;
 	for(; ret==0; )
 	{
-		ret = userdb_traverse_tbl(user_mngr->userdb, &cursor, tbl_name);
-		if(ret == 0)
+		ret = db_attend_traverse_tbl(user_mngr->userdb, &cursor, tbl_name);
+		if(ret==0 && strncmp(tbl_name, USERDB_TABLE, strlen(USERDB_TABLE)))
 		{
-			ret = userdb_read_byName(user_mngr->userdb, tbl_name, username, &user);
+			ret = db_attend_read_byName(user_mngr->userdb, tbl_name, username, &attend);
 			if(ret != 0)
 			{
 				continue;
 			}
-			ret = userdb_delete_byName(user_mngr->userdb, tbl_name, username);
+			ret = db_attend_delete_byName(user_mngr->userdb, tbl_name, username);
 
 			/* remove face images */
 			memset(dir_name, 0, sizeof(dir_name));
-			sprintf(dir_name, "%s/%d_%s", FACES_IMAGES_PATH, user.id, user.name);
+			sprintf(dir_name, "%s/%d_%s", FACES_IMAGES_PATH, attend.id, attend.name);
 			remove_dir(dir_name);
 		}
 	}
+
+	db_user_delete_byName(user_mngr->userdb, username);
     printf("%s: name: %s\n", __FUNCTION__, username);
 
 	return 0;
@@ -117,15 +128,15 @@ int user_delete(char *username)
 int user_get_faceimg_label(vector<Mat>& images, vector<int>& labels) 
 {
     struct userMngr_Stru *usr_mngr = &user_mngr_unit;
-    struct userdb_user user;
+    struct db_userinfo user;
 	string img_path;
-    int total, cursor = 0;
-    int i, j, ret;
+    int cursor = 0;
+    int j, ret;
 
-    total = userdb_get_total(usr_mngr->userdb);
-    for(i=0; i<total +1; i++)
+	ret = 0;
+    for(; ret == 0; )
 	{
-        ret = userdb_traverse_user(usr_mngr->userdb, NULL, &cursor, &user);
+        ret = db_user_traverse_user(usr_mngr->userdb, &cursor, &user);
         if(ret != 0)
             break;
 		
@@ -201,8 +212,8 @@ int user_create_dir(char *base_dir, int id, char *usr_name, char *usr_dir)
 int user_mngr_init(void)
 {
 	struct userMngr_Stru *user_mngr = &user_mngr_unit;
-    struct userdb_user user;
-    int total, cursor = 0;
+    struct db_userinfo user;
+    int cursor = 0;
     int i, ret;
 
 	memset(user_mngr, 0, sizeof(struct userMngr_Stru));
@@ -210,14 +221,15 @@ int user_mngr_init(void)
 	userdb_init(&user_mngr->userdb);
 
 	/* list all user */
-    total = userdb_get_total(user_mngr->userdb);
-    for(i=0; i<total +1; i++)
+	ret = 0;
+	i = 0;
+    for(; ret == 0; )
     {
-        ret = userdb_traverse_user(user_mngr->userdb, NULL, &cursor, &user);
+        ret = db_user_traverse_user(user_mngr->userdb, &cursor, &user);
         if(ret != 0)
             break;
 
-		printf("[%d] user[id: %d], name: %s\n", i+1, user.id, user.name);
+		printf("[%d] user[id: %d], name: %s\n", i++, user.id, user.name);
     }
 
 	return 0;

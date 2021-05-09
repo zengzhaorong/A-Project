@@ -154,7 +154,7 @@ int client_0x06_deleteUser(struct clientInfo *client, uint8_t *data, int len, ui
 
 int server_0x07_getUserList(struct clientInfo *client, uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
 {
-	struct userdb_user userInfo;
+	struct db_userinfo user;
 	int userCnt = 0;
 	int cursor = 0;
 	int tmplen = 0;
@@ -171,17 +171,17 @@ int server_0x07_getUserList(struct clientInfo *client, uint8_t *data, int len, u
 	tmplen += 4;
 	
 	/* user count */
-	userCnt = userdb_get_total(user_mngr_unit.userdb);
+	userCnt = db_user_get_total(user_mngr_unit.userdb);
 	memcpy(ack_data +tmplen, &userCnt, 4);
 	tmplen += 4;
 
 	/* user name */
 	for(i=0; i<userCnt +1; i++)
 	{
-		ret = userdb_traverse_user(user_mngr_unit.userdb, NULL, &cursor, &userInfo);
+		ret = db_user_traverse_user(user_mngr_unit.userdb, &cursor, &user);
 		if(ret == -1)
 			break;
-		memcpy(ack_data +tmplen, userInfo.name, 32);
+		memcpy(ack_data +tmplen, user.name, 32);
 		tmplen += 32;
 	}
 
@@ -297,7 +297,7 @@ int server_0x31_setAttendTime(struct clientInfo *client, uint8_t *data, int len,
 
 int server_0x32_getAttendList(struct clientInfo *client, uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
 {
-	struct userdb_user user;
+	struct db_attend attend;
 	char table[TABLE_NAME_LEN] = TABLE_NAME_PRE;
 	int userCnt = 0;
 	int cursor = 0;
@@ -324,21 +324,21 @@ int server_0x32_getAttendList(struct clientInfo *client, uint8_t *data, int len,
 	userCnt = 0;
 	for(; ret==0; )
 	{
-		ret = userdb_traverse_user(user_mngr_unit.userdb, table, &cursor, &user);
+		ret = db_attend_traverse_user(user_mngr_unit.userdb, table, &cursor, &attend);
 		if(ret == -1)
 			break;
 
-		memcpy(ack_data +tmplen, &user.id, 4);
+		memcpy(ack_data +tmplen, &attend.id, 4);
 		tmplen += 4;
-		memcpy(ack_data +tmplen, user.name, USER_NAME_LEN);
+		memcpy(ack_data +tmplen, attend.name, USER_NAME_LEN);
 		tmplen += USER_NAME_LEN;
-		memcpy(ack_data +tmplen, &user.in_time, 4);
+		memcpy(ack_data +tmplen, &attend.in_time, 4);
 		tmplen += 4;
-		memcpy(ack_data +tmplen, &user.in_sta, 4);
+		memcpy(ack_data +tmplen, &attend.in_sta, 4);
 		tmplen += 4;
-		memcpy(ack_data +tmplen, &user.out_time, 4);
+		memcpy(ack_data +tmplen, &attend.out_time, 4);
 		tmplen += 4;
-		memcpy(ack_data +tmplen, &user.out_sta, 4);
+		memcpy(ack_data +tmplen, &attend.out_sta, 4);
 		tmplen += 4;
 
 		userCnt ++;

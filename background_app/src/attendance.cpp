@@ -21,7 +21,7 @@ extern struct userMngr_Stru	user_mngr_unit;
 attend_sta_e attendance_set_one(int id, uint32_t time)
 {
     struct userMngr_Stru *user_mngr = &user_mngr_unit;
-    struct userdb_user user;
+    struct db_attend attend;
     uint32_t adt_sec_day;
     uint32_t mid_time;
     attend_sta_e status = ATTEND_STA_IN_OK;
@@ -30,7 +30,7 @@ attend_sta_e attendance_set_one(int id, uint32_t time)
     adt_sec_day = time_t_to_sec_day(time);
     mid_time = (main_mngr.atdin_secday +main_mngr.atdout_secday)/2;
 
-    ret = userdb_read_byId(user_mngr->userdb, user_mngr->curr_tbl, id, &user);
+    ret = db_attend_read_byId(user_mngr->userdb, user_mngr->curr_tbl, id, &attend);
     if(ret != 0)
     {
         printf("ERROR: %s: not find user!\n", __FUNCTION__);
@@ -43,17 +43,17 @@ attend_sta_e attendance_set_one(int id, uint32_t time)
         if(adt_sec_day <= main_mngr.atdin_secday)
         {
             status = ATTEND_STA_IN_OK;
-            printf("user id [%d]: attend in ok.\n", id);
+            printf("user [id=%d]: attend in ok.\n", id);
         }
         else
         {
             status = ATTEND_STA_IN_LATE;
-            printf("user id [%d]: attend in late.\n", id);
+            printf("user [id=%d]: attend in late.\n", id);
         }
-        if(user.in_sta == ATTEND_STA_NONE)
+        if(attend.in_sta == ATTEND_STA_NONE)
         {
-            user.in_time = time;
-            user.in_sta = status;
+            attend.in_time = time;
+            attend.in_sta = status;
         }
     }
     /* attend out: use the last time */
@@ -62,17 +62,17 @@ attend_sta_e attendance_set_one(int id, uint32_t time)
         if(adt_sec_day < main_mngr.atdout_secday)
         {
             status = ATTEND_STA_OUT_EARLY;
-            printf("user id [%d]: attend out early.\n", id);
+            printf("user [id=%d]: attend out early.\n", id);
         }
         else
         {
             status = ATTEND_STA_OUT_OK;
-            printf("user id [%d]: attend out ok.\n", id);
+            printf("user [id=%d]: attend out ok.\n", id);
         }
-        user.out_time = time;
-        user.out_sta = status;
+        attend.out_time = time;
+        attend.out_sta = status;
     }
-    userdb_write(user_mngr->userdb, user_mngr->curr_tbl, &user);
+    db_attend_write(user_mngr->userdb, user_mngr->curr_tbl, &attend);
 
     return status;
 }
@@ -80,24 +80,24 @@ attend_sta_e attendance_set_one(int id, uint32_t time)
 void attendance_reset_tbl(char *tbl_name)
 {
     struct userMngr_Stru *user_mngr = &user_mngr_unit;
-    struct userdb_user user;
+    struct db_attend attend;
     int total, cursor = 0;
     int i, ret;
     
-    total = userdb_get_total(user_mngr->userdb);
+    total = db_user_get_total(user_mngr->userdb);
 
     // reset all user attend info
     for(i=0; i<total +1; i++)
     {
-        ret = userdb_traverse_user(user_mngr->userdb, tbl_name, &cursor, &user);
+        ret = db_attend_traverse_user(user_mngr->userdb, tbl_name, &cursor, &attend);
         if(ret != 0)
             break;
 
-        user.in_time = 0;
-        user.out_time = 0;
-        user.in_sta = ATTEND_STA_NONE;
-        user.out_sta = ATTEND_STA_NONE;
-        userdb_write(user_mngr->userdb, user_mngr->curr_tbl, &user);
+        attend.in_time = 0;
+        attend.out_time = 0;
+        attend.in_sta = ATTEND_STA_NONE;
+        attend.out_sta = ATTEND_STA_NONE;
+        db_attend_write(user_mngr->userdb, user_mngr->curr_tbl, &attend);
     }
     
 }
@@ -106,10 +106,10 @@ void attendance_reset_tbl(char *tbl_name)
 int attendance_save_data_csv(char *filename)
 {
 	struct userMngr_Stru *user_mngr = &user_mngr_unit;
-    struct userdb_user user;
+    struct db_attend attend;
 	struct tm *ptm;
     string atdin_str, atdout_str;
-    int total, cursor = 0;
+    int cursor = 0;
 	ofstream csvFile;
 	char intime_str[16] = {0};
 	char outtime_str[16] = {0};
@@ -117,7 +117,7 @@ int attendance_save_data_csv(char *filename)
 	char outsta_str[16] = {0};
     time_t timein;
     time_t timeout;
-    int i, ret;
+    int ret;
 
 	csvFile.open(filename);
     if(csvFile.fail())
@@ -128,16 +128,16 @@ int attendance_save_data_csv(char *filename)
 
 	csvFile << TEXT_USER_ID << ',' << TEXT_USER_NAME << ',' << TEXT_ATTEND_IN << ',' << TEXT_ATTEND_OUT << ',' << TEXT_STATUS << endl;  
 	
-	/* list all user */
-    total = userdb_get_total(user_mngr->userdb);
-    for(i=0; i<total +1; i++)
+	/* list all attend table */
+    ret = 0;
+    for(; ret == 0; )
     {
-        ret = userdb_traverse_user(user_mngr->userdb, NULL, &cursor, &user);
+        ret = db_attend_traverse_user(user_mngr->userdb, user_mngr->curr_tbl, &cursor, &attend);
         if(ret != 0)
             break;
 
-        timein = user.in_time;
-        timeout = user.out_time;
+        timein = attend.in_time;
+        timeout = attend.out_time;
 		memset(intime_str, 0, sizeof(intime_str));
 		memset(outtime_str, 0, sizeof(outtime_str));
 		ptm = localtime((time_t *)&timein);
@@ -152,11 +152,11 @@ int attendance_save_data_csv(char *filename)
 		}
 
         memset(insta_str, 0, sizeof(insta_str));
-        if(user.in_sta == ATTEND_STA_IN_OK)
+        if(attend.in_sta == ATTEND_STA_IN_OK)
         {
             strcpy(insta_str, TEXT_ATTEND_OK);
         }
-        else if(user.in_sta == ATTEND_STA_IN_LATE)
+        else if(attend.in_sta == ATTEND_STA_IN_LATE)
         {
             strcpy(insta_str, TEXT_ATTEND_IN_LATE);
         }
@@ -166,11 +166,11 @@ int attendance_save_data_csv(char *filename)
         }
 
         memset(outsta_str, 0, sizeof(outsta_str));
-        if(user.out_sta == ATTEND_STA_OUT_OK)
+        if(attend.out_sta == ATTEND_STA_OUT_OK)
         {
             strcpy(outsta_str, TEXT_ATTEND_OK);
         }
-        else if(user.out_sta == ATTEND_STA_OUT_EARLY)
+        else if(attend.out_sta == ATTEND_STA_OUT_EARLY)
         {
             strcpy(outsta_str, TEXT_ATTEND_OUT_EARLY);
         }
@@ -179,7 +179,7 @@ int attendance_save_data_csv(char *filename)
             strcpy(outsta_str, TEXT_ATTEND_NULL);
         }
 
-		csvFile << user.id << ',' << user.name << ',' << intime_str << ',' << outtime_str \
+		csvFile << attend.id << ',' << attend.name << ',' << intime_str << ',' << outtime_str \
                 << ',' << insta_str << ':' << outsta_str << endl;  
     }
 	csvFile.close();
@@ -192,7 +192,7 @@ int attendance_set_tbl(char *tbl_name)
 
     memcpy(user_mngr_unit.curr_tbl, tbl_name, TABLE_NAME_LEN);
 
-    userdb_creat_tbl(user_mngr_unit.userdb, tbl_name);
+    db_attend_creat_tbl(user_mngr_unit.userdb, tbl_name);
 
     return 0;
 }

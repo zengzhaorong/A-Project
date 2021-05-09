@@ -349,6 +349,7 @@ int proto_0x30_setAttendTable(int handle, int count, char *tbl_list)
 	int data_len = 0;
 	int buf_size = 0;
 	int packLen = 0;
+	int i;
 
 	if(handle < 0 || handle >=MAX_PROTO_OBJ)
 		return -1;
@@ -359,7 +360,7 @@ int proto_0x30_setAttendTable(int handle, int count, char *tbl_list)
 	memcpy(tmp_protoBuf +data_len, &count, 4);
 	data_len += 4;
 
-	for(int i=0; i<count; i++)
+	for(i=0; i<count; i++)
 	{
 		memcpy(tmp_protoBuf +data_len, tbl_list +i*32, 32);
 		data_len += 32;
