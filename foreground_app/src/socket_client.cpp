@@ -286,6 +286,7 @@ int client_0x32_getAttendList(struct clientInfo *client, uint8_t *data, int len,
 	uint32_t time_atdout;
 	int sta_atdin;
 	int sta_atdout;
+	int atd_times;
 	int userCnt = 0;
 	int tmplen = 0;
 	int ret;
@@ -314,8 +315,10 @@ int client_0x32_getAttendList(struct clientInfo *client, uint8_t *data, int len,
 		tmplen += 4;
 		memcpy(&sta_atdout, data +tmplen, 4);
 		tmplen += 4;
+		memcpy(&atd_times, data +tmplen, 4);
+		tmplen += 4;
 		//printf("%s: id: %d, name: %s, \n", __FUNCTION__, user_id, user_name);
-		mainwin_set_attendList(user_id, user_name, time_atdin, sta_atdin, time_atdout, sta_atdout);
+		mainwin_set_attendList(user_id, user_name, time_atdin, sta_atdin, time_atdout, sta_atdout, atd_times);
 	}
 
 	return 0;

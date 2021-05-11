@@ -31,6 +31,7 @@
 #define TEXT_ATTEND_IN_LATE		"³Ùµ½"
 #define TEXT_ATTEND_OUT_EARLY	"ÔçÍË"
 #define TEXT_ATTEND_NULL		"È±ÇÚ"
+#define TEXT_TIMES				"´ÎÊý"
 
 #define TEST_COURSE_CHN			"Chinese"
 #define TEST_COURSE_MATH		"Math"

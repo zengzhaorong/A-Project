@@ -291,6 +291,7 @@ int server_0x31_setAttendTime(struct clientInfo *client, uint8_t *data, int len,
 
 	sprintf(table, TABLE_NAME_PRE"%s", course);
 	attendance_set_tbl(table);
+	attendance_clear_tbl(table);
 
 	return 0;
 }
@@ -339,6 +340,8 @@ int server_0x32_getAttendList(struct clientInfo *client, uint8_t *data, int len,
 		memcpy(ack_data +tmplen, &attend.out_time, 4);
 		tmplen += 4;
 		memcpy(ack_data +tmplen, &attend.out_sta, 4);
+		tmplen += 4;
+		memcpy(ack_data +tmplen, &attend.times, 4);
 		tmplen += 4;
 
 		userCnt ++;

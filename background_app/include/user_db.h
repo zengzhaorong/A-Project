@@ -4,15 +4,18 @@
 #include <sqlite3.h>
 #include "public.h"
 
-#define USERDB_FILE_NAME       "userInfo.db"
+#define USERDB_FILE_NAME       "user_attend.db"
 #define USERDB_TABLE		    "USER_TBL"
+
 #define USERDB_COL_ID		    "ID"
 #define USERDB_COL_NAME		    "NAME"
+#define USERDB_COL_FACEPATH		"FACEPATH"
+
 #define USERDB_COL_TIMEIN		"TIMEIN"
 #define USERDB_COL_TIMEOUT		"TIMEOUT"
 #define USERDB_COL_STAIN		"STAIN"
 #define USERDB_COL_STAOUT		"STAOUT"
-#define USERDB_COL_FACEPATH		"FACEPATH"
+#define USERDB_COL_TIMES        "TIMES"
 
 #define TABLE_NAME_PRE      "TBL_"
 #define TABLE_NAME_LEN      64
@@ -33,6 +36,7 @@ struct db_attend
     int out_time;      // attend out time
     int in_sta;     // attend in status
     int out_sta;    // attend in status
+    int times;      // attend times
 };
 
 

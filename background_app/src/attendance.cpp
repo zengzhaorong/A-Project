@@ -54,6 +54,7 @@ attend_sta_e attendance_set_one(int id, uint32_t time)
         {
             attend.in_time = time;
             attend.in_sta = status;
+            db_attend_write(user_mngr->userdb, user_mngr->curr_tbl, &attend);
         }
     }
     /* attend out: use the last time */
@@ -69,15 +70,50 @@ attend_sta_e attendance_set_one(int id, uint32_t time)
             status = ATTEND_STA_OUT_OK;
             printf("user [id=%d]: attend out ok.\n", id);
         }
+
+        /* add attend times */
+        if(attend.in_sta!=ATTEND_STA_NONE && attend.out_sta==ATTEND_STA_NONE)
+        {
+            attend.times ++;
+        }
+
         attend.out_time = time;
         attend.out_sta = status;
+        db_attend_write(user_mngr->userdb, user_mngr->curr_tbl, &attend);
     }
-    db_attend_write(user_mngr->userdb, user_mngr->curr_tbl, &attend);
 
     return status;
 }
 
+/* reset all data */
 void attendance_reset_tbl(char *tbl_name)
+{
+    struct userMngr_Stru *user_mngr = &user_mngr_unit;
+    struct db_attend attend;
+    int total, cursor = 0;
+    int i, ret;
+    
+    total = db_user_get_total(user_mngr->userdb);
+
+    // reset all user attend info
+    for(i=0; i<total +1; i++)
+    {
+        ret = db_attend_traverse_user(user_mngr->userdb, tbl_name, &cursor, &attend);
+        if(ret != 0)
+            break;
+
+        attend.in_time = 0;
+        attend.out_time = 0;
+        attend.in_sta = ATTEND_STA_NONE;
+        attend.out_sta = ATTEND_STA_NONE;
+        attend.times = 0;
+        db_attend_write(user_mngr->userdb, user_mngr->curr_tbl, &attend);
+    }
+    
+}
+
+/* not clear times */
+void attendance_clear_tbl(char *tbl_name)
 {
     struct userMngr_Stru *user_mngr = &user_mngr_unit;
     struct db_attend attend;

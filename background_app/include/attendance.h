@@ -15,6 +15,7 @@ extern "C" {
 
 attend_sta_e attendance_set_one(int id, uint32_t time);
 void attendance_reset_tbl(char *tbl_name);
+void attendance_clear_tbl(char *tbl_name);
 int attendance_save_data_csv(char *filename);
 int attendance_set_tbl(char *tbl_name);
 

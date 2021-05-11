@@ -54,7 +54,8 @@ extern "C" {
 #define TEXT_RESET				"÷ÿ÷√"
 #define TEXT_SWIT_CAPTURE		"«–ªªª≠√Ê"
 
-#define TIME_TABLE_STATUS_POS	4	// status pos in timesheet table
+#define TIME_TBL_POS_STATUS		4	// status pos in timesheet table
+#define TIME_TBL_POS_TIMES		5	// times pos in timesheet table
 
 typedef enum {
 	MAINWIN_MODE_DISCONECT,
@@ -129,7 +130,7 @@ public:
 };
 
 int mainwin_set_userList(int flag, int userCnt, char *usr_name);
-int mainwin_set_attendList(int id, char *usr_name, uint32_t time_atdin, int sta_atdin, uint32_t time_atdout, int sta_atdout);
+int mainwin_set_attendList(int id, char *usr_name, uint32_t time_atdin, int sta_atdin, uint32_t time_atdout, int sta_atdout, int times);
 void mainwin_clear_attendList(void);
 
 int mainwin_set_rects(int x, int y, int w, int h);

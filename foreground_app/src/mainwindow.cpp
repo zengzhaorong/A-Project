@@ -490,10 +490,11 @@ void MainWindow::resetTimeSheet(void)
 	for(i=0; i<userModel->rowCount(); i++)
 	{
 		/* clear attend in time and attend out time */
-		mainwindow->userModel->setItem(i, 2, new QStandardItem(QString("")));
-		mainwindow->userModel->setItem(i, 3, new QStandardItem(QString("")));
-		userModel->setItem(i, TIME_TABLE_STATUS_POS, new QStandardItem(QString("%1").arg(codec->toUnicode(TEXT_ATTEND_NULL ":" TEXT_ATTEND_NULL))));
-		userModel->item(i, TIME_TABLE_STATUS_POS)->setBackground(QBrush(color));
+		userModel->setItem(i, 2, new QStandardItem(QString("")));
+		userModel->setItem(i, 3, new QStandardItem(QString("")));
+		userModel->setItem(i, TIME_TBL_POS_STATUS, new QStandardItem(QString("%1").arg(codec->toUnicode(TEXT_ATTEND_NULL ":" TEXT_ATTEND_NULL))));
+		userModel->item(i, TIME_TBL_POS_STATUS)->setBackground(QBrush(color));
+		userModel->setItem(i, TIME_TBL_POS_TIMES, new QStandardItem(QString("0")));
 	}
 }
 
@@ -663,7 +664,7 @@ int mainwin_set_recognInfo(int id, uint8_t confid, char *usr_name, int status)
 }
 
 /* set attend info */
-int mainwin_set_attendList(int id, char *usr_name, uint32_t time_atdin, int sta_atdin, uint32_t time_atdout, int sta_atdout)
+int mainwin_set_attendList(int id, char *usr_name, uint32_t time_atdin, int sta_atdin, uint32_t time_atdout, int sta_atdout, int times)
 {
 	QColor color;
 	char usr_id[16] = {0};
@@ -741,17 +742,19 @@ int mainwin_set_attendList(int id, char *usr_name, uint32_t time_atdin, int sta_
 	mainwindow->userModel->setItem(modelRowCnt, 1, new QStandardItem(QString("%1").arg(usr_name)));
 	mainwindow->userModel->setItem(modelRowCnt, 2, new QStandardItem(QString("%1").arg(intime_str)));
 	mainwindow->userModel->setItem(modelRowCnt, 3, new QStandardItem(QString("%1").arg(outtime_str)));
-	mainwindow->userModel->setItem(modelRowCnt, TIME_TABLE_STATUS_POS, new QStandardItem(QString("%1").arg(codec->toUnicode(sta_str))));
+	mainwindow->userModel->setItem(modelRowCnt, TIME_TBL_POS_STATUS, new QStandardItem(QString("%1").arg(codec->toUnicode(sta_str))));
+	mainwindow->userModel->setItem(modelRowCnt, TIME_TBL_POS_TIMES, new QStandardItem(QString("%1").arg(times)));
 
 	/* set item align center */
 	mainwindow->userModel->item(modelRowCnt, 0)->setTextAlignment(Qt::AlignCenter);
 	mainwindow->userModel->item(modelRowCnt, 1)->setTextAlignment(Qt::AlignCenter);
 	mainwindow->userModel->item(modelRowCnt, 2)->setTextAlignment(Qt::AlignCenter);
 	mainwindow->userModel->item(modelRowCnt, 3)->setTextAlignment(Qt::AlignCenter);
-	mainwindow->userModel->item(modelRowCnt, TIME_TABLE_STATUS_POS)->setTextAlignment(Qt::AlignCenter);
+	mainwindow->userModel->item(modelRowCnt, TIME_TBL_POS_STATUS)->setTextAlignment(Qt::AlignCenter);
+	mainwindow->userModel->item(modelRowCnt, TIME_TBL_POS_TIMES)->setTextAlignment(Qt::AlignCenter);
 
 	/* set item background color */
-	mainwindow->userModel->item(modelRowCnt, TIME_TABLE_STATUS_POS)->setBackground(QBrush(color));
+	mainwindow->userModel->item(modelRowCnt, TIME_TBL_POS_STATUS)->setBackground(QBrush(color));
 	
 	/* set item fonts(forground) color */
 	//item(x, y)->setForeground(QBrush(QColor(255, 0, 0)));
@@ -765,7 +768,7 @@ void mainwin_clear_attendList(void)
 
 	mainwindow->userModel->clear();
 	mainwindow->userModel->setHorizontalHeaderLabels({codec->toUnicode(TEXT_USER_ID), codec->toUnicode(TEXT_USER_NAME), codec->toUnicode(TEXT_ATTEND_IN), \
-														codec->toUnicode(TEXT_ATTEND_OUT), codec->toUnicode(TEXT_STATUS)});
+														codec->toUnicode(TEXT_ATTEND_OUT), codec->toUnicode(TEXT_STATUS), codec->toUnicode(TEXT_TIMES)});
 }
 
 

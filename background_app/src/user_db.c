@@ -267,10 +267,10 @@ int db_attend_write(sqlite3 *db, char *tbl_name, struct db_attend *attend)
     }
     else
     {
-        sprintf(sql_cmd, "INSERT INTO %s(%s, %s, %s, %s, %s, %s) VALUES(%d, '%s', %d, %d, %d, %d);", \
-                        tbl_name, USERDB_COL_ID, USERDB_COL_NAME, USERDB_COL_TIMEIN, \
-                        USERDB_COL_TIMEOUT, USERDB_COL_STAIN, USERDB_COL_STAOUT, \
-                        attend->id, attend->name, attend->in_time, attend->out_time, attend->in_sta, attend->out_sta);
+        sprintf(sql_cmd, "INSERT INTO %s(%s, %s, %s, %s, %s, %s, %s) VALUES(%d, '%s', %d, %d, %d, %d, %d);", \
+                        tbl_name, USERDB_COL_ID, USERDB_COL_NAME, USERDB_COL_TIMEIN, USERDB_COL_TIMEOUT, \
+                        USERDB_COL_STAIN, USERDB_COL_STAOUT, USERDB_COL_TIMES, attend->id, attend->name, \
+                        attend->in_time, attend->out_time, attend->in_sta, attend->out_sta, attend->times);
         ret = sqlite3_exec(db, sql_cmd, NULL, NULL, &errMsg);
         if(ret != SQLITE_OK)    // may be already exist
         {
@@ -290,10 +290,10 @@ int db_attend_update(sqlite3 *db, char *tbl_name, struct db_attend *attend)
     int ret;
 
     /* CMD: UPDATE USER_TBL set a=%d, b=%d where ID=%d */
-    sprintf(sql_cmd, "UPDATE %s set %s='%s',%s=%d,%s=%d,%s=%d,%s=%d where %s=%d;", \
+    sprintf(sql_cmd, "UPDATE %s set %s='%s',%s=%d,%s=%d,%s=%d,%s=%d,%s=%d where %s=%d;", \
                     tbl_name, USERDB_COL_NAME, attend->name, USERDB_COL_TIMEIN,attend->in_time, \
                     USERDB_COL_TIMEOUT,attend->out_time, USERDB_COL_STAIN,attend->in_sta,\
-                    USERDB_COL_STAOUT,attend->out_sta, USERDB_COL_ID,attend->id);
+                    USERDB_COL_STAOUT,attend->out_sta, USERDB_COL_TIMES,attend->times, USERDB_COL_ID,attend->id);
     ret = sqlite3_exec(db, sql_cmd, NULL, NULL, &errMsg);
     if(ret != SQLITE_OK)    // may be already exist
     {
@@ -329,6 +329,7 @@ int db_attend_read_byId(sqlite3 *db, char *tbl_name, int id, struct db_attend *a
         attend->out_time = sqlite3_column_int(pStmt, 3);
         attend->in_sta = sqlite3_column_int(pStmt, 4);
         attend->out_sta = sqlite3_column_int(pStmt, 5);
+        attend->times = sqlite3_column_int(pStmt, 6);
         //printf("%s: id=%d, name=%s\n", __FUNCTION__, attend->id, attend->name);
         ret = 0;
     }
@@ -363,6 +364,7 @@ int db_attend_read_byName(sqlite3 *db, char *tbl_name, char *name, struct db_att
         attend->out_time = sqlite3_column_int(pStmt, 3);
         attend->in_sta = sqlite3_column_int(pStmt, 4);
         attend->out_sta = sqlite3_column_int(pStmt, 5);
+        attend->times = sqlite3_column_int(pStmt, 6);
         //printf("%s: id=%d, name=%s\n", __FUNCTION__, attend->id, attend->name);
         ret = 0;
     }
@@ -437,6 +439,7 @@ int db_attend_traverse_user(sqlite3 *db, char *tbl_name, int *cursor, struct db_
         attend->out_time = sqlite3_column_int(pStmt, 3);
         attend->in_sta = sqlite3_column_int(pStmt, 4);
         attend->out_sta = sqlite3_column_int(pStmt, 5);
+        attend->times = sqlite3_column_int(pStmt, 6);
         //printf("%s: id=%d, name=%s\n", __FUNCTION__, attend->id, attend->name);
         (*cursor) ++;
         ret = 0;
@@ -500,9 +503,9 @@ int db_attend_creat_tbl(sqlite3 *db, char *tbl_name)
     int ret;
 
     /* create db table if not exist */
-	sprintf(sql_cmd, "CREATE TABLE IF NOT EXISTS %s(%s INT PRIMARY KEY NOT NULL, %s CHAR(%d) NOT NULL, %s INT, %s INT, %s INT, %s INT);", \
+	sprintf(sql_cmd, "CREATE TABLE IF NOT EXISTS %s(%s INT PRIMARY KEY NOT NULL, %s CHAR(%d) NOT NULL, %s INT, %s INT, %s INT, %s INT, %s INT);", \
 					tbl_name, USERDB_COL_ID, USERDB_COL_NAME, USER_NAME_LEN, USERDB_COL_TIMEIN, \
-                    USERDB_COL_TIMEOUT, USERDB_COL_STAIN, USERDB_COL_STAOUT);
+                    USERDB_COL_TIMEOUT, USERDB_COL_STAIN, USERDB_COL_STAOUT, USERDB_COL_TIMES);
     //printf("%s: cmd: %s\n", __FUNCTION__, sql_cmd);
     ret = sqlite3_exec(db, sql_cmd, NULL, NULL, &errMsg);
     if(ret != SQLITE_OK)    // may be already exist
