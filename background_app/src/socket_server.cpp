@@ -617,7 +617,7 @@ void *socket_listen_thread(void *arg)
 	struct sockaddr_in cli_addr;
 	pthread_t tid;
 	int tmpSock, client_index;
-	int tmpLen;
+	int tmpLen = 0;
 	int ret;
 	int i;
 
