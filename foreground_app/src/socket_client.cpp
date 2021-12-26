@@ -71,6 +71,7 @@ int client_0x01_login(struct clientInfo *client, uint8_t *data, int len, uint8_t
 
 int client_0x03_heartbeat(struct clientInfo *client, uint8_t *data, int len, uint8_t *ack_data, int size, int *ack_len)
 {
+#if 0
 	struct tm *ptm;
 	struct tm local_info;
 	struct tm utc_info;
@@ -116,7 +117,7 @@ int client_0x03_heartbeat(struct clientInfo *client, uint8_t *data, int len, uin
 
 	if(ack_len != NULL)
 		*ack_len = 0;
-
+#endif
 	return 0;
 }
 
