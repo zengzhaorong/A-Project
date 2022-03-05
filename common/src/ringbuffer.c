@@ -23,7 +23,7 @@ int ringbuf_full(struct ringbuffer *ringbuf)
 }
 
 /* return: read byte conut */
-int ringbuf_read(struct ringbuffer *ringbuf, void *buf, int len)
+int ringbuf_read(struct ringbuffer *ringbuf, unsigned char *buf, int len)
 {
 	int tmplen = 0;
 	int retlen = 0;
@@ -68,7 +68,7 @@ int ringbuf_read(struct ringbuffer *ringbuf, void *buf, int len)
 }
 
 /* return: write byte conut */
-int ringbuf_write(struct ringbuffer *ringbuf, void *buf, int len)
+int ringbuf_write(struct ringbuffer *ringbuf, unsigned char *buf, int len)
 {
 	int tmplen = 0;
 	int retlen = 0;

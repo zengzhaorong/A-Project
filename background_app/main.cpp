@@ -3,6 +3,7 @@
 #include "opencv_face_process.h"
 #include "socket_server.h"
 #include "user_mngr.h"
+#include <QApplication>
 
 
 /* C++ include C */
@@ -20,6 +21,7 @@ struct main_mngr_info main_mngr;
 
 int main(int argc, char* argv[])
 {
+    QApplication qtApp(argc, argv);
 	(void)argc;
 	(void)argv;
 
@@ -44,10 +46,5 @@ int main(int argc, char* argv[])
 
 	start_socket_server_task();
 
-	while(1)
-	{
-		sleep(3);
-	}
-
-	return 0;
+	return qtApp.exec();		// start qt application, message loop ...
 }

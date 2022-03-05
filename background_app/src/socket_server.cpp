@@ -321,7 +321,6 @@ int server_0x32_getAttendList(struct clientInfo *client, uint8_t *data, int len,
 	cnt_pos = tmplen;
 	tmplen += 4;
 
-	/* user name */
 	userCnt = 0;
 	for(; ret==0; )
 	{
@@ -617,7 +616,7 @@ void *socket_listen_thread(void *arg)
 	struct sockaddr_in cli_addr;
 	pthread_t tid;
 	int tmpSock, client_index;
-	int tmpLen = sizeof(struct sockaddr);
+	int tmpLen;
 	int ret;
 	int i;
 
@@ -629,8 +628,6 @@ void *socket_listen_thread(void *arg)
 
 	while(1)
 	{
-	
-		// ps: only support 1 client now
 		if(server->client_cnt >= MAX_CLIENT_NUM)
 		{
 			sleep(3);

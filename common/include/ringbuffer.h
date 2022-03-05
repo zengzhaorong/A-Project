@@ -4,7 +4,7 @@
 
 struct ringbuffer
 {
-	void *buf;
+	unsigned char *buf;
 	int size;
 	int head;
 	int tail;
@@ -15,9 +15,9 @@ int ringbuf_empty(struct ringbuffer *ringbuf);
 
 int ringbuf_full(struct ringbuffer *ringbuf);
 
-int ringbuf_read(struct ringbuffer *ringbuf, void *buf, int len);
+int ringbuf_read(struct ringbuffer *ringbuf, unsigned char *buf, int len);
 
-int ringbuf_write(struct ringbuffer *ringbuf, void *buf, int len);
+int ringbuf_write(struct ringbuffer *ringbuf, unsigned char *buf, int len);
 
 int ringbuf_datalen(struct ringbuffer *ringbuf);
 
